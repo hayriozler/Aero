@@ -1,0 +1,6 @@
+@Aero.Scanner.Api_HostAddress = http://localhost:5038
+
+GET {{Aero.Scanner.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

@@ -26,5 +26,9 @@
     <ProjectReference Include="..\Aero.Scanner.Shared\Aero.Scanner.Shared.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Infrastructure\" />
+  </ItemGroup>
+
 
 </Project>

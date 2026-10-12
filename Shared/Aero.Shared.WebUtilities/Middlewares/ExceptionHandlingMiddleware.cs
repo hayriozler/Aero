@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Aero.Shared.WebUtilities.Middlewares;
 
+
 public sealed class ExceptionHandlingMiddleware(RequestDelegate next, LoggerService<ExceptionHandlingMiddleware> logger)
 {
     public async Task InvokeAsync(HttpContext context)

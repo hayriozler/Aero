@@ -1,8 +1,11 @@
 <Solution>
   <Folder Name="/Fids/" />
   <Folder Name="/Flight/" />
-  <Folder Name="/MessageProcessor/" />
+  <Folder Name="/MessageProcessor/">
+    <Project Path="MessageProcessor/Aero.MessageProcessor.TextMessageProcessor/Aero.MessageProcessor.TextMessageProcessor.csproj" Id="cbcf569b-9a64-4fa4-868a-283c70f095a4" />
+  </Folder>
   <Folder Name="/Scanner/">
+    <Project Path="Scanner/Aero.Scanner.Api/Aero.Scanner.Api.csproj" />
     <Project Path="Scanner/Aero.Scanner.Domain/Aero.Scanner.Domain.csproj" />
     <Project Path="Scanner/Aero.Scanner.Mobile/Aero.Scanner.Mobile.csproj">
       <Deploy Solution="Debug|*" />
