@@ -1,0 +1,327 @@
+@page "/"
+@attribute [Authorize]
+@implements IAsyncDisposable
+@using Aero.Scanner.Domain.Enums
+@inject DashboardApiClient Api
+@inject ClientTimeService Time
+@inject IJSRuntime JS
+
+<PageTitle>AeroScan BRS · Dashboard</PageTitle>
+
+<div class="p-6 space-y-6">
+
+    <!-- Telemetry strip -->
+    <div class="h-1 w-full bg-primary-container relative overflow-hidden opacity-80">
+        <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent w-1/4 animate-scan-strip"></div>
+    </div>
+
+    <!-- Header -->
+    <header class="flex justify-between items-end">
+        <div>
+            <h1 class="text-4xl font-extrabold tracking-tighter text-on-surface uppercase font-headline">Operational Canvas</h1>
+            <p class="text-on-surface-variant text-sm font-body">
+                Global System Status:
+                <span class="text-primary-container font-bold">@(_summary is not null ? "NOMINAL" : "LOADING...")</span>
+            </p>
+        </div>
+        <div class="text-right hidden sm:flex items-center gap-3">
+            <button @onclick="RefreshAsync"
+                    class="flex items-center gap-2 px-4 py-2 bg-surface-container text-on-surface-variant hover:text-primary-container font-headline text-xs uppercase tracking-widest transition-colors @(_loading ? "opacity-50 cursor-not-allowed" : "")"
+                    disabled="@_loading">
+                <span class="material-symbols-outlined text-sm @(_loading ? "animate-spin" : "")">refresh</span>
+                @(_loading ? "Refreshing..." : "Refresh")
+            </button>
+            <div>
+                <span class="block text-xs uppercase text-on-surface-variant font-label tracking-widest">Last Update</span>
+                <span class="text-xl font-medium text-on-surface font-headline">@_lastUpdated</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- KPI bento grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+
+        <div class="bg-surface-container p-6 shadow-lg relative overflow-hidden group">
+            <div class="absolute top-0 right-0 p-4 text-primary opacity-20">
+                <span class="material-symbols-outlined text-4xl">flight</span>
+            </div>
+            <span class="block text-xs font-label uppercase text-on-surface-variant tracking-widest mb-1">Active Flights</span>
+            <div class="text-5xl font-bold text-on-surface font-headline">@(_summary?.ActiveFlights.ToString() ?? "--")</div>
+        </div>
+
+        <div class="bg-surface-container-high p-6 shadow-lg relative overflow-hidden">
+            <span class="block text-xs font-label uppercase text-on-surface-variant tracking-widest mb-1">Bags Scanned Today</span>
+            <div class="text-5xl font-bold text-primary-container font-headline">@(_summary?.TotalBagsScannedToday.ToString("N0") ?? "--")</div>
+        </div>
+
+        <div class="bg-surface-container p-6 shadow-lg relative group">
+            @if (_summary?.ReconciliationErrors > 0)
+            {
+                <div class="absolute top-0 right-0 p-4">
+                    <span class="flex h-3 w-3">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-secondary opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-3 w-3 bg-secondary"></span>
+                    </span>
+                </div>
+            }
+            <span class="block text-xs font-label uppercase text-on-surface-variant tracking-widest mb-1">Reconciliation Errors</span>
+            <div class="text-5xl font-bold @(_summary?.ReconciliationErrors > 0 ? "text-secondary" : "text-on-surface") font-headline">
+                @(_summary?.ReconciliationErrors.ToString("D2") ?? "--")
+            </div>
+            @if (_summary?.ReconciliationErrors > 0)
+            {
+                <div class="mt-4 flex items-center text-xs text-secondary-dim font-bold">
+                    <span class="material-symbols-outlined text-sm mr-1">warning</span>
+                    ACTION REQUIRED
+                </div>
+            }
+        </div>
+
+        <div class="bg-surface-container p-6 shadow-lg relative overflow-hidden">
+            <span class="block text-xs font-label uppercase text-on-surface-variant tracking-widest mb-1">System Throughput</span>
+            <div class="text-5xl font-bold text-on-surface font-headline">
+                @(_summary?.ThroughputPerMinute.ToString() ?? "--")
+                <span class="text-lg ml-1 text-on-surface-variant">b/m</span>
+            </div>
+            <div class="mt-4 flex items-center text-xs text-on-surface-variant">
+                <span class="material-symbols-outlined text-sm mr-1">bolt</span>
+                Bags per minute
+            </div>
+        </div>
+    </div>
+
+    <!-- Flight Reconciliation Summary -->
+    <div class="bg-surface-container-low overflow-hidden shadow-2xl">
+
+        <div class="px-6 py-5 bg-surface-container flex justify-between items-center">
+            <h2 class="text-xl font-bold uppercase tracking-tight font-headline flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary">view_list</span>
+                Flight Reconciliation Summary
+            </h2>
+            <span class="text-xs font-label text-on-surface-variant uppercase tracking-widest">
+                Updated: <span class="font-bold text-on-surface">@_lastUpdated</span>
+            </span>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+
+                    <!-- Group header row -->
+                    <tr class="text-[9px] uppercase font-extrabold tracking-widest">
+                        <th colspan="5"
+                            class="px-5 py-2.5 bg-primary/15 text-primary border-r-2 border-surface-container-highest/40">
+                            <span class="flex items-center gap-1.5">
+                                <span class="material-symbols-outlined text-sm">flight_takeoff</span>
+                                Departure Flight
+                            </span>
+                        </th>
+                        <th colspan="5"
+                            class="px-5 py-2.5 bg-secondary/10 text-secondary border-r-2 border-surface-container-highest/40">
+                            <span class="flex items-center gap-1.5">
+                                <span class="material-symbols-outlined text-sm">luggage</span>
+                                Bag
+                            </span>
+                        </th>
+                        <th colspan="2"
+                            class="px-5 py-2.5 bg-tertiary/10 text-tertiary">
+                            <span class="flex items-center gap-1.5">
+                                <span class="material-symbols-outlined text-sm">flight_land</span>
+                                Arrival
+                            </span>
+                        </th>
+                    </tr>
+
+                    <!-- Column sub-header row -->
+                    <tr class="bg-surface-container-highest/60 text-on-surface-variant text-[10px] uppercase font-bold tracking-widest border-b border-surface-container-highest/50">
+                        <!-- Departure -->
+                        <th class="px-4 py-3">Flight</th>
+                        <th class="px-4 py-3">STD</th>
+                        <th class="px-4 py-3">ETD</th>
+                        <th class="px-4 py-3">Status</th>
+                        <th class="px-4 py-3 border-r-2 border-surface-container-highest/40">Gate / CI</th>
+                        <!-- Bag -->
+                        <th class="px-4 py-3 text-center">Expected</th>
+                        <th class="px-4 py-3 text-center">Loaded</th>
+                        <th class="px-4 py-3 text-center">Missing</th>
+                        <th class="px-4 py-3 text-center">Offloaded</th>
+                        <th class="px-4 py-3 border-r-2 border-surface-container-highest/40">Recon %</th>
+                        <!-- Arrival -->
+                        <th class="px-4 py-3">Destination</th>
+                        <th class="px-4 py-3">Terminal</th>
+                    </tr>
+
+                </thead>
+                <tbody class="divide-y divide-surface-container-highest/30">
+                    @if (_summary?.FlightReconciliations is { Count: > 0 } rows)
+                    {
+                        @foreach (var row in rows)
+                        {
+                            <tr class="hover:bg-surface-bright transition-colors @(row.HasMismatch ? "border-l-4 border-secondary" : "border-l-4 border-transparent")">
+
+                                <!-- ── Departure Flight ── -->
+                                <td class="px-4 py-4">
+                                    <span class="font-headline font-bold text-lg leading-none @(row.HasMismatch ? "text-secondary" : "text-primary")">
+                                        @row.FlightNo
+                                    </span>
+                                </td>
+                                <td class="px-4 py-4 font-mono text-sm text-on-surface">
+                                    @row.ScheduledDeparture
+                                </td>
+                                <td class="px-4 py-4 font-mono text-sm">
+                                    @if (row.EstimatedDeparture is not null && row.EstimatedDeparture != row.ScheduledDeparture)
+                                    {
+                                        <span class="text-secondary font-bold">@row.EstimatedDeparture</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-on-surface-variant/30">—</span>
+                                    }
+                                </td>
+                                <td class="px-4 py-4">
+                                    <span class="inline-block px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider @GetStatusClass(row.FlightStatus)">
+                                        @GetStatusLabel(row.FlightStatus)
+                                    </span>
+                                </td>
+                                <td class="px-4 py-4 border-r-2 border-surface-container-highest/40">
+                                    <div class="flex flex-col gap-0.5 text-xs">
+                                        @if (row.Gate is not null)
+                                        {
+                                            <span class="font-bold text-on-surface">
+                                                <span class="text-on-surface-variant font-normal">G</span> @row.Gate
+                                            </span>
+                                        }
+                                        @if (row.CheckIn is not null)
+                                        {
+                                            <span class="text-on-surface-variant">
+                                                CI @row.CheckIn
+                                            </span>
+                                        }
+                                        @if (row.Gate is null && row.CheckIn is null)
+                                        {
+                                            <span class="text-on-surface-variant/30">—</span>
+                                        }
+                                    </div>
+                                </td>
+
+                                <!-- ── Bag ── -->
+                                <td class="px-4 py-4 text-center font-mono text-sm text-on-surface">
+                                    @row.ExpectedBagCount
+                                </td>
+                                <td class="px-4 py-4 text-center font-mono text-sm font-bold text-primary-container">
+                                    @row.LoadedBagCount
+                                </td>
+                                <td class="px-4 py-4 text-center font-mono text-sm @(row.MissingBagCount > 0 ? "font-bold text-secondary" : "text-on-surface-variant/40")">
+                                    @(row.MissingBagCount > 0 ? row.MissingBagCount.ToString() : "—")
+                                </td>
+                                <td class="px-4 py-4 text-center font-mono text-sm text-on-surface-variant">
+                                    @(row.OffloadedCount > 0 ? row.OffloadedCount.ToString() : "—")
+                                </td>
+                                <td class="px-4 py-4 border-r-2 border-surface-container-highest/40">
+                                    <div class="flex items-center gap-2 min-w-[110px]">
+                                        <div class="flex-1 h-1.5 bg-surface-container-highest rounded-full overflow-hidden">
+                                            <div class="h-full transition-all duration-500 @(row.HasMismatch ? "bg-secondary" : "bg-primary-container")"
+                                                 style="width: @(row.ReconciliationPercent)%"></div>
+                                        </div>
+                                        <span class="text-xs font-bold w-9 text-right shrink-0 @(row.HasMismatch ? "text-secondary" : "text-primary-container")">
+                                            @row.ReconciliationPercent%
+                                        </span>
+                                    </div>
+                                    @if (row.HasMismatch)
+                                    {
+                                        <div class="mt-1 text-[9px] font-bold text-secondary uppercase tracking-wider">
+                                            Mismatch
+                                        </div>
+                                    }
+                                </td>
+
+                                <!-- ── Arrival ── -->
+                                <td class="px-4 py-4">
+                                    <div class="flex flex-col leading-tight">
+                                        <span class="font-headline font-bold text-on-surface">@row.NextAirport</span>
+                                        @if (row.DestinationAirport != row.NextAirport)
+                                        {
+                                            <span class="text-[10px] text-on-surface-variant">via @row.DestinationAirport</span>
+                                        }
+                                    </div>
+                                </td>
+                                <td class="px-4 py-4 text-sm text-on-surface-variant">
+                                    @if (row.Terminal is not null)
+                                    {
+                                        @row.Terminal
+                                    }
+                                    else
+                                    {
+                                        <span class="text-on-surface-variant/30">—</span>
+                                    }
+                                </td>
+
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="12" class="px-6 py-16 text-center text-on-surface-variant font-headline text-sm uppercase tracking-widest">
+                                @(_loading ? "Loading flight data..." : "No active flights")
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+@code {
+    private DashboardSummaryDto? _summary;
+    private bool _loading;
+    private string _lastUpdated = "--:--:--";
+    private CancellationTokenSource _cts = new();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        await Time.LoadAsync(JS);
+        await RefreshAsync();
+    }
+
+    private async Task RefreshAsync()
+    {
+        _loading = true;
+        await InvokeAsync(StateHasChanged);
+
+        _summary = await Api.GetSummaryAsync(_cts.Token);
+        _lastUpdated = Time.Format(DateTime.UtcNow, "HH:mm:ss");
+        _loading = false;
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private static string GetStatusClass(DepartureFlightStatus status) => status switch
+    {
+        DepartureFlightStatus.CheckInOpen => "bg-primary/20 text-primary",
+        DepartureFlightStatus.Boarding    => "bg-tertiary/20 text-tertiary",
+        DepartureFlightStatus.FinalCall   => "bg-secondary/20 text-secondary",
+        DepartureFlightStatus.GateClosed  => "bg-error/20 text-error",
+        DepartureFlightStatus.Departed    => "bg-surface-container-highest text-on-surface-variant",
+        DepartureFlightStatus.Delayed     => "bg-secondary/20 text-secondary",
+        DepartureFlightStatus.Cancelled   => "bg-error/20 text-error",
+        _                                 => "bg-surface-container text-on-surface-variant"
+    };
+
+    private static string GetStatusLabel(DepartureFlightStatus status) => status switch
+    {
+        DepartureFlightStatus.CheckInOpen => "Check-in",
+        DepartureFlightStatus.FinalCall   => "Final Call",
+        DepartureFlightStatus.GateClosed  => "Gate Closed",
+        _                                 => status.ToString()
+    };
+
+    public async ValueTask DisposeAsync()
+    {
+        await _cts.CancelAsync();
+        _cts.Dispose();
+    }
+}

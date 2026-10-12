@@ -1,0 +1,48 @@
+﻿namespace Aero.Scanner.Shared.Dtos;
+
+public sealed record TextMessageDepartureBagDto(
+    long Id,
+    char? AckRequest,
+    bool AuthorityToLoad,
+    bool AuthorityToTransport,
+    char SourceIndicator,
+    string SourceAirportCode,
+    string AirlineCode,
+    string FlightNumber,
+    string FlightIataDate,
+    string Destination,
+    bool BagTagStatus,
+    List<string> BagTags,
+    List<(string AirlineCode, string FlightNumber, string FlightIataDate, string Destination, char? Class)> Onwards,
+    char PassengerStatus,
+    string PassengerName,
+    string? PassengerSecurityNumber,
+    string PassengerSequenceNumber,
+    char? PassengerClass,
+    string? SeatNumber);
+
+
+public sealed record TextMessageDepartureBagDeleteDto(long messageId,
+            char? ackRequest,
+            char sourceIndicator, string sourceAirport,
+            string airlineCode, string flightNumber, string flightIataDate, string destination,
+            List<string> BagTags);
+public sealed record TextMessageDepartureBagChgDto(long Id,
+    char? AckRequest,
+    bool AuthorityToLoad,
+    bool AuthorityToTransport,
+    char SourceIndicator,
+    string SourceAirportCode,
+    string AirlineCode,
+    string FlightNumber,
+    string FlightIataDate,
+    string Destination,
+    bool BagTagStatus,
+    List<string> BagTags,
+    List<(string AirlineCode, string FlightNumber, string FlightIataDate, string Destination, char? Class)> Onwards,
+    char PassengerStatus,
+    string PassengerName,
+    string? PassengerSecurityNumber,
+    string PassengerSequenceNumber,
+    char? PassengerClass,
+    string? SeatNumber);

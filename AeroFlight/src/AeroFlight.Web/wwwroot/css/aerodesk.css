@@ -1,0 +1,152 @@
+:root {
+    --color-bg: #f8f4ea;
+    --color-surface: #f1e9d9;
+    --color-text: #241d13;
+    --color-accent: #b57a2c;
+    --color-accent-2: #bd8f45;
+
+    --color-accent-100: #fffaee;
+    --color-accent-200: #ffefc9;
+    --color-accent-300: #fbda97;
+    --color-accent-400: #eaba69;
+    --color-accent-500: #d29a43;
+    --color-accent-600: #b07a2b;
+    --color-accent-700: #8a5d1e;
+    --color-accent-800: #634116;
+    --color-accent-900: #412a0e;
+
+    --color-accent-2-100: #fff7f0;
+    --color-accent-2-200: #ffe8d6;
+    --color-accent-2-300: #f2d6bd;
+    --color-accent-2-400: #dbbb9e;
+    --color-accent-2-500: #bd9c7e;
+    --color-accent-2-600: #9b7d62;
+    --color-accent-2-700: #78604a;
+    --color-accent-2-800: #554435;
+    --color-accent-2-900: #382c22;
+
+    --color-neutral-100: #f8f6f3;
+    --color-neutral-200: #ebe7e2;
+    --color-neutral-300: #d9d4cd;
+    --color-neutral-400: #bcb6ae;
+    --color-neutral-500: #9d968d;
+    --color-neutral-600: #7f786f;
+    --color-neutral-700: #625b53;
+    --color-neutral-800: #46403a;
+    --color-neutral-900: #2e2924;
+
+    --color-alert: #b3321f;
+    --color-alert-100: #fdeee9;
+    --color-alert-200: #f8d2c8;
+    --color-alert-700: #8b2415;
+    --color-alert-900: #4e140c;
+
+    --color-divider: color-mix(in srgb, #1d1f20 16%, transparent);
+}
+
+.blueprint {
+    position: relative;
+    border: 1px solid var(--color-divider);
+    border-radius: 0;
+}
+
+.blueprint > .corner {
+    position: absolute;
+    width: 11px;
+    height: 11px;
+    color: color-mix(in srgb, var(--color-text) 55%, transparent);
+}
+
+.blueprint > .corner::before,
+.blueprint > .corner::after {
+    content: "";
+    position: absolute;
+    background: currentColor;
+}
+
+.blueprint > .corner::before {
+    left: 5px;
+    top: 0;
+    width: 1px;
+    height: 100%;
+}
+
+.blueprint > .corner::after {
+    top: 5px;
+    left: 0;
+    width: 100%;
+    height: 1px;
+}
+
+.blueprint > .corner.tl {
+    top: -6px;
+    left: -6px;
+}
+
+.blueprint > .corner.tr {
+    top: -6px;
+    right: -6px;
+}
+
+.blueprint > .corner.bl {
+    bottom: -6px;
+    left: -6px;
+}
+
+.blueprint > .corner.br {
+    bottom: -6px;
+    right: -6px;
+}
+
+.kicker {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    color: color-mix(in srgb, var(--color-text) 60%, transparent);
+}
+
+.tabular-nums {
+    font-variant-numeric: tabular-nums;
+}
+
+/* Flight detail Resources tab: docks the active sub-tab's MudTable to the resizable
+   #flight-resources-grid box so it fills the box (MudTable Height="100%" FixedHeader="true")
+   instead of sitting at its own intrinsic content height. min-height:0 on every flex link in the
+   chain is required — flex children default to min-height:auto, which blocks a nested scroll area. */
+#flight-resources-grid > .mud-tabs {
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+#flight-resources-grid .mud-tabs-tabbar {
+    flex: 0 0 auto;
+}
+
+#flight-resources-grid .mud-tabs-panels {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Scoped to the active, non-hidden panel only — matching MudBlazor's own condition for its
+   display:contents rule. An unscoped ".mud-tab-panel" selector here would still out-specificity
+   (ID beats class) MudBlazor's "display:none" on every OTHER (inactive) sub-tab too, making all 5
+   Resources sub-tabs flex items at once instead of just the one being shown. */
+#flight-resources-grid .mud-tab-panel.mud-tab-panel-active:not(.mud-tab-panel-hidden) {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+#flight-resources-grid .mud-tab-panel > * {
+    flex: 0 0 auto;
+}
+
+#flight-resources-grid .mud-tab-panel > .mud-table {
+    flex: 1 1 auto;
+    min-height: 0;
+}

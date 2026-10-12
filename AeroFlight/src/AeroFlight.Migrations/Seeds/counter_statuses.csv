@@ -1,0 +1,6 @@
+code,description,is_default,is_open,is_close
+A,Available,true,false,false
+S,Assigned,false,false,false
+O,Occupied,false,true,false
+C,Closed,false,false,true
+X,Out Of Service,false,false,false

@@ -1,0 +1,91 @@
+@using AeroFids.Infrastructure.Identity
+@using AeroFids.Service.Services
+@inject IFidsUserService UserService
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        @if (_error is not null)
+        {
+            <MudAlert Severity="Severity.Error" Variant="Variant.Filled" Dense="true" Class="mb-3">@_error</MudAlert>
+        }
+
+        <MudForm @ref="_form">
+            <MudSelect T="string" @bind-Value="_role" Label="Role" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-3">
+                <MudSelectItem T="string" Value="@FidsRoles.Admin">Admin</MudSelectItem>
+            </MudSelect>
+
+            <MudTextField T="string" @bind-Value="_newPassword" Label="New Password" InputType="InputType.Password"
+                          HelperText="Leave blank to keep the current password"
+                          Validation="@(new Func<string, string?>(ValidatePassword))"
+                          Variant="Variant.Outlined" Margin="Margin.Dense" Immediate="true" Class="mb-3" />
+
+            <MudCheckBox T="bool" @bind-Value="_isActive" Label="Active" />
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" Disabled="_saving">Cancel</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="SubmitAsync" Disabled="_saving">
+            @if (_saving)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+            }
+            Save
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = null!;
+
+    [Parameter]
+    public FidsUserResponse Existing { get; set; } = null!;
+
+    private MudForm _form = null!;
+    private string _role = FidsRoles.Admin;
+    private string _newPassword = "";
+    private bool _isActive = true;
+    private bool _saving;
+    private string? _error;
+
+    private static string? ValidatePassword(string value) =>
+        string.IsNullOrEmpty(value) || value.Length >= 6 ? null : "Password must be at least 6 characters";
+
+    protected override void OnInitialized()
+    {
+        _role = Existing.Role;
+        _isActive = Existing.IsActive;
+    }
+
+    private async Task SubmitAsync()
+    {
+        await _form.ValidateAsync();
+        if (!_form.IsValid)
+            return;
+
+        _saving = true;
+        _error = null;
+        try
+        {
+            var request = new UpdateFidsUserRequest(_role, _isActive, string.IsNullOrEmpty(_newPassword) ? null : _newPassword);
+            await UserService.UpdateAsync(Existing.Id, request, CancellationToken.None);
+            Snackbar.Add($"'{Existing.Username}' updated.", Severity.Success);
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (FidsValidationException ex)
+        {
+            _error = ex.Message;
+        }
+        catch (Exception)
+        {
+            _error = "Something went wrong. Please try again.";
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

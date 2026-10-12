@@ -1,0 +1,241 @@
+@page "/resource-status-maps"
+@attribute [Authorize]
+@inject ContainerApiClient Api
+@inject ISnackbar Snackbar
+@inject AuthenticationStateProvider AuthState
+@inject IStringLocalizer<SharedResources> L
+@using System.Text.Json
+@using Aero.Scanner.Shared.Consts
+@using Aero.Scanner.Shared.Requests
+@using Aero.Scanner.WebApp.Resources
+
+<PageTitle>AeroScan BRS · Resource Status Maps</PageTitle>
+
+<div class="p-6 space-y-6">
+
+    @if (!_isAirportOperator)
+    {
+        <div class="bg-secondary/10 border border-secondary/30 p-6 text-center">
+            <span class="material-symbols-outlined text-secondary text-4xl block mb-2">block</span>
+            <p class="text-secondary font-headline uppercase tracking-widest text-sm font-bold">Access Restricted</p>
+            <p class="text-on-surface-variant text-xs mt-1">This page is only accessible to Airport Operator personnel.</p>
+        </div>
+        return;
+    }
+
+    <header class="flex justify-between items-end flex-wrap gap-4">
+        <div>
+            <h1 class="text-4xl font-extrabold tracking-tighter text-on-surface uppercase font-headline">Resource Status Maps</h1>
+            <p class="text-on-surface-variant text-sm font-body">Map external resource status values to internal target statuses</p>
+        </div>
+        <button @onclick="OpenAddForm"
+                class="flex items-center gap-2 px-4 py-2 bg-primary-container text-on-primary font-headline text-xs uppercase tracking-widest transition-colors hover:opacity-90">
+            <span class="material-symbols-outlined text-sm">add</span>
+            Add Mapping
+        </button>
+    </header>
+
+    @if (_formVisible)
+    {
+        <section class="bg-surface-container p-6 space-y-4 border border-outline-variant/40">
+            <h2 class="text-xs font-bold uppercase tracking-widest text-on-surface-variant font-headline">
+                @(_editKey is not null ? "Edit Mapping" : "New Mapping")
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="space-y-1">
+                    <label class="text-xs font-headline uppercase tracking-widest text-on-surface-variant">Source Resource Name *</label>
+                    <MudTextField @bind-Value="_form.SourceResourceName" Placeholder="e.g. BagMaster" Variant="Variant.Outlined"
+                                  Margin="Margin.Dense" MaxLength="20" Disabled="@(_editKey is not null)" />
+                </div>
+                <div class="space-y-1">
+                    <label class="text-xs font-headline uppercase tracking-widest text-on-surface-variant">Source Status *</label>
+                    <MudTextField @bind-Value="_form.SourceResourceStatus" Placeholder="e.g. LOADED" Variant="Variant.Outlined"
+                                  Margin="Margin.Dense" MaxLength="20" Disabled="@(_editKey is not null)" />
+                </div>
+                <div class="space-y-1">
+                    <label class="text-xs font-headline uppercase tracking-widest text-on-surface-variant">Target Status * (1 char)</label>
+                    <MudTextField @bind-Value="_form.TargetResourceStatus" Placeholder="e.g. X" Variant="Variant.Outlined"
+                                  Margin="Margin.Dense" MaxLength="1" />
+                </div>
+            </div>
+            <div class="flex items-center gap-3 pt-2">
+                <button @onclick="SaveAsync" disabled="@_saving"
+                        class="px-6 py-2 bg-primary-container text-on-primary font-headline text-xs uppercase tracking-widest transition-colors hover:opacity-90 disabled:opacity-50">
+                    @(_saving ? "Saving…" : "Save")
+                </button>
+                <button @onclick="CloseForm"
+                        class="px-6 py-2 bg-surface-container-high text-on-surface-variant font-headline text-xs uppercase tracking-widest transition-colors hover:text-on-surface">
+                    Cancel
+                </button>
+                @if (!string.IsNullOrEmpty(_formError))
+                {
+                    <span class="text-xs text-error font-body">@_formError</span>
+                }
+            </div>
+        </section>
+    }
+
+    <MudDataGrid T="ResourceStatusMapDto" Items="@_items" SortMode="SortMode.Single" Dense="true" Hover="true"
+                 Loading="@_loading" LoadingProgressColor="Color.Warning" Class="brs-grid">
+        <Columns>
+            <PropertyColumn Property="m => m.SourceResourceName" Title="Source Resource" Sortable="true">
+                <CellTemplate>
+                    <span class="font-mono font-bold text-primary-container">@context.Item.SourceResourceName</span>
+                </CellTemplate>
+            </PropertyColumn>
+            <PropertyColumn Property="m => m.SourceResourceStatus" Title="Source Status" Sortable="true">
+                <CellTemplate>
+                    <span class="font-mono text-on-surface-variant">@context.Item.SourceResourceStatus</span>
+                </CellTemplate>
+            </PropertyColumn>
+            <PropertyColumn Property="m => m.TargetResourceStatus" Title="Target Status" Sortable="true">
+                <CellTemplate>
+                    <span class="font-mono font-bold text-on-surface">@context.Item.TargetResourceStatus</span>
+                </CellTemplate>
+            </PropertyColumn>
+            <TemplateColumn Title="" CellClass="text-right">
+                <CellTemplate>
+                    <div class="flex justify-end gap-3">
+                        <button @onclick="() => OpenEditForm(context.Item)"
+                                class="text-on-surface-variant hover:text-primary-container transition-colors" title="Edit">
+                            <span class="material-symbols-outlined text-base">edit</span>
+                        </button>
+                        <button @onclick="() => DeleteAsync(context.Item)"
+                                class="text-on-surface-variant hover:text-error transition-colors" title="Delete">
+                            <span class="material-symbols-outlined text-base">delete</span>
+                        </button>
+                        <button @onclick="() => OpenAudit(context.Item)"
+                                class="text-on-surface-variant hover:text-warning transition-colors" title="Audit History">
+                            <span class="material-symbols-outlined text-base">history</span>
+                        </button>
+                    </div>
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+        <NoRecordsContent>
+            <div style="padding:3rem 0;text-align:center;color:var(--mud-palette-text-secondary);font-size:0.7rem;text-transform:uppercase;letter-spacing:0.08em;font-weight:600;">
+                @(_loading ? "Loading…" : "No resource status mappings found")
+            </div>
+        </NoRecordsContent>
+        <PagerContent>
+            <MudDataGridPager T="ResourceStatusMapDto" PageSizeOptions="[15, 30, 50]" />
+        </PagerContent>
+    </MudDataGrid>
+</div>
+
+<AuditDrawer EntityType="ResourceStatusMap" PrimaryKey="@_auditPk" Label="@_auditLabel" @bind-IsOpen="_auditOpen" />
+
+@code {
+    private IReadOnlyList<ResourceStatusMapDto> _items = [];
+    private bool _loading;
+    private bool _formVisible;
+    private bool _saving;
+    private string _formError = string.Empty;
+    private (string SourceResourceName, string SourceResourceStatus)? _editKey;
+    private bool _isAirportOperator;
+
+    private bool   _auditOpen;
+    private string _auditPk    = string.Empty;
+    private string _auditLabel = string.Empty;
+
+    private MapFormModel _form = new();
+
+    private sealed class MapFormModel
+    {
+        public string SourceResourceName { get; set; } = string.Empty;
+        public string SourceResourceStatus { get; set; } = string.Empty;
+        public string TargetResourceStatus { get; set; } = string.Empty;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthState.GetAuthenticationStateAsync();
+        _isAirportOperator = string.Equals(
+            authState.User.FindFirst("company_type")?.Value,
+            Policies.AirportOperator, StringComparison.OrdinalIgnoreCase);
+
+        if (!_isAirportOperator) return;
+
+        _loading = true;
+        _items = await Api.GetResourceStatusMapsAsync();
+        _loading = false;
+    }
+
+    private void OpenAudit(ResourceStatusMapDto item)
+    {
+        _auditPk = JsonSerializer.Serialize(new Dictionary<string, object>
+        {
+            ["SourceResourceName"]   = item.SourceResourceName,
+            ["SourceResourceStatus"] = item.SourceResourceStatus
+        });
+        _auditLabel = item.SourceResourceName + "/" + item.SourceResourceStatus;
+        _auditOpen  = true;
+    }
+
+    private void OpenAddForm() { _editKey = null; _form = new(); _formError = string.Empty; _formVisible = true; }
+
+    private void OpenEditForm(ResourceStatusMapDto m)
+    {
+        _editKey = (m.SourceResourceName, m.SourceResourceStatus);
+        _form = new()
+        {
+            SourceResourceName = m.SourceResourceName,
+            SourceResourceStatus = m.SourceResourceStatus,
+            TargetResourceStatus = m.TargetResourceStatus
+        };
+        _formError = string.Empty;
+        _formVisible = true;
+    }
+
+    private void CloseForm() { _formVisible = false; _formError = string.Empty; }
+
+    private async Task SaveAsync()
+    {
+        _formError = string.Empty;
+        if (string.IsNullOrWhiteSpace(_form.SourceResourceName)) { _formError = L["Validation.Required.SourceResourceName"]; return; }
+        if (string.IsNullOrWhiteSpace(_form.SourceResourceStatus)) { _formError = L["Validation.Required.SourceStatus"]; return; }
+        if (string.IsNullOrWhiteSpace(_form.TargetResourceStatus)) { _formError = L["Validation.Required.TargetStatus"]; return; }
+
+        _saving = true;
+        bool success; string? error;
+
+        if (_editKey is not null)
+        {
+            (success, _, error) = await Api.UpdateResourceStatusMapAsync(
+                _editKey.Value.SourceResourceName, _editKey.Value.SourceResourceStatus,
+                new UpdateResourceStatusMapRequest(_form.TargetResourceStatus));
+        }
+        else
+        {
+            (success, _, error) = await Api.CreateResourceStatusMapAsync(
+                new CreateResourceStatusMapRequest(
+                    _form.SourceResourceName, _form.SourceResourceStatus, _form.TargetResourceStatus));
+        }
+
+        _saving = false;
+
+        if (success)
+        {
+            Snackbar.Add(_editKey is not null ? "Mapping updated." : "Mapping created.", Severity.Success);
+            CloseForm();
+            _items = await Api.GetResourceStatusMapsAsync();
+        }
+        else
+        {
+            _formError = error ?? "An unexpected error occurred.";
+        }
+    }
+
+    private async Task DeleteAsync(ResourceStatusMapDto m)
+    {
+        if (await Api.DeleteResourceStatusMapAsync(m.SourceResourceName, m.SourceResourceStatus))
+        {
+            Snackbar.Add($"Mapping '{m.SourceResourceName}/{m.SourceResourceStatus}' deleted.", Severity.Info);
+            _items = await Api.GetResourceStatusMapsAsync();
+        }
+        else
+        {
+            Snackbar.Add("Failed to delete mapping.", Severity.Error);
+        }
+    }
+}

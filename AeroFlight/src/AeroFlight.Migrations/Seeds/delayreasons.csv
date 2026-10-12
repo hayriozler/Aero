@@ -1,0 +1,88 @@
+﻿code,alphabeticcode,description
+46,TC,Aircraft change
+47,TL,Standby aircraft
+48,TV,Scheduled cabin configuration/version adjustment
+51,DF,Damage during flight operations
+52,DG,Damage during ground operations
+55,ED,Departure control
+56,EC,Cargo preparation/documentation
+57,EF,Flight plans
+61,FP,"Flight plan, late completion"
+62,FF,Operational requirements
+63,FT,Late crew boarding or departure procedures
+64,FS,Flight deck crew shortage
+65,FR,Flight deck crew special request
+66,FL,Late cabin crew boarding or departure procedures
+67,FC,Cabin crew shortage
+68,FA,Cabin crew error or special request
+69,FB,Captain request for security check
+71,WO,Weather departure station
+72,WT,Weather destination station
+73,WR,Weather en-route or alternate
+73X,NULL,ETOPS
+73Y,NULL,Outside crew limits
+73Z,NULL,Outside aircraft limits
+75,WI,De-icing of aircraft
+76,WS,"Removal of snow, ice, water and sand from airport"
+77,WG,Gnd handling impaired by adverse weather conditions
+81,AT,ATFM due to ATC en-route demand/capacity
+81Y,ATY,High demand or capacity
+81Z,ATZ,ATC routing
+82,AX,ATFM due to ATC staff/equipment en-route
+82V,AXV,Special event
+82W,AXW,Military activity
+82X,AXX,Staff shortage
+82Y,AXY,Equipment failure
+82Z,AXZ,Industrial action
+83,AE,ATFM due to restrictions at destination airport
+83R,AER,Other
+83S,AES,Nose abatement/night curfew
+83T,AET,Special event
+83U,AEU,Military activity
+83V,AEV,Accident/incident
+83W,AEW,Staff shortage
+83X,AEX,Equipment failure
+83Y,AEY,Industrial action
+83Z,AEZ,High demand or capacity
+84,AW,ATFM due to weather at destination
+85,AS,Mandatory security
+86,AG,"Immigration, customs, health"
+87,87,Terminal Delays
+87H,AFH,Late or lack of follow-me
+87J,AFJ,Breakdown of airport fueling system
+87K,AFK,No push clearance due to construction
+87L,AFL,Ground communication system failure
+87M,AFM,Insufficient fire cover
+87N,AFN,FIDS failure
+87P,AFP,Passenger transport system failure
+87R,AFR,Electrical system failure
+87S,AFS,Lack of check-in counters
+87T,AFT,Jet bridge inop
+87U,AFU,No push clearance due to infrastructure
+87V,AFV,Baggage sorting system down/slow
+87W,AFW,Gate limitation/no gate available
+87Y,AFY,Ramp congestion
+87Z,AFZ,Lack of parking stands
+89G,AMG,Other
+89H,AMH,Construction work/maintenance
+89J,AMJ,Lost flight plan by ATC
+89K,AMK,Start-up/pushback clearance delay (Local ATC)
+89L,AML,Runway closure
+89M,AMM,Airport closure
+89N,AMN,ATC environmental
+89P,AMP,ATC political unrest
+89R,AMR,ATC restriction due to curfew
+89S,AMS,ATC weather
+89T,AMT,ATC special event
+89U,AMU,ATC due to de-icing
+89V,AMV,ATC accident/incident
+89W,AMW,ATC equipment
+89X,AMX,ATC staffing
+89Y,AMY,ATC industrial action
+89Z,AMZ,ATC capacity
+93U,RAU,Late arrival due to technical reasons
+93V,RAV,Late arrival due to weather at destination
+93W,RAW,Late arrival due to high demand of destination station
+93X,RAX,Late arrival due to delay after landing
+93Y,RAY,Late arrival due to enroute delay
+93Z,RAZ,Late arrival due to departure delay at previous station

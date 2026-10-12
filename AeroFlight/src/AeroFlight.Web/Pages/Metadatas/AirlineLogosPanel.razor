@@ -1,0 +1,201 @@
+@using AeroFlight.Contracts.Metadatas
+@using AeroFlight.Web.Services.Metadatas
+@using Microsoft.AspNetCore.Components.Forms
+
+@if (_loading)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="mb-3" />
+}
+else
+{
+    <MudFileUpload T="IReadOnlyList<IBrowserFile>" FilesChanged="UploadAsync" Accept="image/*" AppendMultipleFiles="true">
+        <CustomContent Context="fileUpload">
+            <MudTooltip Text="Add Logo(s)">
+                <MudIconButton Icon="@Icons.Material.Filled.Upload" Color="Color.Primary"
+                               Disabled="@_busy" Class="mb-3" OnClick="@fileUpload.OpenFilePickerAsync" />
+            </MudTooltip>
+        </CustomContent>
+    </MudFileUpload>
+
+    @if (_logos.Count == 0)
+    {
+        <MudText Typo="Typo.body2" Color="Color.Secondary">No logos yet.</MudText>
+    }
+    else
+    {
+        <MudGrid Spacing="3">
+            @foreach (var logo in _logos)
+            {
+                <MudItem xs="12" sm="4">
+                    <MudPaper Class="pa-3 d-flex flex-column align-center" Outlined="true">
+                        @if (_previews.TryGetValue(logo.Id, out var dataUri))
+                        {
+                            <MudImage Src="@dataUri" Height="100" ObjectFit="ObjectFit.Contain" Class="mb-2" />
+                        }
+                        @if (_renamingId == logo.Id)
+                        {
+                            <MudTextField @bind-Value="_renameValue" Immediate="true" Variant="Variant.Outlined" Margin="Margin.Dense" MaxLength="50" Class="mb-1" />
+                            <div class="d-flex ga-1">
+                                <MudTooltip Text="Save">
+                                    <MudIconButton Icon="@Icons.Material.Filled.Save" Size="Size.Small" Color="Color.Primary" OnClick="ConfirmRenameAsync" Disabled="@string.IsNullOrWhiteSpace(_renameValue)" />
+                                </MudTooltip>
+                                <MudTooltip Text="Cancel">
+                                    <MudIconButton Icon="@Icons.Material.Filled.Close" Size="Size.Small" OnClick="CancelRename" />
+                                </MudTooltip>
+                            </div>
+                        }
+                        else
+                        {
+                            <MudText Typo="Typo.subtitle2" Class="mb-1">@logo.Name</MudText>
+                            <div class="d-flex ga-1">
+                                <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" OnClick="@(() => BeginRename(logo))" />
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error" Disabled="@_busy" OnClick="@(() => DeleteAsync(logo.Id))" />
+                            </div>
+                        }
+                    </MudPaper>
+                </MudItem>
+            }
+        </MudGrid>
+    }
+}
+
+@code {
+    private const long MaxFileSize = 5 * 1024 * 1024;
+
+    [Parameter, EditorRequired]
+    public string AirlineCode { get; set; } = null!;
+
+    [Inject]
+    private IAirlineExtrasClient Client { get; set; } = null!;
+
+    [Inject]
+    private ISnackbar Snackbar { get; set; } = null!;
+
+    [Inject]
+    private IDialogService DialogService { get; set; } = null!;
+
+    private IReadOnlyList<AirlineLogoResponse> _logos = [];
+    private readonly Dictionary<int, string> _previews = [];
+    private bool _loading = true;
+    private bool _busy;
+    private int? _renamingId;
+    private string _renameValue = "";
+
+    protected override async Task OnInitializedAsync() => await ReloadAsync();
+
+    private async Task ReloadAsync()
+    {
+        _loading = true;
+        try
+        {
+            _logos = await Client.GetLogosAsync(AirlineCode);
+            foreach (var logo in _logos)
+            {
+                if (_previews.ContainsKey(logo.Id)) continue;
+                var image = await Client.GetLogoImageAsync(AirlineCode, logo.Id);
+                if (image is { } img)
+                    _previews[logo.Id] = ToDataUri(img.Data, img.ContentType);
+            }
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Could not load airline logos.", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task UploadAsync(IReadOnlyList<IBrowserFile>? files)
+    {
+        if (files is null || files.Count == 0) return;
+
+        var parameters = new DialogParameters<AirlineLogoUploadDialog> { { x => x.Files, files } };
+        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true };
+        var dialog = await DialogService.ShowAsync<AirlineLogoUploadDialog>("Name Logo(s)", parameters, options);
+        var result = await dialog.Result;
+        if (result is null || result.Canceled || result.Data is not List<AirlineLogoUploadDialog.NamedFile> named)
+            return;
+
+        _busy = true;
+        try
+        {
+            foreach (var (file, name) in named)
+            {
+                using var stream = file.OpenReadStream(MaxFileSize);
+                using var buffer = new MemoryStream();
+                await stream.CopyToAsync(buffer);
+
+                await Client.AddLogoAsync(AirlineCode, name, buffer.ToArray(), file.Name, file.ContentType);
+            }
+
+            await ReloadAsync();
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Could not upload one or more logos.", Severity.Error);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private void BeginRename(AirlineLogoResponse logo)
+    {
+        _renamingId = logo.Id;
+        _renameValue = logo.Name;
+    }
+
+    private void CancelRename()
+    {
+        _renamingId = null;
+        _renameValue = "";
+    }
+
+    private async Task ConfirmRenameAsync()
+    {
+        if (_renamingId is not { } id) return;
+
+        try
+        {
+            await Client.RenameLogoAsync(AirlineCode, id, _renameValue.Trim());
+            CancelRename();
+            await ReloadAsync();
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Could not rename the logo.", Severity.Error);
+        }
+    }
+
+    private async Task DeleteAsync(int id)
+    {
+        _busy = true;
+        try
+        {
+            await Client.DeleteLogoAsync(AirlineCode, id);
+            _previews.Remove(id);
+            await ReloadAsync();
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Could not remove the logo.", Severity.Error);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private static string ToDataUri(byte[] data, string contentType) => $"data:{contentType};base64,{Convert.ToBase64String(data)}";
+}

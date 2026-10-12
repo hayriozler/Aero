@@ -1,0 +1,11 @@
+@page "/flights"
+@attribute [Authorize]
+
+<PageTitle>Flights — AeroFlight</PageTitle>
+
+<div class="mb-3">
+    <MudText Typo="Typo.h5">Flights</MudText>
+    <MudText Typo="Typo.body2" Color="Color.Secondary">Operational arrivals and departures.</MudText>
+</div>
+
+<MovementsTable />

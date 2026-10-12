@@ -1,0 +1,17 @@
+code,description,capacity,terminal_code
+101,T1 1.Belt,4,T1
+102,T1 2.Belt,4,T1
+103,T1 3.Belt,4,T1
+104,T1 4.Belt,4,T1
+105,T1 5.Belt,4,T1
+106,T1 6.Belt,4,T1
+201,T2 1.Belt,4,T2
+202,T2 2.Belt,4,T2
+203,T2 3.Belt,4,T2
+204,T2 4.Belt,4,T2
+205,T2 5.Belt,4,T2
+206,T2 6.Belt,4,T2
+301,Domestic 1.Belt,3,D
+302,Domestic 2.Belt,3,D
+303,Domestic 3.Belt,3,D
+304,Domestic 4.Belt,3,D

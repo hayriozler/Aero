@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <PackageReference Include="FluentValidation" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    <ProjectMetadata Include="..\AeroFlight.Domain\AeroFlight.Domain.csproj" />
+    <ProjectMetadata Include="..\AeroFlight.Contracts\AeroFlight.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>

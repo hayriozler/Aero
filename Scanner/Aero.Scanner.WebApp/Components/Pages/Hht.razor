@@ -1,0 +1,347 @@
+@page "/hht"
+@using System.Text.Json
+@using Aero.Scanner.Shared.Consts
+@using Aero.Scanner.WebApp.Resources
+@attribute [Authorize(Roles = SystemDefinedRoles.Admin+ "," + SystemDefinedRoles.RamSupervisor)]
+@inject HhtApiClient Api
+@inject CompanyApiClient CompanyApi
+@inject ISnackbar Snackbar
+@inject AuthenticationStateProvider AuthState
+@inject IStringLocalizer<SharedResources> L
+
+<PageTitle>AeroScan BRS · HHT Terminals</PageTitle>
+
+<div class="p-6 space-y-6">
+
+    <!-- Header -->
+    <header class="flex justify-between items-end flex-wrap gap-4">
+        <div>
+            <h1 class="text-4xl font-extrabold tracking-tighter text-on-surface uppercase font-headline">HHT Terminals</h1>
+            <p class="text-on-surface-variant text-sm font-body">
+                @if (_isAirportOperator)
+                { <span>All handheld terminal devices</span> }
+                else
+                { <span>Terminals assigned to your company</span> }
+            </p>
+        </div>
+        @if (_isAirportOperator)
+        {
+            <button @onclick="OpenAddForm"
+                    class="flex items-center gap-2 px-4 py-2 bg-primary-container text-on-primary font-headline text-xs uppercase tracking-widest hover:opacity-90">
+                <span class="material-symbols-outlined text-sm">add</span>
+                Register Terminal
+            </button>
+        }
+    </header>
+
+    <!-- Add / Edit form (airport only) -->
+    @if (_formVisible)
+    {
+        <section class="bg-surface-container p-6 space-y-4 border border-outline-variant/40">
+            <h2 class="text-xs font-bold uppercase tracking-widest text-on-surface-variant font-headline">
+                @(_editId.HasValue ? "Edit Terminal" : "Register New Terminal")
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                @if (!_editId.HasValue)
+                {
+                    <div class="space-y-1">
+                        <label class="text-xs font-headline uppercase tracking-widest text-on-surface-variant">Device ID *</label>
+                        <MudTextField @bind-Value="_form.DeviceId" Placeholder="e.g. HHT-001" Variant="Variant.Outlined"
+                                      Margin="Margin.Dense" MaxLength="50" HelperText="Unique, auto-uppercased" />
+                    </div>
+                }
+                <div class="space-y-1">
+                    <label class="text-xs font-headline uppercase tracking-widest text-on-surface-variant">Name *</label>
+                    <MudTextField @bind-Value="_form.Name" Placeholder="e.g. Terminal Gate B1" Variant="Variant.Outlined"
+                                  Margin="Margin.Dense" MaxLength="100" />
+                </div>
+                <div class="space-y-1">
+                    <label class="text-xs font-headline uppercase tracking-widest text-on-surface-variant">Model</label>
+                    <MudTextField @bind-Value="_form.Model" Placeholder="e.g. Zebra TC52" Variant="Variant.Outlined"
+                                  Margin="Margin.Dense" MaxLength="100" />
+                </div>
+                <div class="space-y-1">
+                    <label class="text-xs font-headline uppercase tracking-widest text-on-surface-variant">Serial Number</label>
+                    <MudTextField @bind-Value="_form.SerialNumber" Placeholder="e.g. SN123456" Variant="Variant.Outlined"
+                                  Margin="Margin.Dense" MaxLength="100" />
+                </div>
+            </div>
+            <div class="flex items-center gap-3 pt-2">
+                <button @onclick="SaveAsync" disabled="@_saving"
+                        class="px-6 py-2 bg-primary-container text-on-primary font-headline text-xs uppercase tracking-widest hover:opacity-90 disabled:opacity-50">
+                    @(_saving ? "Saving…" : "Save")
+                </button>
+                <button @onclick="CloseForm"
+                        class="px-6 py-2 bg-surface-container-high text-on-surface-variant font-headline text-xs uppercase tracking-widest hover:text-on-surface">
+                    Cancel
+                </button>
+                @if (!string.IsNullOrEmpty(_formError))
+                {
+                    <span class="text-xs text-error font-body">@_formError</span>
+                }
+            </div>
+        </section>
+    }
+
+    <!-- Assign form (airport only) -->
+    @if (_assignId.HasValue)
+    {
+        <section class="bg-surface-container p-6 space-y-4 border border-primary-container/30">
+            <h2 class="text-xs font-bold uppercase tracking-widest text-on-surface-variant font-headline">
+                Assign Terminal — @_assignDeviceId
+            </h2>
+            <div class="max-w-sm space-y-1">
+                <label class="text-xs font-headline uppercase tracking-widest text-on-surface-variant">Handling Company</label>
+                <MudSelect T="string" @bind-Value="_assignCompanyCode" Placeholder="Select company"
+                           Variant="Variant.Outlined" Margin="Margin.Dense">
+                    @foreach (var c in _handlingCompanies)
+                    {
+                        <MudSelectItem T="string" Value="@c.Code">@c.Name (@c.Code)</MudSelectItem>
+                    }
+                </MudSelect>
+            </div>
+            <div class="flex gap-3">
+                <button @onclick="ConfirmAssignAsync" disabled="@_saving"
+                        class="px-6 py-2 bg-primary-container text-on-primary font-headline text-xs uppercase tracking-widest hover:opacity-90 disabled:opacity-50">
+                    @(_saving ? "Assigning…" : "Assign")
+                </button>
+                <button @onclick="() => _assignId = null"
+                        class="px-6 py-2 bg-surface-container-high text-on-surface-variant font-headline text-xs uppercase tracking-widest hover:text-on-surface">
+                    Cancel
+                </button>
+            </div>
+        </section>
+    }
+
+    <!-- Terminals grid -->
+    <MudDataGrid T="HandheldTerminalDto" Items="@_terminals" SortMode="SortMode.Multiple" Filterable="true"
+                 FilterMode="DataGridFilterMode.ColumnFilterRow" Dense="true" Hover="true"
+                 Loading="@_loading" LoadingProgressColor="Color.Warning" Class="brs-grid">
+        <Columns>
+            <PropertyColumn Property="h => h.DeviceId" Title="Device ID" Sortable="true" Filterable="true">
+                <CellTemplate>
+                    <span class="font-mono font-bold text-primary-container">@context.Item.DeviceId</span>
+                </CellTemplate>
+            </PropertyColumn>
+            <PropertyColumn Property="h => h.Name" Title="Name" Sortable="true" Filterable="true" />
+            <PropertyColumn Property="h => h.Model" Title="Model" Sortable="true" Filterable="false">
+                <CellTemplate>
+                    <span class="text-on-surface-variant font-mono text-xs">@(context.Item.Model ?? "—")</span>
+                </CellTemplate>
+            </PropertyColumn>
+            <PropertyColumn Property="h => h.SerialNumber" Title="Serial No." Sortable="false" Filterable="false">
+                <CellTemplate>
+                    <span class="text-on-surface-variant font-mono text-xs">@(context.Item.SerialNumber ?? "—")</span>
+                </CellTemplate>
+            </PropertyColumn>
+            <PropertyColumn Property="h => h.AssignedCompanyName" Title="Assigned To" Sortable="true" Filterable="true">
+                <CellTemplate>
+                    @if (!string.IsNullOrEmpty(context.Item.AssignedCompanyCode))
+                    {
+                        <span class="font-medium text-on-surface">@context.Item.AssignedCompanyName</span>
+                    }
+                    else
+                    {
+                        <span class="italic text-on-surface-variant/50 text-xs">Unassigned</span>
+                    }
+                </CellTemplate>
+            </PropertyColumn>            
+            <TemplateColumn Title="Actions" Sortable="false" Filterable="false">
+                <CellTemplate>
+                    <div class="flex items-center gap-2">
+                        @if (_isAirportOperator)
+                        {
+                            <button @onclick="() => OpenEditForm(context.Item)" title="Edit"
+                                    class="text-on-surface-variant hover:text-primary-container transition-colors">
+                                <span class="material-symbols-outlined text-sm">edit</span>
+                            </button>
+                            @if (!string.IsNullOrEmpty(context.Item.AssignedCompanyCode))
+                            {
+                                <button @onclick="() => UnassignAsync(context.Item)" title="Unassign"
+                                        class="text-on-surface-variant hover:text-secondary transition-colors">
+                                    <span class="material-symbols-outlined text-sm">link_off</span>
+                                </button>
+                            }
+                            else
+                            {
+                                <button @onclick="() => OpenAssign(context.Item)" title="Assign to company"
+                                        class="text-on-surface-variant hover:text-primary-container transition-colors">
+                                    <span class="material-symbols-outlined text-sm">link</span>
+                                </button>
+                            }
+                        }
+                        <button @onclick="() => OpenAudit(context.Item.Id, context.Item.Name)" title="Audit History"
+                                class="text-on-surface-variant hover:text-warning transition-colors">
+                            <span class="material-symbols-outlined text-sm">history</span>
+                        </button>
+                    </div>
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+        <NoRecordsContent>
+            <div style="padding:3rem 0;text-align:center;color:var(--mud-palette-text-secondary);font-size:0.7rem;text-transform:uppercase;letter-spacing:0.08em;font-weight:600;">
+                @(_loading ? "Loading terminals…" : "No terminals found")
+            </div>
+        </NoRecordsContent>
+        <PagerContent>
+            <MudDataGridPager T="HandheldTerminalDto" PageSizeOptions="[15, 30, 50]" />
+        </PagerContent>
+    </MudDataGrid>
+</div>
+
+<AuditDrawer EntityType="HandheldTerminal" PrimaryKey="@_auditPk" Label="@_auditLabel" @bind-IsOpen="_auditOpen" />
+
+@code {
+    private IReadOnlyList<HandheldTerminalDto> _terminals = [];
+    private IReadOnlyList<CompanyDto> _handlingCompanies = [];
+    private bool _loading;
+    private bool _formVisible;
+    private bool _saving;
+    private string _formError = string.Empty;
+    private int? _editId;
+    private bool _isAirportOperator;
+
+    private bool _auditOpen;
+    private string _auditPk = string.Empty;
+    private string _auditLabel = string.Empty;
+
+    // Assign state
+    private int? _assignId;
+    private string _assignDeviceId = string.Empty;
+    private string _assignCompanyCode = string.Empty;
+
+    private HhtFormModel _form = new();
+
+    private sealed class HhtFormModel
+    {
+        public string DeviceId     { get; set; } = string.Empty;
+        public string Name         { get; set; } = string.Empty;
+        public string? Model       { get; set; }
+        public string? SerialNumber { get; set; }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthState.GetAuthenticationStateAsync();
+        var companyType = authState.User.FindFirst("company_type")?.Value ?? string.Empty;
+        _isAirportOperator = string.Equals(companyType, Policies.AirportOperator, StringComparison.OrdinalIgnoreCase);
+
+        _loading = true;
+        var terminalsTask = Api.GetAllAsync();
+        var companiesTask = _isAirportOperator ? CompanyApi.GetHandlingAgentCompaniesAsync() : Task.FromResult<IReadOnlyList<CompanyDto>>([]);
+        await Task.WhenAll(terminalsTask, companiesTask);
+        _terminals = terminalsTask.Result;
+        _handlingCompanies = companiesTask.Result;
+        _loading = false;
+    }
+
+    private void OpenAudit(int id, string label)
+    {
+        _auditPk = JsonSerializer.Serialize(new { Id = id });
+        _auditLabel = label;
+        _auditOpen = true;
+    }
+
+    private void OpenAddForm()
+    {
+        _editId = null;
+        _form = new();
+        _formError = string.Empty;
+        _formVisible = true;
+        _assignId = null;
+    }
+
+    private void OpenEditForm(HandheldTerminalDto h)
+    {
+        _editId = h.Id;
+        _form = new() { DeviceId = h.DeviceId, Name = h.Name, Model = h.Model, SerialNumber = h.SerialNumber };
+        _formError = string.Empty;
+        _formVisible = true;
+        _assignId = null;
+    }
+
+    private void CloseForm() { _formVisible = false; _formError = string.Empty; }
+
+    private void OpenAssign(HandheldTerminalDto h)
+    {
+        _assignId = h.Id;
+        _assignDeviceId = h.DeviceId;
+        _assignCompanyCode = _handlingCompanies.FirstOrDefault()?.Code ?? string.Empty;
+        _formVisible = false;
+    }
+
+    private async Task SaveAsync()
+    {
+        _formError = string.Empty;
+        if (string.IsNullOrWhiteSpace(_form.Name)) { _formError = L["Validation.Required.Name"]; return; }
+        if (!_editId.HasValue && string.IsNullOrWhiteSpace(_form.DeviceId)) { _formError = L["Validation.Required.DeviceId"]; return; }
+
+        _saving = true;
+        bool success; string? error;
+
+        if (_editId.HasValue)
+        {
+            var req = new Aero.Scanner.Shared.Requests.UpdateHandheldTerminalRequest(_form.Name, _form.SerialNumber, _form.Model);
+            (success, _, error) = await Api.UpdateAsync(_editId.Value, req);
+        }
+        else
+        {
+            var req = new Aero.Scanner.Shared.Requests.CreateHandheldTerminalRequest(_form.DeviceId, _form.Name, _form.SerialNumber, _form.Model);
+            (success, _, error) = await Api.CreateAsync(req);
+        }
+        _saving = false;
+
+        if (success)
+        {
+            Snackbar.Add(_editId.HasValue ? "Terminal updated." : "Terminal registered.", Severity.Success);
+            CloseForm();
+            _terminals = await Api.GetAllAsync();
+        }
+        else
+        {
+            _formError = error ?? "An unexpected error occurred.";
+        }
+    }
+
+    private async Task ConfirmAssignAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_assignCompanyCode)) { Snackbar.Add("Please select a company.", Severity.Warning); return; }
+        _saving = true;
+        var (ok, _, err) = await Api.AssignAsync(
+            _assignId!.Value,
+            new Aero.Scanner.Shared.Requests.AssignHandheldTerminalRequest(_assignCompanyCode));
+        _saving = false;
+
+        if (ok)
+        {
+            Snackbar.Add("Terminal assigned successfully.", Severity.Success);
+            _assignId = null;
+            _terminals = await Api.GetAllAsync();
+        }
+        else
+        {
+            Snackbar.Add(err ?? "Failed to assign terminal.", Severity.Error);
+        }
+    }
+
+    private async Task UnassignAsync(HandheldTerminalDto h)
+    {
+        var (ok, _, err) = await Api.UnassignAsync(h.Id);
+        if (ok)
+        {
+            Snackbar.Add($"{h.DeviceId} unassigned.", Severity.Info);
+            _terminals = await Api.GetAllAsync();
+        }
+        else Snackbar.Add(err ?? "Failed to unassign.", Severity.Error);
+    }
+
+    private async Task DeactivateAsync(HandheldTerminalDto h)
+    {
+        if (await Api.DeactivateAsync(h.Id))
+        {
+            Snackbar.Add($"{h.DeviceId} deactivated.", Severity.Info);
+            _terminals = await Api.GetAllAsync();
+        }
+        else Snackbar.Add("Failed to deactivate terminal.", Severity.Error);
+    }
+}

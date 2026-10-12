@@ -1,0 +1,480 @@
+@page "/handling-contracts"
+@using System.Text.Json
+@using Aero.Scanner.Shared.Consts
+@using Aero.Scanner.WebApp.Resources
+@attribute [Authorize(Roles = SystemDefinedRoles.Admin+ "," + SystemDefinedRoles.RamSupervisor)]
+@inject HandlingContractApiClient Api
+@inject ISnackbar Snackbar
+@inject AuthenticationStateProvider AuthState
+@inject ClientTimeService Time
+@inject IJSRuntime JS
+@inject IStringLocalizer<SharedResources> L
+
+<PageTitle>AeroScan BRS · Handling Contracts</PageTitle>
+
+<div class="p-6 space-y-6">
+
+    <!-- Header -->
+    <header class="flex justify-between items-end flex-wrap gap-4">
+        <div>
+            <h1 class="text-4xl font-extrabold tracking-tighter text-on-surface uppercase font-headline">
+                Handling Contracts
+            </h1>
+            <p class="text-on-surface-variant text-sm font-body">
+                Airline ↔ ground handling company assignments
+            </p>
+        </div>
+        <button @onclick="OpenAddForm"
+                class="flex items-center gap-2 px-4 py-2 bg-primary-container text-on-primary font-headline text-xs uppercase tracking-widest transition-colors hover:opacity-90">
+            <span class="material-symbols-outlined text-sm">add</span>
+            Add Contract
+        </button>
+    </header>
+
+    <!-- Add / Edit form panel -->
+    @if (_formVisible)
+    {
+        <section class="bg-surface-container p-6 space-y-5 border border-outline-variant/40">
+            <h2 class="text-xs font-bold uppercase tracking-widest text-on-surface-variant font-headline">
+                @(_editId.HasValue ? "Edit Contract" : "New Contract")
+            </h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                <!-- Airline Code -->
+                <div class="space-y-1">
+                    <label class="text-xs font-headline uppercase tracking-widest text-on-surface-variant">
+                        Airline Code *
+                    </label>
+                    <MudTextField @bind-Value="_form.AirlineCode"
+                                  Placeholder="e.g. TK"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  MaxLength="4" />
+                </div>
+
+                <!-- Handling Company — only visible to airport operator users -->
+                @if (!_isHandlingAgent)
+                {
+                    <div class="space-y-1">
+                        <label class="text-xs font-headline uppercase tracking-widest text-on-surface-variant">
+                            Handling Company *
+                        </label>
+                        <MudSelect T="string"
+                                   @bind-Value="_form.HandlingCompanyCode"
+                                   Placeholder="Select company"
+                                   Variant="Variant.Outlined"
+                                   Margin="Margin.Dense">
+                            @foreach (var company in _handlingCompanies)
+                            {
+                                <MudSelectItem T="string" Value="@company.Code">
+                                    @company.Code — @company.Name
+                                </MudSelectItem>
+                            }
+                        </MudSelect>
+                    </div>
+                }
+
+                <!-- Valid From -->
+                <div class="space-y-1">
+                    <label class="text-xs font-headline uppercase tracking-widest text-on-surface-variant">
+                        Valid From *
+                    </label>
+                    <MudDatePicker @bind-Date="_form.ValidFrom"
+                                   Variant="Variant.Outlined"
+                                   Margin="Margin.Dense"
+                                   DateFormat="yyyy-MM-dd" />
+                </div>
+
+                <!-- Valid To -->
+                <div class="space-y-1">
+                    <label class="text-xs font-headline uppercase tracking-widest text-on-surface-variant">
+                        Valid To *
+                    </label>
+                    <MudDatePicker @bind-Date="_form.ValidTo"
+                                   Variant="Variant.Outlined"
+                                   Margin="Margin.Dense"
+                                   DateFormat="yyyy-MM-dd" />
+                </div>
+
+                <!-- Notes -->
+                <div class="space-y-1 md:col-span-2">
+                    <label class="text-xs font-headline uppercase tracking-widest text-on-surface-variant">
+                        Notes
+                    </label>
+                    <MudTextField @bind-Value="_form.Notes"
+                                  Placeholder="Optional notes…"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Lines="2" />
+                </div>
+            </div>
+
+            <!-- Flight numbers section -->
+            <div class="space-y-3">
+                <p class="text-xs font-headline uppercase tracking-widest text-on-surface-variant">
+                    Specific Flight Numbers
+                    <span class="normal-case font-body text-on-surface-variant/70 ml-1">
+                        (leave empty to apply to all flights of the airline)
+                    </span>
+                </p>
+
+                <div class="flex items-center gap-2">
+                    <MudTextField @bind-Value="_newFlightNumber"
+                                  Placeholder="e.g. TK001"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  MaxLength="7"
+                                  Style="max-width:180px"
+                                  @onkeydown="OnFlightNumberKeyDown" />
+                    <button @onclick="AddFlightNumber"
+                            class="px-3 py-1.5 bg-surface-container-high text-on-surface font-headline text-xs uppercase tracking-widest hover:bg-primary-container hover:text-on-primary transition-colors">
+                        Add
+                    </button>
+                </div>
+
+                @if (_form.FlightNumbers.Count > 0)
+                {
+                    <div class="flex flex-wrap gap-2">
+                        @foreach (var fn in _form.FlightNumbers)
+                        {
+                            <MudChip T="string"
+                                     Value="@fn"
+                                     OnClose="() => RemoveFlightNumber(fn)"
+                                     Color="Color.Default"
+                                     Variant="Variant.Outlined"
+                                     Size="Size.Small"
+                                     Class="font-mono">
+                                @fn
+                            </MudChip>
+                        }
+                    </div>
+                }
+            </div>
+
+            <!-- Form actions -->
+            <div class="flex items-center gap-3 pt-2">
+                <button @onclick="SaveAsync"
+                        disabled="@_saving"
+                        class="px-6 py-2 bg-primary-container text-on-primary font-headline text-xs uppercase tracking-widest transition-colors hover:opacity-90 disabled:opacity-50">
+                    @(_saving ? "Saving…" : "Save")
+                </button>
+                <button @onclick="CloseForm"
+                        class="px-6 py-2 bg-surface-container-high text-on-surface-variant font-headline text-xs uppercase tracking-widest transition-colors hover:text-on-surface">
+                    Cancel
+                </button>
+                @if (!string.IsNullOrEmpty(_formError))
+                {
+                    <span class="text-xs text-error font-body">@_formError</span>
+                }
+            </div>
+        </section>
+    }
+
+    <!-- Contracts data grid -->
+    <MudDataGrid T="AirlineHandlingContractDto"
+                 Items="@_contracts"
+                 SortMode="SortMode.Multiple"
+                 Filterable="true"
+                 FilterMode="DataGridFilterMode.ColumnFilterRow"
+                 Dense="true"
+                 Hover="true"
+                 Loading="@_loading"
+                 LoadingProgressColor="Color.Warning"
+                 Class="brs-grid">
+
+        <Columns>
+
+            <PropertyColumn Property="c => c.AirlineCode" Title="Airline" Sortable="true" Filterable="true">
+                <CellTemplate>
+                    <span class="font-mono font-bold text-primary-container">@context.Item.AirlineCode</span>
+                </CellTemplate>
+            </PropertyColumn>
+
+            <PropertyColumn Property="c => c.HandlingCompanyName" Title="Handling Company" Sortable="true" Filterable="true">
+                <CellTemplate>
+                    <div>
+                        <span class="font-medium text-on-surface">@context.Item.HandlingCompanyName</span>
+                        <span class="ml-1 text-xs text-on-surface-variant font-mono">(@context.Item.HandlingCompanyCode)</span>
+                    </div>
+                </CellTemplate>
+            </PropertyColumn>
+
+            <PropertyColumn Property="c => c.ValidFrom" Title="Valid From (local)" Sortable="true" Filterable="false">
+                <CellTemplate>
+                    <span class="font-mono text-sm text-on-surface-variant">
+                        @Time.Format(context.Item.ValidFrom)
+                    </span>
+                </CellTemplate>
+            </PropertyColumn>
+
+            <PropertyColumn Property="c => c.ValidTo" Title="Valid To (local)" Sortable="true" Filterable="false">
+                <CellTemplate>
+                    <span class="font-mono text-sm text-on-surface-variant">
+                        @Time.Format(context.Item.ValidTo)
+                    </span>
+                </CellTemplate>
+            </PropertyColumn>
+
+            <PropertyColumn Property="c => c.FlightNumbers.Count" Title="Flights" Sortable="true" Filterable="false">
+                <CellTemplate>
+                    @if (context.Item.FlightNumbers.Count == 0)
+                    {
+                        <span class="text-xs text-on-surface-variant italic">All flights</span>
+                    }
+                    else
+                    {
+                        <MudTooltip Text="@string.Join(", ", context.Item.FlightNumbers)">
+                            <span class="font-headline font-bold text-on-surface cursor-help">
+                                @context.Item.FlightNumbers.Count flight(s)
+                            </span>
+                        </MudTooltip>
+                    }
+                </CellTemplate>
+            </PropertyColumn>
+
+            <PropertyColumn Property="c => c.IsActive" Title="Status" Sortable="true" Filterable="false">
+                <CellTemplate>
+                    <MudChip T="string"
+                             Size="Size.Small"
+                             Variant="Variant.Filled"
+                             Color="@(context.Item.IsActive ? Color.Success : Color.Default)">
+                        @(context.Item.IsActive ? "ACTIVE" : "INACTIVE")
+                    </MudChip>
+                </CellTemplate>
+            </PropertyColumn>
+
+            <TemplateColumn Title="Actions" Sortable="false" Filterable="false">
+                <CellTemplate>
+                    <div class="flex items-center gap-2">
+                        <button @onclick="() => OpenEditForm(context.Item)"
+                                class="text-on-surface-variant hover:text-primary-container transition-colors"
+                                title="Edit">
+                            <span class="material-symbols-outlined text-sm">edit</span>
+                        </button>
+                        @if (context.Item.IsActive)
+                        {
+                            <button @onclick="() => DeactivateAsync(context.Item)"
+                                    class="text-on-surface-variant hover:text-error transition-colors"
+                                    title="Deactivate">
+                                <span class="material-symbols-outlined text-sm">block</span>
+                            </button>
+                        }
+                        <button @onclick="() => OpenAudit(context.Item.Id, AuditLabel(context.Item))"
+                                class="text-on-surface-variant hover:text-warning transition-colors"
+                                title="Audit History">
+                            <span class="material-symbols-outlined text-sm">history</span>
+                        </button>
+                    </div>
+                </CellTemplate>
+            </TemplateColumn>
+
+        </Columns>
+
+        <NoRecordsContent>
+            <div style="padding: 3rem 0; text-align: center; color: var(--mud-palette-text-secondary);
+                        font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600;">
+                @(_loading ? "Loading contracts…" : "No handling contracts found")
+            </div>
+        </NoRecordsContent>
+
+        <PagerContent>
+            <MudDataGridPager T="AirlineHandlingContractDto" PageSizeOptions="[15, 30, 50]" />
+        </PagerContent>
+
+    </MudDataGrid>
+
+</div>
+
+<AuditDrawer EntityType="AirlineHandlingContract" PrimaryKey="@_auditPk" Label="@_auditLabel" @bind-IsOpen="_auditOpen" />
+
+@code {
+    private IReadOnlyList<AirlineHandlingContractDto> _contracts = [];
+    private IReadOnlyList<CompanyDto> _handlingCompanies = [];
+    private bool _loading;
+    private bool _formVisible;
+    private bool _saving;
+    private string _formError = string.Empty;
+    private string _newFlightNumber = string.Empty;
+    private int? _editId;
+
+    private bool _auditOpen;
+    private string _auditPk = string.Empty;
+    private string _auditLabel = string.Empty;
+
+    private bool _isHandlingAgent;
+    private string _myCompanyCode = string.Empty;
+    private string _myCompanyName = string.Empty;
+
+    private ContractFormModel _form = new();
+
+    private sealed class ContractFormModel
+    {
+        public string AirlineCode { get; set; } = string.Empty;
+        public string HandlingCompanyCode { get; set; } = string.Empty;
+        public DateTime? ValidFrom { get; set; } = DateTime.UtcNow.Date;
+        public DateTime? ValidTo { get; set; } = DateTime.UtcNow.Date.AddYears(1);
+        public string Notes { get; set; } = string.Empty;
+        public List<string> FlightNumbers { get; set; } = [];
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Resolve the current user's company context from auth claims
+        var authState = await AuthState.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        var companyType = user.FindFirst("company_type")?.Value ?? string.Empty;
+        _isHandlingAgent = string.Equals(companyType, "HandlingAgent", StringComparison.OrdinalIgnoreCase);
+
+        _myCompanyCode = user.FindFirst("company_code")?.Value ?? string.Empty;
+
+        _myCompanyName = user.FindFirst("company_name")?.Value ?? string.Empty;
+
+        await Time.LoadAsync(JS);
+        _loading = true;
+        var contractsTask = Api.GetAllAsync();
+        var companiesTask = Api.GetHandlingAgentCompaniesAsync();
+        await Task.WhenAll(contractsTask, companiesTask);
+        _contracts = contractsTask.Result;
+        _handlingCompanies = companiesTask.Result;
+        _loading = false;
+    }
+
+    private static string AuditLabel(AirlineHandlingContractDto item) =>
+        item.AirlineCode + " \u2014 " + item.HandlingCompanyName;
+
+    private void OpenAudit(int id, string label)
+    {
+        _auditPk = JsonSerializer.Serialize(new { Id = id });
+        _auditLabel = label;
+        _auditOpen = true;
+    }
+
+    private void OpenAddForm()
+    {
+        _editId = null;
+        _form = new();
+        // Pre-fill company for handling agent users
+        if (_isHandlingAgent) _form.HandlingCompanyCode = _myCompanyCode;
+        _formError = string.Empty;
+        _newFlightNumber = string.Empty;
+        _formVisible = true;
+    }
+
+    private void OpenEditForm(AirlineHandlingContractDto contract)
+    {
+        _editId = contract.Id;
+        _form = new()
+        {
+            AirlineCode       = contract.AirlineCode,
+            HandlingCompanyCode = contract.HandlingCompanyCode,
+            ValidFrom         = contract.ValidFrom,
+            ValidTo           = contract.ValidTo,
+            Notes             = contract.Notes ?? string.Empty,
+            FlightNumbers     = [.. contract.FlightNumbers]
+        };
+        _formError = string.Empty;
+        _newFlightNumber = string.Empty;
+        _formVisible = true;
+    }
+
+    private void CloseForm()
+    {
+        _formVisible = false;
+        _formError = string.Empty;
+    }
+
+    private void AddFlightNumber()
+    {
+        var fn = _newFlightNumber.ToUpperInvariant().Trim();
+        if (string.IsNullOrWhiteSpace(fn)) return;
+        if (!_form.FlightNumbers.Contains(fn))
+            _form.FlightNumbers.Add(fn);
+        _newFlightNumber = string.Empty;
+    }
+
+    private void RemoveFlightNumber(string fn) =>
+        _form.FlightNumbers.Remove(fn);
+
+    private void OnFlightNumberKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter") AddFlightNumber();
+    }
+
+    private async Task SaveAsync()
+    {
+        _formError = string.Empty;
+
+        if (string.IsNullOrWhiteSpace(_form.AirlineCode))
+        { _formError = L["Validation.Required.AirlineCode"]; return; }
+
+        if (string.IsNullOrWhiteSpace(_form.HandlingCompanyCode))
+        { _formError = L["Validation.Required.HandlingCompany"]; return; }
+
+        if (_form.ValidFrom is null || _form.ValidTo is null)
+        { _formError = L["Validation.Required.Dates"]; return; }
+
+        if (_form.ValidTo <= _form.ValidFrom)
+        { _formError = L["Validation.DateRange.ValidToAfterFrom"]; return; }
+
+        _saving = true;
+
+        bool success;
+        string? error;
+
+        if (_editId.HasValue)
+        {
+            var req = new Aero.Scanner.Shared.Requests.UpdateAirlineHandlingContractRequest(
+                _form.AirlineCode,
+                _form.HandlingCompanyCode,
+                _form.ValidFrom.Value,
+                _form.ValidTo.Value,
+                string.IsNullOrWhiteSpace(_form.Notes) ? null : _form.Notes,
+                _form.FlightNumbers);
+
+            var (s, _, e) = await Api.UpdateAsync(_editId.Value, req);
+            success = s; error = e;
+        }
+        else
+        {
+            var req = new Aero.Scanner.Shared.Requests.CreateAirlineHandlingContractRequest(
+                _form.AirlineCode,
+                _form.HandlingCompanyCode,
+                _form.ValidFrom.Value,
+                _form.ValidTo.Value,
+                string.IsNullOrWhiteSpace(_form.Notes) ? null : _form.Notes,
+                _form.FlightNumbers);
+
+            var (s, _, e) = await Api.CreateAsync(req);
+            success = s; error = e;
+        }
+
+        _saving = false;
+
+        if (success)
+        {
+            Snackbar.Add(_editId.HasValue ? "Contract updated." : "Contract created.", Severity.Success);
+            CloseForm();
+            _contracts = await Api.GetAllAsync();
+        }
+        else
+        {
+            _formError = error ?? "An unexpected error occurred.";
+        }
+    }
+
+    private async Task DeactivateAsync(AirlineHandlingContractDto contract)
+    {
+        var ok = await Api.DeactivateAsync(contract.Id);
+        if (ok)
+        {
+            Snackbar.Add($"Contract for {contract.AirlineCode} deactivated.", Severity.Info);
+            _contracts = await Api.GetAllAsync();
+        }
+        else
+        {
+            Snackbar.Add("Failed to deactivate contract.", Severity.Error);
+        }
+    }
+}

@@ -1,0 +1,6 @@
+code,description,is_default,is_open,is_close
+A,Available,true,false,false
+S,Assigned,false,true,false
+L,Last Bag,false,false,false
+C,Closed,false,false,true
+X,Out of Service,false,false,false

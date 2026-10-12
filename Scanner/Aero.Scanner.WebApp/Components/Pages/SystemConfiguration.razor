@@ -1,0 +1,210 @@
+@page "/system-configurations"
+@using Aero.Scanner.Shared.Requests
+@using Aero.Scanner.WebApp.Resources
+@attribute [Authorize]
+@inject SystemConfigurationApiClient Api
+@inject ISnackbar Snackbar
+@inject AuthenticationStateProvider AuthState
+@inject IStringLocalizer<SharedResources> L
+
+<PageTitle>AeroScan BRS · System Configurations</PageTitle>
+
+<div class="p-6 space-y-6">
+
+    @if (!_isAirportOperator)
+    {
+        <div class="bg-secondary/10 border border-secondary/30 p-6 text-center">
+            <span class="material-symbols-outlined text-secondary text-4xl block mb-2">block</span>
+            <p class="text-secondary font-headline uppercase tracking-widest text-sm font-bold">@L["SysConfig.AccessRestricted"]</p>
+            <p class="text-on-surface-variant text-xs mt-1">@L["SysConfig.AccessRestrictedDesc"]</p>
+        </div>
+        return;
+    }
+
+    <header class="flex justify-between items-end flex-wrap gap-4">
+        <div>
+            <h1 class="text-4xl font-extrabold tracking-tighter text-on-surface uppercase font-headline">@L["SysConfig.Title"]</h1>
+            <p class="text-on-surface-variant text-sm font-body">@L["SysConfig.Subtitle"]</p>
+        </div>
+        <button @onclick="OpenAddForm"
+                class="flex items-center gap-2 px-4 py-2 bg-primary-container text-on-primary font-headline text-xs uppercase tracking-widest transition-colors hover:opacity-90">
+            <span class="material-symbols-outlined text-sm">add</span>
+            @L["SysConfig.New"]
+        </button>
+    </header>
+
+    @if (_formVisible)
+    {
+        <section class="bg-surface-container p-6 space-y-4 border border-outline-variant/40">
+            <h2 class="text-xs font-bold uppercase tracking-widest text-on-surface-variant font-headline">
+                @(_editKey is not null ? L["SysConfig.EditTitle"] : L["SysConfig.NewTitle"])
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="space-y-1">
+                    <label class="text-xs font-headline uppercase tracking-widest text-on-surface-variant">@L["SysConfig.CodeLabel"] *</label>
+                    <MudTextField @bind-Value="_form.Key" Placeholder="e.g. A" Variant="Variant.Outlined"
+                                  Margin="Margin.Dense" MaxLength="1" Disabled="@(_editKey is not null)" />
+                </div>
+                <div class="space-y-1">
+                    <label class="text-xs font-headline uppercase tracking-widest text-on-surface-variant">@L["SysConfig.Value"] *</label>
+                    <MudTextField @bind-Value="_form.Value" Placeholder="e.g. Y" Variant="Variant.Outlined"
+                                  Margin="Margin.Dense" MaxLength="1" />
+                </div>
+
+                <div class="space-y-1 md:col-span-1 lg:col-span-2">
+                    <label class="text-xs font-headline uppercase tracking-widest text-on-surface-variant">@L["SysConfig.DescriptionLabel"] *</label>
+                    <MudTextField @bind-Value="_form.Description" Placeholder="e.g. Unit Load Device" Variant="Variant.Outlined" Margin="Margin.Dense" MaxLength="20" />
+                </div>
+            </div>
+            <div class="flex items-center gap-3 pt-2">
+                <button @onclick="SaveAsync" disabled="@_saving"
+                        class="px-6 py-2 bg-primary-container text-on-primary font-headline text-xs uppercase tracking-widest transition-colors hover:opacity-90 disabled:opacity-50">
+                    @(_saving ? L["Common.Saving"] : L["Common.Save"])
+                </button>
+                <button @onclick="CloseForm"
+                        class="px-6 py-2 bg-surface-container-high text-on-surface-variant font-headline text-xs uppercase tracking-widest transition-colors hover:text-on-surface">
+                    @L["Common.Cancel"]
+                </button>
+                @if (!string.IsNullOrEmpty(_formError))
+                {
+                    <span class="text-xs text-error font-body">@_formError</span>
+                }
+            </div>
+        </section>
+    }
+
+    <MudDataGrid T="SystemConfigurationDto" Items="@_items" SortMode="SortMode.Single" Dense="true" Hover="true"
+                 Loading="@_loading" LoadingProgressColor="Color.Warning" Class="brs-grid">
+        <Columns>
+            <PropertyColumn Property="t => t.Key" Title="@L["SysConfig.ColCode"]" Sortable="true">
+                <CellTemplate>
+                    <span class="font-mono font-bold text-primary-container">@context.Item.Key</span>
+                </CellTemplate>
+            </PropertyColumn>
+            <PropertyColumn Property="t => t.Value" Title="@L["SysConfig.ColValue"]" Sortable="true">
+                <CellTemplate>
+                    <span class="font-mono font-bold text-primary-container">@context.Item.Value</span>
+                </CellTemplate>
+            </PropertyColumn>
+            <PropertyColumn Property="t => t.Description" Title="@L["SysConfig.ColDescription"]" Sortable="true" />
+            <TemplateColumn Title="" CellClass="text-right">
+                <CellTemplate>
+                    <div class="flex justify-end gap-3">
+                        <button @onclick="() => OpenEditForm(context.Item)"
+                                class="text-on-surface-variant hover:text-primary-container transition-colors" title="Edit">
+                            <span class="material-symbols-outlined text-base">edit</span>
+                        </button>
+                        <button @onclick="() => DeleteAsync(context.Item)"
+                                class="text-on-surface-variant hover:text-error transition-colors" title="Delete">
+                            <span class="material-symbols-outlined text-base">delete</span>
+                        </button>
+                    </div>
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+        <NoRecordsContent>
+            <div style="padding:3rem 0;text-align:center;color:var(--mud-palette-text-secondary);font-size:0.7rem;text-transform:uppercase;letter-spacing:0.08em;font-weight:600;">
+                @(_loading ? L["Common.Loading"] : L["Common.NoRecords"])
+            </div>
+        </NoRecordsContent>        
+    </MudDataGrid>
+</div>
+
+@code {
+    private IReadOnlyList<SystemConfigurationDto> _items = [];
+    private bool _loading;
+    private bool _formVisible;
+    private bool _saving;
+    private string _formError = string.Empty;
+    private string? _editKey;
+    private bool _isAirportOperator;
+
+    private SystemSettingFormModel _form = new();
+
+    private sealed class SystemSettingFormModel
+    {
+        public string Key { get; set; } = string.Empty;
+        public string Value { get; set; } = string.Empty;
+        public string? Description { get; set; }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthState.GetAuthenticationStateAsync();
+        _isAirportOperator = string.Equals(
+            authState.User.FindFirst("company_type")?.Value,
+            Policies.AirportOperator, StringComparison.OrdinalIgnoreCase);
+
+        if (!_isAirportOperator) return;
+
+        _loading = true;
+        _items = await Api.GetAllAsync();
+        _loading = false;
+    }
+
+    private void OpenAddForm()
+    {
+        _editKey = string.Empty;
+        _form = new();
+        _formError = string.Empty;
+        _formVisible = true;
+    }
+
+    private void OpenEditForm(SystemConfigurationDto t)
+    {
+        _editKey = t.Key;
+        _form = new() { Key = t.Key, Value = t.Value, Description = t.Description};
+        _formError = string.Empty;
+        _formVisible = true;
+    }
+
+    private void CloseForm() { _formVisible = false; _formError = string.Empty; }
+
+    private async Task SaveAsync()
+    {
+        _formError = string.Empty;
+        if (string.IsNullOrWhiteSpace(_form.Key)) { _formError = L["Validation.Required.Key"]; return; }
+        if (string.IsNullOrWhiteSpace(_form.Value)) { _formError = L["Validation.Required.Value"]; return; }
+
+        _saving = true;
+        bool success; string? error;
+
+        if (_editKey is not null)
+        {
+            var req = new UpdateSystemConfigurationRequest(_form.Value, _form.Description);
+            (success, _, error) = await Api.UpdateAsync(_editKey, req);
+        }
+        else
+        {
+            var req = new CreateSystemConfigurationRequest(_form.Key, _form.Value, _form.Description);
+            (success, _, error) = await Api.CreateAsync(req);
+        }
+
+        _saving = false;
+
+        if (success)
+        {
+            Snackbar.Add(_editKey  is not null ? "Type updated." : "Type created.", Severity.Success);
+            CloseForm();
+            _items = await Api.GetAllAsync();
+        }
+        else
+        {
+            _formError = error ?? "An unexpected error occurred.";
+        }
+    }
+
+    private async Task DeleteAsync(SystemConfigurationDto t)
+    {
+        if (await Api.DeleteAsync(t.Key))
+        {
+            Snackbar.Add($"Type '{t.Key}' deleted.", Severity.Info);
+            _items = await Api.GetAllAsync();
+        }
+        else
+        {
+            Snackbar.Add("Failed to delete type.", Severity.Error);
+        }
+    }
+}
+

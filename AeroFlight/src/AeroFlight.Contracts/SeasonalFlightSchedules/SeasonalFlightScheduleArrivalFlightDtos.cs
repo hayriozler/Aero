@@ -1,0 +1,43 @@
+namespace AeroFlight.Contracts.SeasonalFlightSchedules;
+
+public sealed record SeasonalFlightScheduleArrivalFlightRequest(
+    string ScheduleSeasonCode,
+    string AirlineCode,
+    string FlightNumber,
+    string? CallSign,
+    string? ScheduleFlightStatusCode,
+    string? CountryType,
+    string? AircraftTypeCode,
+    string? OpsDays,
+    int Frequency,
+    bool IsOverMidnight,
+    string? DirectionCode,
+    bool IsTransit,
+    string? Comment,
+    DateTimeOffset Sta,
+    DateTimeOffset PeriodBegin,
+    DateTimeOffset PeriodEnd,
+    string OriginAirportCode,
+    IReadOnlyList<SeasonalFlightScheduleRoutingRequest> Routings);
+
+public sealed record SeasonalFlightScheduleArrivalFlightResponse(
+    int Id,
+    string ScheduleSeasonCode,
+    string AirlineCode,
+    string FlightNumber,
+    string? CallSign,
+    string? ScheduleFlightStatusCode,
+    string? CountryType,
+    string? AircraftTypeCode,
+    string? OpsDays,
+    int Frequency,
+    bool IsOverMidnight,
+    string? DirectionCode,
+    bool IsTransit,
+    string? Comment,
+    DateTimeOffset Sta,
+    DateTimeOffset PeriodBegin,
+    DateTimeOffset PeriodEnd,
+    string OriginAirportCode,
+    int? LinkedDepartureFlightId,
+    IReadOnlyList<SeasonalFlightScheduleRoutingResponse> Routings);

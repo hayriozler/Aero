@@ -1,0 +1,111 @@
+@using AeroFlight.Contracts.Flights
+@using AeroFlight.Web.Services.Metadatas
+@inject IMetadataClient MetadataData
+
+<MudDialog>
+    <DialogContent>
+        <MudForm @ref="_form" Model="_model">
+            <MudGrid Spacing="3">
+                <MudItem xs="12" md="4">
+                    <MudAutocomplete T="string" @bind-Value="_model.DelayCode" Label="Delay Code" Required="true"
+                                     RequiredError="Delay code is required" SearchFunc="SearchDelayReasonsAsync"
+                                     MinCharacters="0" CoerceText="false" />
+                </MudItem>
+                <MudItem xs="12" md="4">
+                    <MudNumericField T="decimal?" @bind-Value="_model.DelayMinutes" Label="Minutes" Min="0" />
+                </MudItem>
+                <MudItem xs="12" md="12">
+                    <MudTextField @bind-Value="_model.Comment" Label="Comment" Lines="2" MaxLength="500" />
+                </MudItem>
+            </MudGrid>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudTooltip Text="Cancel">
+            <MudIconButton Icon="@Icons.Material.Filled.Close" OnClick="Cancel" />
+        </MudTooltip>
+        <MudTooltip Text="Save">
+            <MudIconButton Icon="@Icons.Material.Filled.Save" Color="Color.Primary" OnClick="SubmitAsync" />
+        </MudTooltip>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = null!;
+
+    [Parameter]
+    public DelayResponse? Existing { get; set; }
+
+    private MudForm _form = null!;
+    private readonly EditModel _model = new();
+
+    protected override void OnInitialized()
+    {
+        if (Existing is { } e)
+        {
+            _model.DelayCode = e.DelayCode;
+            _model.DelayMinutes = e.DelayMinutes;
+            _model.Comment = e.Comment ?? "";
+        }
+    }
+
+    private async Task<IEnumerable<string>> SearchDelayReasonsAsync(string search, CancellationToken ct)
+    {
+        try
+        {
+            var rows = await MetadataData.GetAllAsync(MetadataCatalog.RouteOf("delayreasons"), ct);
+            IEnumerable<IReadOnlyDictionary<string, System.Text.Json.JsonElement>> matches = rows;
+
+            if (!string.IsNullOrWhiteSpace(search))
+                matches = matches.Where(row => RowMatches(row, search));
+
+            return matches
+                .Select(row => row.TryGetValue("code", out var code) && code.ValueKind == System.Text.Json.JsonValueKind.String ? code.GetString() : null)
+                .Where(code => !string.IsNullOrWhiteSpace(code))
+                .Cast<string>()
+                .Take(20);
+        }
+        catch (Exception)
+        {
+            return [];
+        }
+    }
+
+    // Matches on any string field in the row (code, alphabetic code, description) so typing part of
+    // the delay reason description finds it, not just typing the code.
+    private static bool RowMatches(IReadOnlyDictionary<string, System.Text.Json.JsonElement> row, string search)
+    {
+        foreach (var value in row.Values)
+        {
+            if (value.ValueKind == System.Text.Json.JsonValueKind.String)
+            {
+                var s = value.GetString();
+                if (!string.IsNullOrEmpty(s) && s.Contains(search, StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+        }
+        return false;
+    }
+
+    private async Task SubmitAsync()
+    {
+        await _form.ValidateAsync();
+        if (!_form.IsValid)
+            return;
+
+        var request = new DelayRequest(_model.DelayCode, _model.DelayMinutes, Blank(_model.Comment));
+        MudDialog.Close(DialogResult.Ok(request));
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private static string? Blank(string? value) => string.IsNullOrWhiteSpace(value) ? null : value;
+
+    private sealed class EditModel
+    {
+        public string DelayCode { get; set; } = "";
+        public decimal? DelayMinutes { get; set; }
+        public string Comment { get; set; } = "";
+    }
+}

@@ -1,0 +1,78 @@
+@using AeroFlight.Contracts.SeasonalFlightSchedules
+
+<MudDialog>
+    <DialogContent>
+        <MudForm @ref="_form" Model="_model">
+            <MudGrid Spacing="3">
+                <MudItem xs="12" md="4">
+                    <MudTextField @bind-Value="_model.Code" Label="Season Code" Required="true"
+                                  RequiredError="Code is required" MaxLength="10" Disabled="@(Existing is not null)" />
+                </MudItem>
+                <MudItem xs="12" md="8">
+                    <MudTextField @bind-Value="_model.Description" Label="Description" MaxLength="200" />
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudDatePicker @bind-Date="_model.BeginDate" Label="Begin Date" Required="true" />
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudDatePicker @bind-Date="_model.EndDate" Label="End Date" Required="true" />
+                </MudItem>
+            </MudGrid>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudTooltip Text="Cancel">
+            <MudIconButton Icon="@Icons.Material.Filled.Close" OnClick="Cancel" />
+        </MudTooltip>
+        <MudTooltip Text="Save">
+            <MudIconButton Icon="@Icons.Material.Filled.Save" Color="Color.Primary" OnClick="SubmitAsync" />
+        </MudTooltip>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = null!;
+
+    [Parameter]
+    public ScheduleSeasonResponse? Existing { get; set; }
+
+    private MudForm _form = null!;
+    private readonly EditModel _model = new();
+
+    protected override void OnInitialized()
+    {
+        if (Existing is { } e)
+        {
+            _model.Code = e.Code;
+            _model.Description = e.Description ?? "";
+            _model.BeginDate = e.BeginDate.Date;
+            _model.EndDate = e.EndDate.Date;
+        }
+    }
+
+    private async Task SubmitAsync()
+    {
+        await _form.ValidateAsync();
+        if (!_form.IsValid || _model.BeginDate is null || _model.EndDate is null)
+            return;
+
+        var request = new ScheduleSeasonRequest(
+            _model.Code, string.IsNullOrWhiteSpace(_model.Description) ? null : _model.Description,
+            ToUtcMidnight(_model.BeginDate.Value), ToUtcMidnight(_model.EndDate.Value));
+        MudDialog.Close(DialogResult.Ok(request));
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private static DateTimeOffset ToUtcMidnight(DateTime date) =>
+        new(DateTime.SpecifyKind(date, DateTimeKind.Unspecified), TimeSpan.Zero);
+
+    private sealed class EditModel
+    {
+        public string Code { get; set; } = "";
+        public string Description { get; set; } = "";
+        public DateTime? BeginDate { get; set; } = DateTime.Today;
+        public DateTime? EndDate { get; set; } = DateTime.Today.AddMonths(6);
+    }
+}

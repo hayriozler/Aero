@@ -1,0 +1,23 @@
+@page "/flights/ops"
+@page "/"
+@attribute [Authorize]
+
+<PageTitle>AODB Ops Desk — AeroFlight</PageTitle>
+
+<div class="mb-3">
+    <span class="kicker" style="display:block; margin-bottom:2px">AODB · Ops desk</span>
+    <MudText Typo="Typo.h5">AODB Ops Desk</MudText>
+    <MudText Typo="Typo.body2" Color="Color.Secondary">Movements, gate/resource allocation and turnaround status in one place.</MudText>
+</div>
+
+<MudTabs Elevation="0" Rounded="false" ApplyEffectsToContainer="true">
+    <MudTabPanel Text="Overview">
+        <div class="pa-4"><OverviewPanel /></div>
+    </MudTabPanel>
+    <MudTabPanel Text="Movements">
+        <div class="pa-4"><MovementsTable /></div>
+    </MudTabPanel>
+    <MudTabPanel Text="Gantt">
+        <div class="pa-4"><ResourceGantt /></div>
+    </MudTabPanel>
+</MudTabs>

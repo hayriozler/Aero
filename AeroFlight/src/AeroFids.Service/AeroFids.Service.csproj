@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <UserSecretsId>c86156ac-bcc6-4e1b-bf5b-c85b28fe24ee</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MudBlazor" />
+    <PackageReference Include="Aspire.RabbitMQ.Client" />
+    <PackageReference Include="RabbitMQ.Client" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AeroFlight.Contracts\AeroFlight.Contracts.csproj" />
+    <ProjectReference Include="..\AeroFlight.ServiceDefaults\AeroFlight.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\AeroFlight.Application\AeroFlight.Application.csproj" />
+    <ProjectReference Include="..\AeroFlight.Infrastructure\AeroFlight.Infrastructure.csproj" />
+    <ProjectReference Include="..\AeroFids.Infrastructure\AeroFids.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

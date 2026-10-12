@@ -1,0 +1,12 @@
+code,name,description,is_updatable
+BIL,Billed,In Billing and Locked,false
+COM,Completed,Completed Flight,true
+DIV,Diverted,Diverted from operating airport,true
+OCC,Operation Completed,Operation Completed,true
+OFB,Departured,Departed,off block,true
+OFF,Take Off,Take off/airborne/started,true
+ONB,Arrived,Arrived/on block,true
+SKD,Scheduled,Scheduled (initial status),true
+TD,Touched Down, Touched Down,true
+TMO,In range,TMO / In range,true
+XLD,Cancelled,Ops Cancelled,true

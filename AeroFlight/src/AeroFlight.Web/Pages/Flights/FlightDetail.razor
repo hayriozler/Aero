@@ -1,0 +1,20 @@
+@page "/flights/{Direction}/{Id:long}"
+@attribute [Authorize]
+@inject NavigationManager Navigation
+
+<PageTitle>Flight Detail — AeroFlight</PageTitle>
+
+<div class="d-flex align-center mb-4" style="gap:8px">
+    <MudIconButton Icon="@Icons.Material.Filled.ArrowBack" OnClick="@(() => Navigation.NavigateTo("/flights"))" />
+    <MudText Typo="Typo.h5">Flight Detail</MudText>
+</div>
+
+<FlightEditPanel Direction="@Direction" Id="@Id" />
+
+@code {
+    [Parameter]
+    public string Direction { get; set; } = "";
+
+    [Parameter]
+    public long Id { get; set; }
+}

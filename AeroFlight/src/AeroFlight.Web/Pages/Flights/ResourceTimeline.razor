@@ -1,0 +1,11 @@
+@page "/flights/timeline"
+@attribute [Authorize]
+
+<PageTitle>Resource Timeline — AeroFlight</PageTitle>
+
+<div class="mb-3">
+    <MudText Typo="Typo.h5">Resource Timeline</MudText>
+    <MudText Typo="Typo.body2" Color="Color.Secondary">Gate, counter, park position and belt occupancy over a selected day.</MudText>
+</div>
+
+<ResourceGantt />

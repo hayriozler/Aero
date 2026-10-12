@@ -1,0 +1,191 @@
+@using System.Text.Json
+@using AeroFlight.Contracts.Flights
+@using AeroFlight.Web.Services.Flights
+@using AeroFlight.Web.Services.Metadatas
+@inject IFlightsClient Flights
+@inject IMetadataClient Metadata
+@inject ISnackbar Snackbar
+
+<MudText Typo="Typo.subtitle2" Class="mb-2">Payer summary</MudText>
+
+@if (_loading)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="mb-2" />
+}
+
+<MudTable Items="_rows" Dense="true" Hover="true" Bordered="false" Elevation="1">
+    <HeaderContent>
+        <MudTh>Resource</MudTh>
+        <MudTh>Code</MudTh>
+        <MudTh>Payer</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Resource">@context.Kind</MudTd>
+        <MudTd DataLabel="Code">@(context.Code ?? "—")</MudTd>
+        <MudTd DataLabel="Payer">
+            <MudAutocomplete T="string" Value="@context.PayerCompanyCode" ValueChanged="@(v => OnPayerChangedAsync(context, v))"
+                              Clearable="true" SearchFunc="SearchPayerCompaniesAsync" MinCharacters="0" CoerceText="false"
+                              Dense="true" Margin="Margin.Dense" Disabled="@context.Saving" />
+        </MudTd>
+    </RowTemplate>
+    <NoRecordsContent>
+        <MudText Color="Color.Secondary">No resources allocated yet.</MudText>
+    </NoRecordsContent>
+</MudTable>
+
+@code {
+    [Parameter, EditorRequired]
+    public string GateResourceRoute { get; set; } = "";
+
+    [Parameter, EditorRequired]
+    public string BeltResourceRoute { get; set; } = "";
+
+    // Counters only exist for departure flights — leave null/blank for arrivals.
+    [Parameter]
+    public string? CounterResourceRoute { get; set; }
+
+    [Parameter, EditorRequired]
+    public string ParkPositionResourceRoute { get; set; } = "";
+
+    [Parameter, EditorRequired]
+    public string ServiceResourceRoute { get; set; } = "";
+
+    private List<FinanceRow> _rows = [];
+    private Dictionary<string, string> _companyNames = new(StringComparer.OrdinalIgnoreCase);
+    private bool _loading;
+    private string? _loadedKey;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var key = $"{GateResourceRoute}|{BeltResourceRoute}|{CounterResourceRoute}|{ParkPositionResourceRoute}|{ServiceResourceRoute}";
+        if (string.IsNullOrWhiteSpace(GateResourceRoute) || key == _loadedKey)
+            return;
+
+        _loadedKey = key;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        try
+        {
+            await LoadCompanyNamesAsync();
+
+            var rows = new List<FinanceRow>();
+
+            var gates = await Flights.GetFlightResourcesAsync(GateResourceRoute);
+            rows.AddRange(gates.Select(r => new FinanceRow("Gate", r.Code, r.PayerCompanyCode,
+                payer => Flights.UpdateFlightResourceAsync($"{GateResourceRoute}/{r.Id}",
+                    new AeroFlight.Web.Services.Flights.FlightResourceRequest(r.Code, r.BeginPlan, r.EndPlan, r.StatusCode, r.BeginActual, r.EndActual, payer, r.IsComplimentary)))));
+
+            var belts = await Flights.GetFlightResourcesAsync(BeltResourceRoute);
+            rows.AddRange(belts.Select(r => new FinanceRow("Belt", r.Code, r.PayerCompanyCode,
+                payer => Flights.UpdateFlightResourceAsync($"{BeltResourceRoute}/{r.Id}",
+                    new AeroFlight.Web.Services.Flights.FlightResourceRequest(r.Code, r.BeginPlan, r.EndPlan, r.StatusCode, r.BeginActual, r.EndActual, payer, r.IsComplimentary)))));
+
+            if (!string.IsNullOrWhiteSpace(CounterResourceRoute))
+            {
+                var counters = await Flights.GetCounterResourcesAsync(CounterResourceRoute);
+                rows.AddRange(counters.Select(r => new FinanceRow("Counter", r.Code, r.PayerCompanyCode,
+                    payer => Flights.UpdateCounterResourceAsync($"{CounterResourceRoute}/{r.Id}",
+                        new AeroFlight.Web.Services.Flights.FlightResourceRequest(r.Code, r.BeginPlan, r.EndPlan, r.StatusCode, r.BeginActual, r.EndActual, payer, r.IsComplimentary, r.CheckinClassCode)))));
+            }
+
+            var parkPositions = await Flights.GetParkPositionsAsync(ParkPositionResourceRoute);
+            rows.AddRange(parkPositions.Select(r => new FinanceRow("Park Position", r.Code, r.PayerCompanyCode,
+                payer => Flights.UpdateParkPositionAsync($"{ParkPositionResourceRoute}/{r.Id}",
+                    new OpsParkPositionRequest(r.Code, r.BeginPlan, r.EndPlan, r.BeginActual, r.EndActual, payer)))));
+
+            var services = await Flights.GetServicesAsync(ServiceResourceRoute);
+            rows.AddRange(services.Select(r => new FinanceRow("Handling Service", r.ServiceCode, r.PayerCompanyCode,
+                payer => Flights.UpdateServiceAsync($"{ServiceResourceRoute}/{r.Id}",
+                    new ServiceRequest(r.ServiceCode, r.BeginPlan, r.EndPlan, r.AmountPlan, r.BeginActual, r.EndActual, r.AmountActual, r.HandlingAgentCode, r.Comment, payer)))));
+
+            _rows = rows;
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add($"Failed to load payer info: {ex.Message}", Severity.Error);
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Could not reach the API while loading payer info.", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task LoadCompanyNamesAsync()
+    {
+        try
+        {
+            var rows = await Metadata.GetAllAsync(MetadataCatalog.RouteOf("companies"));
+            var names = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var row in rows)
+            {
+                if (row.TryGetValue("code", out var codeElement) && codeElement.ValueKind == JsonValueKind.String
+                    && codeElement.GetString() is { } code && !string.IsNullOrWhiteSpace(code))
+                {
+                    var name = row.TryGetValue("name", out var nameElement) && nameElement.ValueKind == JsonValueKind.String
+                        ? nameElement.GetString()
+                        : null;
+                    names[code] = string.IsNullOrWhiteSpace(name) ? code : name;
+                }
+            }
+            _companyNames = names;
+        }
+        catch (Exception)
+        {
+            _companyNames = new(StringComparer.OrdinalIgnoreCase);
+        }
+    }
+
+    private Task<IEnumerable<string>> SearchPayerCompaniesAsync(string search, CancellationToken ct)
+    {
+        IEnumerable<string> codes = _companyNames.Keys;
+
+        if (!string.IsNullOrWhiteSpace(search))
+            codes = codes.Where(code => code.Contains(search, StringComparison.OrdinalIgnoreCase)
+                || (_companyNames.TryGetValue(code, out var name) && name.Contains(search, StringComparison.OrdinalIgnoreCase)));
+
+        return Task.FromResult(codes.Take(20));
+    }
+
+    private async Task OnPayerChangedAsync(FinanceRow row, string? value)
+    {
+        var previous = row.PayerCompanyCode;
+        row.PayerCompanyCode = value;
+        row.Saving = true;
+        try
+        {
+            await row.SaveAsync(value);
+            Snackbar.Add("Payer updated.", Severity.Success);
+        }
+        catch (ApiException ex)
+        {
+            row.PayerCompanyCode = previous;
+            Snackbar.Add($"Failed to update payer: {ex.Message}", Severity.Error);
+        }
+        catch (Exception)
+        {
+            row.PayerCompanyCode = previous;
+            Snackbar.Add("Could not reach the API while updating payer.", Severity.Error);
+        }
+        finally
+        {
+            row.Saving = false;
+        }
+    }
+
+    private sealed class FinanceRow(string kind, string? code, string? payerCompanyCode, Func<string?, Task> saveAsync)
+    {
+        public string Kind { get; } = kind;
+        public string? Code { get; } = code;
+        public string? PayerCompanyCode { get; set; } = payerCompanyCode;
+        public bool Saving { get; set; }
+        public Func<string?, Task> SaveAsync { get; } = saveAsync;
+    }
+}

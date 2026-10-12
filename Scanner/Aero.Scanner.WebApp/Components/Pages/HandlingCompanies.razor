@@ -1,0 +1,233 @@
+@page "/handling-companies"
+@using Aero.Scanner.Shared.Consts
+@using System.Text.Json
+@attribute [Authorize(Roles = SystemDefinedRoles.Admin+ "," + SystemDefinedRoles.RamSupervisor)]
+@inject CompanyApiClient Api
+@inject ISnackbar Snackbar
+@inject AuthenticationStateProvider AuthState
+@inject IStringLocalizer<SharedResources> L
+@inject ClientTimeService Time
+@inject IJSRuntime JS
+
+<PageTitle>AeroScan BRS · Handling Companies</PageTitle>
+
+<div class="p-6 space-y-6">
+
+    @if (!_isAirportOperator)
+    {
+        <div class="bg-secondary/10 border border-secondary/30 p-6 text-center">
+            <span class="material-symbols-outlined text-secondary text-4xl block mb-2">block</span>
+            <p class="text-secondary font-headline uppercase tracking-widest text-sm font-bold">Access Restricted</p>
+            <p class="text-on-surface-variant text-xs mt-1">This page is only accessible to Airport Operator personnel.</p>
+        </div>
+        return;
+    }
+
+    <!-- Header -->
+    <header class="flex justify-between items-end flex-wrap gap-4">
+        <div>
+            <h1 class="text-4xl font-extrabold tracking-tighter text-on-surface uppercase font-headline">
+                Handling Companies
+            </h1>
+            <p class="text-on-surface-variant text-sm font-body">Ground handling agent companies</p>
+        </div>
+        <button @onclick="OpenAddForm"
+                class="flex items-center gap-2 px-4 py-2 bg-primary-container text-on-primary font-headline text-xs uppercase tracking-widest transition-colors hover:opacity-90">
+            <span class="material-symbols-outlined text-sm">add</span>
+            Add Company
+        </button>
+    </header>
+
+    <!-- Add / Edit form -->
+    @if (_formVisible)
+    {
+        <section class="bg-surface-container p-6 space-y-4 border border-outline-variant/40">
+            <h2 class="text-xs font-bold uppercase tracking-widest text-on-surface-variant font-headline">
+                @(!string.IsNullOrWhiteSpace(_editCode) ? "Edit Company" : "New Handling Company")
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="space-y-1">
+                    <label class="text-xs font-headline uppercase tracking-widest text-on-surface-variant">Company Name *</label>
+                    <MudTextField @bind-Value="_form.Name" Placeholder="e.g. Celebi Aviation" Variant="Variant.Outlined" Margin="Margin.Dense" MaxLength="150" />
+                </div>
+                <div class="space-y-1">
+                    <label class="text-xs font-headline uppercase tracking-widest text-on-surface-variant">Company Code *</label>
+                    <MudTextField @bind-Value="_form.Code" Placeholder="e.g. CELEBI" Variant="Variant.Outlined" Margin="Margin.Dense" MaxLength="20" />
+                </div>
+            </div>
+            <div class="flex items-center gap-3 pt-2">
+                <button @onclick="SaveAsync" disabled="@_saving"
+                        class="px-6 py-2 bg-primary-container text-on-primary font-headline text-xs uppercase tracking-widest transition-colors hover:opacity-90 disabled:opacity-50">
+                    @(_saving ? "Saving…" : "Save")
+                </button>
+                <button @onclick="CloseForm"
+                        class="px-6 py-2 bg-surface-container-high text-on-surface-variant font-headline text-xs uppercase tracking-widest transition-colors hover:text-on-surface">
+                    Cancel
+                </button>
+                @if (!string.IsNullOrEmpty(_formError))
+                {
+                    <span class="text-xs text-error font-body">@_formError</span>
+                }
+            </div>
+        </section>
+    }
+
+    <!-- Data Grid -->
+    <MudDataGrid T="CompanyDto" Items="@_companies" SortMode="SortMode.Multiple" Filterable="true"
+                 FilterMode="DataGridFilterMode.ColumnFilterRow" Dense="true" Hover="true"
+                 Loading="@_loading" LoadingProgressColor="Color.Warning" Class="brs-grid">
+        <Columns>
+            <PropertyColumn Property="c => c.Name" Title="Company Name" Sortable="true" Filterable="true">
+                <CellTemplate>
+                    <span class="font-medium text-on-surface">@context.Item.Name</span>
+                </CellTemplate>
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.Code" Title="Code" Sortable="true" Filterable="true">
+                <CellTemplate>
+                    <span class="font-mono font-bold text-primary-container">@context.Item.Code</span>
+                </CellTemplate>
+            </PropertyColumn>            
+            <PropertyColumn Property="c => c.CreatedAt" Title="Created" Sortable="true" Filterable="false">
+                <CellTemplate>
+                    <span class="font-mono text-xs text-on-surface-variant">@Time.FormatDate(context.Item.CreatedAt)</span>
+                </CellTemplate>
+            </PropertyColumn>
+            <TemplateColumn Title="Actions" Sortable="false" Filterable="false">
+                <CellTemplate>
+                    <div class="flex items-center gap-2">
+                        <button @onclick="() => OpenEditForm(context.Item)" title="Edit"
+                                class="text-on-surface-variant hover:text-primary-container transition-colors">
+                            <span class="material-symbols-outlined text-sm">edit</span>
+                        </button>
+                        <button @onclick="() => OpenAudit(context.Item.Code, context.Item.Name)" title="Audit History"
+                                class="text-on-surface-variant hover:text-warning transition-colors">
+                            <span class="material-symbols-outlined text-sm">history</span>
+                        </button>
+                    </div>
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+        <NoRecordsContent>
+            <div style="padding:3rem 0;text-align:center;color:var(--mud-palette-text-secondary);font-size:0.7rem;text-transform:uppercase;letter-spacing:0.08em;font-weight:600;">
+                @(_loading ? "Loading companies…" : "No handling companies found")
+            </div>
+        </NoRecordsContent>
+        <PagerContent>
+            <MudDataGridPager T="CompanyDto" PageSizeOptions="[15, 30, 50]" />
+        </PagerContent>
+    </MudDataGrid>
+</div>
+
+<AuditDrawer EntityType="Company" PrimaryKey="@_auditPk" Label="@_auditLabel" @bind-IsOpen="_auditOpen" />
+
+@code {
+    private IReadOnlyList<CompanyDto> _companies = [];
+    private bool _loading;
+    private bool _formVisible;
+    private bool _saving;
+    private string _formError = string.Empty;
+    private string? _editCode;
+    private bool _isAirportOperator;
+
+    private bool _auditOpen;
+    private string _auditPk = string.Empty;
+    private string _auditLabel = string.Empty;
+
+    private CompanyFormModel _form = new();
+
+    private sealed class CompanyFormModel
+    {
+        public string Code { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        await Time.LoadAsync(JS);
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthState.GetAuthenticationStateAsync();
+        var companyType = authState.User.FindFirst("company_type")?.Value ?? string.Empty;
+        _isAirportOperator = string.Equals(companyType, Policies.AirportOperator, StringComparison.OrdinalIgnoreCase);
+
+        if (!_isAirportOperator) return;
+
+        _loading = true;
+        _companies = (await Api.GetAllAsync()).Where(c => c.Type == "HandlingAgent").ToList();
+        _loading = false;
+    }
+
+    private void OpenAudit(string code, string label)
+    {
+        _auditPk = JsonSerializer.Serialize(new { Id = code });
+        _auditLabel = label;
+        _auditOpen = true;
+    }
+
+    private void OpenAddForm()
+    {
+        _editCode = null;
+        _form = new();
+        _formError = string.Empty;
+        _formVisible = true;
+    }
+
+    private void OpenEditForm(CompanyDto c)
+    {
+        _editCode = c.Code;
+        _form = new() { Name = c.Name, Code = c.Code };
+        _formError = string.Empty;
+        _formVisible = true;
+    }
+
+    private void CloseForm() { _formVisible = false; _formError = string.Empty; }
+
+    private async Task SaveAsync()
+    {
+        _formError = string.Empty;
+        if (string.IsNullOrWhiteSpace(_form.Name)) { _formError = L["Validation.Required.CompanyName"]; return; }
+        if (string.IsNullOrWhiteSpace(_form.Code))  { _formError = L["Validation.Required.CompanyCode"]; return; }
+
+        _saving = true;
+        bool success; string? error;
+
+        if (!string.IsNullOrEmpty(_editCode))
+        {
+            var req = new Aero.Scanner.Shared.Requests.UpdateCompanyRequest(_form.Code.ToUpperInvariant(), _form.Name, "HandlingAgent");
+            (success, _, error) = await Api.UpdateAsync(_editCode, req);
+        }
+        else
+        {
+            var req = new Aero.Scanner.Shared.Requests.CreateCompanyRequest(_form.Code.ToUpperInvariant(), _form.Name, "HandlingAgent");
+            (success, _, error) = await Api.CreateAsync(req);
+        }
+        _saving = false;
+
+        if (success)
+        {
+            Snackbar.Add(_editCode is not null ? "Company updated." : "Company created.", Severity.Success);
+            CloseForm();
+            _companies = (await Api.GetAllAsync()).Where(c => c.Type == "HandlingAgent").ToList();
+        }
+        else
+        {
+            _formError = error ?? "An unexpected error occurred.";
+        }
+    }
+
+    private async Task DeactivateAsync(CompanyDto c)
+    {
+        if (await Api.DeactivateAsync(c.Code))
+        {
+            Snackbar.Add($"{c.Name} deactivated.", Severity.Info);
+            _companies = (await Api.GetAllAsync()).Where(x => x.Type == "HandlingAgent").ToList();
+        }
+        else
+        {
+            Snackbar.Add("Failed to deactivate company.", Severity.Error);
+        }
+    }
+}

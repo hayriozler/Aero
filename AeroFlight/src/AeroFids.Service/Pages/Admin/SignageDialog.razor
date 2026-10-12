@@ -1,0 +1,143 @@
+@using AeroFids.Service.Services
+@using Microsoft.AspNetCore.Components.Forms
+@inject ISignageService SignageService
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        @if (_error is not null)
+        {
+            <MudAlert Severity="Severity.Error" Variant="Variant.Filled" Dense="true" Class="mb-3">@_error</MudAlert>
+        }
+
+        <MudForm @ref="_form">
+            <MudTextField T="string" @bind-Value="_name" Label="Name" Required="true" RequiredError="Name is required"
+                          MaxLength="200" Variant="Variant.Outlined" Margin="Margin.Dense" Immediate="true" Class="mb-3" />
+
+            <div class="d-flex" style="gap:8px">
+                <MudDatePicker Label="Start Date" @bind-Date="_startDate" Clearable="true" Margin="Margin.Dense" Variant="Variant.Outlined" Class="mb-3" />
+                <MudDatePicker Label="End Date" @bind-Date="_endDate" Clearable="true" Margin="Margin.Dense" Variant="Variant.Outlined" Class="mb-3" />
+            </div>
+            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-3">Leave both blank to show whenever active.</MudText>
+
+            <MudNumericField T="int" @bind-Value="_displayOrder" Label="Display Order" Min="0" Margin="Margin.Dense" Variant="Variant.Outlined" Class="mb-3" />
+
+            @if (Existing is null)
+            {
+                <MudFileUpload T="IBrowserFile" FilesChanged="OnFileSelectedAsync" Accept="image/*">
+                    <CustomContent Context="fileUpload">
+                        <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Upload" OnClick="@fileUpload.OpenFilePickerAsync">
+                            @(_fileName ?? "Choose Image")
+                        </MudButton>
+                    </CustomContent>
+                </MudFileUpload>
+            }
+            else
+            {
+                <MudCheckBox T="bool" @bind-Value="_isActive" Label="Active" />
+            }
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" Disabled="_saving">Cancel</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="SubmitAsync" Disabled="_saving">
+            @if (_saving)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+            }
+            @(Existing is null ? "Create" : "Save")
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    private const long MaxFileSize = 8 * 1024 * 1024;
+
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = null!;
+
+    [Parameter]
+    public SignageImageResponse? Existing { get; set; }
+
+    private MudForm _form = null!;
+    private string _name = "";
+    private DateTime? _startDate;
+    private DateTime? _endDate;
+    private int _displayOrder;
+    private bool _isActive = true;
+    private string? _fileName;
+    private byte[]? _fileData;
+    private string? _fileContentType;
+    private bool _saving;
+    private string? _error;
+
+    protected override void OnInitialized()
+    {
+        if (Existing is { } e)
+        {
+            _name = e.Name;
+            _startDate = e.StartDate?.ToDateTime(TimeOnly.MinValue);
+            _endDate = e.EndDate?.ToDateTime(TimeOnly.MinValue);
+            _displayOrder = e.DisplayOrder;
+            _isActive = e.IsActive;
+        }
+    }
+
+    private async Task OnFileSelectedAsync(IBrowserFile file)
+    {
+        using var stream = file.OpenReadStream(MaxFileSize);
+        using var buffer = new MemoryStream();
+        await stream.CopyToAsync(buffer);
+        _fileData = buffer.ToArray();
+        _fileContentType = file.ContentType;
+        _fileName = file.Name;
+    }
+
+    private async Task SubmitAsync()
+    {
+        await _form.ValidateAsync();
+        if (!_form.IsValid)
+            return;
+
+        if (Existing is null && _fileData is null)
+        {
+            _error = "Choose an image.";
+            return;
+        }
+
+        var startDate = _startDate is { } s ? DateOnly.FromDateTime(s) : (DateOnly?)null;
+        var endDate = _endDate is { } e ? DateOnly.FromDateTime(e) : (DateOnly?)null;
+
+        _saving = true;
+        _error = null;
+        try
+        {
+            if (Existing is null)
+            {
+                var created = await SignageService.CreateAsync(_name, _fileData!, _fileContentType ?? "image/png", startDate, endDate, _displayOrder, CancellationToken.None);
+                Snackbar.Add($"'{created.Name}' created.", Severity.Success);
+            }
+            else
+            {
+                await SignageService.UpdateAsync(Existing.Id, _name, startDate, endDate, _displayOrder, _isActive, CancellationToken.None);
+                Snackbar.Add($"'{_name}' updated.", Severity.Success);
+            }
+
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (FidsValidationException ex)
+        {
+            _error = ex.Message;
+        }
+        catch (Exception)
+        {
+            _error = "Something went wrong. Please try again.";
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

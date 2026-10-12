@@ -1,0 +1,65 @@
+@using AeroFlight.Contracts.Flights
+
+<MudDialog>
+    <DialogContent>
+        <MudForm @ref="_form" Model="_model">
+            <MudGrid Spacing="3">
+                <MudItem xs="12" md="9">
+                    <MudAutocomplete T="string" @bind-Value="_model.AirportCode" Label="Airport" Required="true" RequiredError="Airport is required"
+                                     SearchFunc="SearchAirportsAsync" MinCharacters="0" CoerceText="false" ResetValueOnEmptyText="false"
+                                     ToStringFunc="@(code => code)">
+                        <ItemTemplate Context="code">@AirportLabels.GetValueOrDefault(code, code)</ItemTemplate>
+                    </MudAutocomplete>
+                </MudItem>
+            </MudGrid>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudTooltip Text="Cancel">
+            <MudIconButton Icon="@Icons.Material.Filled.Close" OnClick="Cancel" />
+        </MudTooltip>
+        <MudTooltip Text="Save">
+            <MudIconButton Icon="@Icons.Material.Filled.Save" Color="Color.Primary" OnClick="SubmitAsync" />
+        </MudTooltip>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = null!;
+
+    [Parameter]
+    public OpsRoutingResponse? Existing { get; set; }
+
+    [Parameter, EditorRequired]
+    public Func<string, CancellationToken, Task<IEnumerable<string>>> SearchAirportsAsync { get; set; } = null!;
+
+    [Parameter, EditorRequired]
+    public Dictionary<string, string> AirportLabels { get; set; } = new();
+
+    private MudForm _form = null!;
+    private readonly EditModel _model = new();
+
+    protected override void OnInitialized()
+    {
+        if (Existing is { } e)
+            _model.AirportCode = e.AirportCode;
+    }
+
+    private async Task SubmitAsync()
+    {
+        await _form.ValidateAsync();
+        if (!_form.IsValid)
+            return;
+
+        var request = new OpsRoutingRequest(_model.AirportCode);
+        MudDialog.Close(DialogResult.Ok(request));
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private sealed class EditModel
+    {
+        public string AirportCode { get; set; } = "";
+    }
+}

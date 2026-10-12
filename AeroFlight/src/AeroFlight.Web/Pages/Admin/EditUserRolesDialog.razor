@@ -1,0 +1,75 @@
+@using AeroFlight.Web.Services.Identity
+@inject IApiClient Api
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        @if (_roles is null)
+        {
+            <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+        }
+        else
+        {
+            @foreach (var role in _roles)
+            {
+                <MudCheckBox T="bool" Value="@_userRoles.Contains(role.Name)"
+                             ValueChanged="@(v => ToggleRoleAsync(role, v))" Dense="true"
+                             Label="@($"{role.Name} — {role.Description}")" />
+            }
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton Color="Color.Primary" OnClick="Close">Done</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = null!;
+
+    [Parameter]
+    public UserDto User { get; set; } = null!;
+
+    private IReadOnlyList<RoleDto>? _roles;
+    private readonly HashSet<string> _userRoles = new(StringComparer.OrdinalIgnoreCase);
+    private bool _changed;
+
+    protected override async Task OnInitializedAsync()
+    {
+        foreach (var r in User.Roles) _userRoles.Add(r);
+        try
+        {
+            _roles = await Api.GetRolesAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to load roles: {ex.Message}", Severity.Error);
+            _roles = [];
+        }
+    }
+
+    private async Task ToggleRoleAsync(RoleDto role, bool on)
+    {
+        try
+        {
+            if (on)
+            {
+                await Api.AssignUserRoleAsync(User.Id, role.Id);
+                _userRoles.Add(role.Name);
+            }
+            else
+            {
+                await Api.RemoveUserRoleAsync(User.Id, role.Id);
+                _userRoles.Remove(role.Name);
+            }
+            _changed = true;
+            Snackbar.Add($"{role.Name} {(on ? "assigned to" : "removed from")} {User.Username}.", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private void Close() => MudDialog.Close(DialogResult.Ok(_changed));
+}

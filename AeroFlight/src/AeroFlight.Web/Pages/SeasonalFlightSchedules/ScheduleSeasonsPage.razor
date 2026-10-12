@@ -1,0 +1,128 @@
+@page "/seasonal-flight-schedule/seasons"
+@attribute [Authorize]
+@using AeroFlight.Contracts.SeasonalFlightSchedules
+@using AeroFlight.Web.Services.SeasonalFlightSchedules
+@inject ISeasonalFlightScheduleClient ScheduleClient
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+
+<PageTitle>Seasons — AeroFlight</PageTitle>
+
+<div class="d-flex justify-space-between align-center mb-4">
+    <MudText Typo="Typo.h5">Seasonal Flight Schedule — Seasons</MudText>
+    <MudTooltip Text="Add Season">
+        <MudIconButton Icon="@Icons.Material.Filled.Add" Color="Color.Primary" OnClick="AddAsync" />
+    </MudTooltip>
+</div>
+
+@if (_loading)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="mb-2" />
+}
+
+<MudTable Items="_items" Dense="true" Hover="true" Bordered="false" Elevation="1">
+    <HeaderContent>
+        <MudTh>Code</MudTh>
+        <MudTh>Description</MudTh>
+        <MudTh>Begin Date</MudTh>
+        <MudTh>End Date</MudTh>
+        <MudTh></MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Code">@context.Code</MudTd>
+        <MudTd DataLabel="Description">@(context.Description ?? "—")</MudTd>
+        <MudTd DataLabel="Begin Date">@context.BeginDate.ToString("yyyy-MM-dd")</MudTd>
+        <MudTd DataLabel="End Date">@context.EndDate.ToString("yyyy-MM-dd")</MudTd>
+        <MudTd>
+            <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" OnClick="@(() => EditAsync(context))" />
+            <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error" OnClick="@(() => DeleteAsync(context))" />
+        </MudTd>
+    </RowTemplate>
+    <NoRecordsContent>
+        <MudText Color="Color.Secondary">No seasons defined yet.</MudText>
+    </NoRecordsContent>
+</MudTable>
+
+@code {
+    private List<ScheduleSeasonResponse> _items = [];
+    private bool _loading;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        try
+        {
+            _items = (await ScheduleClient.GetSeasonsAsync()).ToList();
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add($"Failed to load seasons: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task AddAsync()
+    {
+        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true };
+        var dialog = await DialogService.ShowAsync<ScheduleSeasonEditDialog>("Add Season", options);
+        var result = await dialog.Result;
+        if (result is null || result.Canceled || result.Data is not ScheduleSeasonRequest request)
+            return;
+
+        try
+        {
+            await ScheduleClient.CreateSeasonAsync(request);
+            Snackbar.Add("Season created.", Severity.Success);
+            await LoadAsync();
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add($"Failed to create season: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task EditAsync(ScheduleSeasonResponse existing)
+    {
+        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true };
+        var parameters = new DialogParameters<ScheduleSeasonEditDialog> { { x => x.Existing, existing } };
+        var dialog = await DialogService.ShowAsync<ScheduleSeasonEditDialog>("Edit Season", parameters, options);
+        var result = await dialog.Result;
+        if (result is null || result.Canceled || result.Data is not ScheduleSeasonRequest request)
+            return;
+
+        try
+        {
+            await ScheduleClient.UpdateSeasonAsync(existing.Code, request);
+            Snackbar.Add("Season updated.", Severity.Success);
+            await LoadAsync();
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add($"Failed to update season: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task DeleteAsync(ScheduleSeasonResponse existing)
+    {
+        var confirmed = await DialogService.ShowMessageBoxAsync(
+            "Delete Season", $"Remove season '{existing.Code}'?", yesText: "Delete", cancelText: "Cancel");
+        if (confirmed != true)
+            return;
+
+        try
+        {
+            await ScheduleClient.DeleteSeasonAsync(existing.Code);
+            Snackbar.Add("Season removed.", Severity.Success);
+            await LoadAsync();
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add($"Failed to remove season: {ex.Message}", Severity.Error);
+        }
+    }
+}

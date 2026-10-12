@@ -1,0 +1,669 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Nav.Dashboard" xml:space="preserve">
+    <value>Panel</value>
+  </data>
+  <data name="Nav.Flights" xml:space="preserve">
+    <value>Uçuşlar</value>
+  </data>
+  <data name="Nav.Flights.Departures" xml:space="preserve">
+    <value>Kalkışlar</value>
+  </data>
+  <data name="Nav.Flights.Arrivals" xml:space="preserve">
+    <value>Varışlar</value>
+  </data>
+  <data name="Nav.Scanning" xml:space="preserve">
+    <value>Tarama</value>
+  </data>
+  <data name="Nav.Reports" xml:space="preserve">
+    <value>Raporlar</value>
+  </data>
+  <data name="Nav.Handling" xml:space="preserve">
+    <value>Yer Hizmetleri</value>
+  </data>
+  <data name="Nav.Companies" xml:space="preserve">
+    <value>Firmalar</value>
+  </data>
+  <data name="Nav.Users" xml:space="preserve">
+    <value>Kullanıcılar</value>
+  </data>
+  <data name="Nav.Roles" xml:space="preserve">
+    <value>Roller</value>
+  </data>
+  <data name="Nav.Hht" xml:space="preserve">
+    <value>HHT Terminaller</value>
+  </data>
+  <data name="Nav.HandlingContracts" xml:space="preserve">
+    <value>Yer Hizmeti Sözleşmeleri</value>
+  </data>
+  <data name="Nav.SystemConfigurations" xml:space="preserve">
+    <value>Sistem Yapılandırmaları</value>
+  </data>
+  <data name="Nav.ContainerRefs" xml:space="preserve">
+    <value>Konteyner Referansları</value>
+  </data>
+  <data name="Nav.ContainerTypes" xml:space="preserve">
+    <value>Konteyner Tipleri</value>
+  </data>
+  <data name="Nav.ContainerStatuses" xml:space="preserve">
+    <value>Konteyner Durumları</value>
+  </data>
+  <data name="Nav.ContainerClasses" xml:space="preserve">
+    <value>Konteyner Sınıfları</value>
+  </data>
+  <data name="Nav.Mappings" xml:space="preserve">
+    <value>Eşleştirmeler</value>
+  </data>
+  <data name="Nav.AirlineClassMaps" xml:space="preserve">
+    <value>Havayolu Sınıf Haritaları</value>
+  </data>
+  <data name="Nav.ResourceStatusMaps" xml:space="preserve">
+    <value>Kaynak Durum Haritaları</value>
+  </data>
+  <data name="Nav.MobileDash" xml:space="preserve">
+    <value>Panel</value>
+  </data>
+  <data name="Nav.MobileScan" xml:space="preserve">
+    <value>Tara</value>
+  </data>
+  <data name="Nav.Settings" xml:space="preserve">
+    <value>Ayarlar</value>
+  </data>
+  <data name="Nav.ChangePassword" xml:space="preserve">
+    <value>Şifre Değiştir</value>
+  </data>
+  <data name="Nav.SignOut" xml:space="preserve">
+    <value>Çıkış</value>
+  </data>
+  <data name="Login.Title" xml:space="preserve">
+    <value>Terminal Girişi</value>
+  </data>
+  <data name="Login.SecureArea" xml:space="preserve">
+    <value>Güvenli Alan</value>
+  </data>
+  <data name="Login.UserName" xml:space="preserve">
+    <value>Kullanıcı Adı</value>
+  </data>
+  <data name="Login.Password" xml:space="preserve">
+    <value>Şifre</value>
+  </data>
+  <data name="Login.Submit" xml:space="preserve">
+    <value>Güvenli Giriş</value>
+  </data>
+  <data name="Login.ResetHint" xml:space="preserve">
+    <value>Şifrenizi sıfırlamak için sistem yöneticisi ile iletişime geçin</value>
+  </data>
+  <data name="Login.SystemStatus" xml:space="preserve">
+    <value>Sistem Durumu</value>
+  </data>
+  <data name="Login.Online" xml:space="preserve">
+    <value>Çevrimiçi</value>
+  </data>
+  <data name="Login.ErrInvalid" xml:space="preserve">
+    <value>Geçersiz kullanıcı adı veya şifre.</value>
+  </data>
+  <data name="Login.ErrMissing" xml:space="preserve">
+    <value>Lütfen kullanıcı adı ve şifrenizi girin.</value>
+  </data>
+  <data name="Login.ErrServer" xml:space="preserve">
+    <value>Kimlik doğrulama servisi kullanılamıyor. Lütfen tekrar deneyin.</value>
+  </data>
+  <data name="Common.From" xml:space="preserve">
+    <value>Başlangıç</value>
+  </data>
+  <data name="Common.To" xml:space="preserve">
+    <value>Bitiş</value>
+  </data>
+  <data name="Common.Save" xml:space="preserve">
+    <value>Kaydet</value>
+  </data>
+  <data name="Common.Saving" xml:space="preserve">
+    <value>Kaydediliyor…</value>
+  </data>
+  <data name="Common.Cancel" xml:space="preserve">
+    <value>İptal</value>
+  </data>
+  <data name="Common.Add" xml:space="preserve">
+    <value>Ekle</value>
+  </data>
+  <data name="Common.Edit" xml:space="preserve">
+    <value>Düzenle</value>
+  </data>
+  <data name="Common.Deactivate" xml:space="preserve">
+    <value>Devre Dışı Bırak</value>
+  </data>
+  <data name="Common.Active" xml:space="preserve">
+    <value>Aktif</value>
+  </data>
+  <data name="Common.Inactive" xml:space="preserve">
+    <value>Pasif</value>
+  </data>
+  <data name="Common.Loading" xml:space="preserve">
+    <value>Yükleniyor…</value>
+  </data>
+  <data name="Common.Refresh" xml:space="preserve">
+    <value>Yenile</value>
+  </data>
+  <data name="Common.Refreshing" xml:space="preserve">
+    <value>Yenileniyor…</value>
+  </data>
+  <data name="Common.NoRecords" xml:space="preserve">
+    <value>Kayıt bulunamadı</value>
+  </data>
+  <data name="Common.Notes" xml:space="preserve">
+    <value>Notlar</value>
+  </data>
+  <data name="Common.AllFlights" xml:space="preserve">
+    <value>Tüm uçuşlar</value>
+  </data>
+  <data name="Common.Search" xml:space="preserve">
+    <value>Ara</value>
+  </data>
+  <data name="Common.Filter" xml:space="preserve">
+    <value>Filtre</value>
+  </data>
+  <data name="Common.Clear" xml:space="preserve">
+    <value>Temizle</value>
+  </data>
+  <data name="Dashboard.Title" xml:space="preserve">
+    <value>Operasyonel Ekran</value>
+  </data>
+  <data name="Dashboard.StatusNominal" xml:space="preserve">
+    <value>NORMAL</value>
+  </data>
+  <data name="Dashboard.StatusLoading" xml:space="preserve">
+    <value>YÜKLENİYOR…</value>
+  </data>
+  <data name="Dashboard.GlobalStatus" xml:space="preserve">
+    <value>Genel Sistem Durumu</value>
+  </data>
+  <data name="Dashboard.ActiveFlights" xml:space="preserve">
+    <value>Aktif Uçuşlar</value>
+  </data>
+  <data name="Dashboard.BagsScannedToday" xml:space="preserve">
+    <value>Bugün Taranan Bagajlar</value>
+  </data>
+  <data name="Dashboard.ReconcilErrors" xml:space="preserve">
+    <value>Mutabakat Hataları</value>
+  </data>
+  <data name="Dashboard.SystemThroughput" xml:space="preserve">
+    <value>Sistem Verimi</value>
+  </data>
+  <data name="Dashboard.BagsPerMinute" xml:space="preserve">
+    <value>Bagaj/dakika</value>
+  </data>
+  <data name="Dashboard.ActionRequired" xml:space="preserve">
+    <value>İşlem Gerekli</value>
+  </data>
+  <data name="Dashboard.ReconcilProgress" xml:space="preserve">
+    <value>Uçuş Mutabakat İlerlemesi</value>
+  </data>
+  <data name="Dashboard.LiveTelemetry" xml:space="preserve">
+    <value>Canlı Telemetri Akışı</value>
+  </data>
+  <data name="Dashboard.NoActiveFlight" xml:space="preserve">
+    <value>Aktif uçuş yok</value>
+  </data>
+  <data name="Dashboard.NoTelemetry" xml:space="preserve">
+    <value>Son telemetri olayı yok</value>
+  </data>
+  <data name="Dashboard.LastUpdate" xml:space="preserve">
+    <value>Son Güncelleme</value>
+  </data>
+  <data name="Dashboard.NextRefresh" xml:space="preserve">
+    <value>Sonraki yenileme</value>
+  </data>
+  <data name="Dashboard.AutoRefreshOff" xml:space="preserve">
+    <value>Otomatik yenileme kapalı</value>
+  </data>
+  <data name="Dashboard.ColFlightNo" xml:space="preserve">
+    <value>Uçuş No</value>
+  </data>
+  <data name="Dashboard.ColDestination" xml:space="preserve">
+    <value>Varış</value>
+  </data>
+  <data name="Dashboard.ColDeparture" xml:space="preserve">
+    <value>Kalkış (UTC)</value>
+  </data>
+  <data name="Dashboard.ColReconcil" xml:space="preserve">
+    <value>Mutabakat</value>
+  </data>
+  <data name="Dashboard.ColActions" xml:space="preserve">
+    <value>İşlemler</value>
+  </data>
+  <data name="Dashboard.Mismatch" xml:space="preserve">
+    <value>Uyumsuzluk</value>
+  </data>
+  <data name="Dashboard.Unscanned" xml:space="preserve">
+    <value>Taranmamış</value>
+  </data>
+  <data name="Flights.Title" xml:space="preserve">
+    <value>Uçuş Genel Görünümü</value>
+  </data>
+  <data name="Flights.Subtitle" xml:space="preserve">
+    <value>Tüm aktif ve planlanmış uçuşlar</value>
+  </data>
+  <data name="Flights.SearchPlaceholder" xml:space="preserve">
+    <value>Uçuş ara…</value>
+  </data>
+  <data name="Flights.ColFlight" xml:space="preserve">
+    <value>Uçuş</value>
+  </data>
+  <data name="Flights.ColAirline" xml:space="preserve">
+    <value>Havayolu</value>
+  </data>
+  <data name="Flights.ColOrigin" xml:space="preserve">
+    <value>Kalkış</value>
+  </data>
+  <data name="Flights.ColDestination" xml:space="preserve">
+    <value>Varış</value>
+  </data>
+  <data name="Flights.ColDeparture" xml:space="preserve">
+    <value>Kalkış (UTC)</value>
+  </data>
+  <data name="Flights.ColStatus" xml:space="preserve">
+    <value>Durum</value>
+  </data>
+  <data name="Flights.ColBags" xml:space="preserve">
+    <value>Bagaj</value>
+  </data>
+  <data name="Flights.FilterAirline" xml:space="preserve">
+    <value>Havayolu kodu</value>
+  </data>
+  <data name="Flights.FilterRoute" xml:space="preserve">
+    <value>Kalkış / Varış</value>
+  </data>
+  <data name="Flights.ShowAll" xml:space="preserve">
+    <value>Tümünü Göster</value>
+  </data>
+  <data name="Flights.AllStatuses" xml:space="preserve">
+    <value>Tüm Durumlar</value>
+  </data>
+  <data name="Flights.LoadFlights" xml:space="preserve">
+    <value>Uçuşları Yükle</value>
+  </data>
+  <data name="Flights.LoadArrivals" xml:space="preserve">
+    <value>Varışları Yükle</value>
+  </data>
+  <data name="Flights.ErrorLoad" xml:space="preserve">
+    <value>Uçuşlar yüklenemedi. Lütfen tekrar deneyin.</value>
+  </data>
+  <data name="Flights.History" xml:space="preserve">
+    <value>Değişiklik Geçmişi</value>
+  </data>
+  <data name="Flights.NoFlights" xml:space="preserve">
+    <value>Uçuş bulunamadı</value>
+  </data>
+  <data name="Flights.NoMatch" xml:space="preserve">
+    <value>Filtrelerle eşleşen uçuş yok</value>
+  </data>
+  <data name="Flights.LoadingFlights" xml:space="preserve">
+    <value>Uçuşlar yükleniyor…</value>
+  </data>
+  <data name="Flights.Count" xml:space="preserve">
+    <value>uçuş</value>
+  </data>
+  <data name="Arrivals.Title" xml:space="preserve">
+    <value>Varış Uçuşları</value>
+  </data>
+  <data name="Arrivals.Subtitle" xml:space="preserve">
+    <value>Tüm aktif ve planlanmış varış uçuşları</value>
+  </data>
+  <data name="Arrivals.NoFlights" xml:space="preserve">
+    <value>Varış uçuşu bulunamadı</value>
+  </data>
+  <data name="Handling.Title" xml:space="preserve">
+    <value>Yer Hizmeti Sözleşmeleri</value>
+  </data>
+  <data name="Handling.Subtitle" xml:space="preserve">
+    <value>Havayolu ↔ yer hizmetleri şirketi atamaları</value>
+  </data>
+  <data name="Handling.AddContract" xml:space="preserve">
+    <value>Sözleşme Ekle</value>
+  </data>
+  <data name="Handling.EditContract" xml:space="preserve">
+    <value>Sözleşme Düzenle</value>
+  </data>
+  <data name="Handling.NewContract" xml:space="preserve">
+    <value>Yeni Sözleşme</value>
+  </data>
+  <data name="Handling.AirlineCode" xml:space="preserve">
+    <value>Havayolu Kodu</value>
+  </data>
+  <data name="Handling.HandlingCompany" xml:space="preserve">
+    <value>Yer Hizmetleri Firması</value>
+  </data>
+  <data name="Handling.ValidFrom" xml:space="preserve">
+    <value>Geçerlilik Başlangıcı (UTC)</value>
+  </data>
+  <data name="Handling.ValidTo" xml:space="preserve">
+    <value>Geçerlilik Bitişi (UTC)</value>
+  </data>
+  <data name="Handling.FlightNumbers" xml:space="preserve">
+    <value>Belirli Uçuş Numaraları</value>
+  </data>
+  <data name="Handling.FlightNumbersHint" xml:space="preserve">
+    <value>(boş bırakırsanız havayolunun tüm uçuşlarına uygulanır)</value>
+  </data>
+  <data name="Handling.ColAirline" xml:space="preserve">
+    <value>Havayolu</value>
+  </data>
+  <data name="Handling.ColCompany" xml:space="preserve">
+    <value>Yer Hizmetleri Firması</value>
+  </data>
+  <data name="Handling.ColValidFrom" xml:space="preserve">
+    <value>Geçerlilik Başlangıcı</value>
+  </data>
+  <data name="Handling.ColValidTo" xml:space="preserve">
+    <value>Geçerlilik Bitişi</value>
+  </data>
+  <data name="Handling.ColFlights" xml:space="preserve">
+    <value>Uçuşlar</value>
+  </data>
+  <data name="Handling.ColStatus" xml:space="preserve">
+    <value>Durum</value>
+  </data>
+  <data name="Handling.ColActions" xml:space="preserve">
+    <value>İşlemler</value>
+  </data>
+  <data name="Handling.AllFlightsLabel" xml:space="preserve">
+    <value>Tüm uçuşlar</value>
+  </data>
+  <data name="Handling.FlightCount" xml:space="preserve">
+    <value>uçuş</value>
+  </data>
+  <data name="Handling.NoContracts" xml:space="preserve">
+    <value>Yer hizmeti sözleşmesi bulunamadı</value>
+  </data>
+  <data name="Handling.LoadingContracts" xml:space="preserve">
+    <value>Sözleşmeler yükleniyor…</value>
+  </data>
+  <data name="Handling.Deactivated" xml:space="preserve">
+    <value>Sözleşme devre dışı bırakıldı.</value>
+  </data>
+  <data name="Handling.Created" xml:space="preserve">
+    <value>Sözleşme oluşturuldu.</value>
+  </data>
+  <data name="Handling.Updated" xml:space="preserve">
+    <value>Sözleşme güncellendi.</value>
+  </data>
+  <data name="Handling.SelectCompany" xml:space="preserve">
+    <value>Firma seçin</value>
+  </data>
+  <data name="Validation.Required.AirlineCode" xml:space="preserve">
+    <value>Havayolu kodu gereklidir.</value>
+  </data>
+  <data name="Validation.Required.SourceClass" xml:space="preserve">
+    <value>Kaynak sınıf gereklidir.</value>
+  </data>
+  <data name="Validation.Required.TargetClass" xml:space="preserve">
+    <value>Hedef sınıf gereklidir.</value>
+  </data>
+  <data name="Validation.Required.TypeCode" xml:space="preserve">
+    <value>Tip kodu gereklidir.</value>
+  </data>
+  <data name="Validation.Required.ClassCode" xml:space="preserve">
+    <value>Sınıf kodu gereklidir.</value>
+  </data>
+  <data name="Validation.Required.Description" xml:space="preserve">
+    <value>Açıklama gereklidir.</value>
+  </data>
+  <data name="Validation.Required.Key" xml:space="preserve">
+    <value>Yapılandırma anahtarı gereklidir.</value>
+  </data>
+  <data name="Validation.Required.Value" xml:space="preserve">
+    <value>Değer gereklidir.</value>
+  </data>
+  <data name="Validation.Required.Code" xml:space="preserve">
+    <value>Kod gereklidir.</value>
+  </data>
+  <data name="Validation.Required.CompanyName" xml:space="preserve">
+    <value>Firma adı gereklidir.</value>
+  </data>
+  <data name="Validation.Required.CompanyCode" xml:space="preserve">
+    <value>Firma kodu gereklidir.</value>
+  </data>
+  <data name="Validation.Required.HandlingCompany" xml:space="preserve">
+    <value>Lütfen bir yer hizmetleri firması seçin.</value>
+  </data>
+  <data name="Validation.Required.Dates" xml:space="preserve">
+    <value>Her iki tarih de gereklidir.</value>
+  </data>
+  <data name="Validation.DateRange.ValidToAfterFrom" xml:space="preserve">
+    <value>Bitiş tarihi, başlangıç tarihinden sonra olmalıdır.</value>
+  </data>
+  <data name="Validation.Required.Name" xml:space="preserve">
+    <value>Ad gereklidir.</value>
+  </data>
+  <data name="Validation.Required.DeviceId" xml:space="preserve">
+    <value>Cihaz kimliği gereklidir.</value>
+  </data>
+  <data name="Validation.Required.SourceResourceName" xml:space="preserve">
+    <value>Kaynak kaynak adı gereklidir.</value>
+  </data>
+  <data name="Validation.Required.SourceStatus" xml:space="preserve">
+    <value>Kaynak durum gereklidir.</value>
+  </data>
+  <data name="Validation.Required.TargetStatus" xml:space="preserve">
+    <value>Hedef durum gereklidir.</value>
+  </data>
+  <data name="Validation.Required.DisplayName" xml:space="preserve">
+    <value>Görünen ad gereklidir.</value>
+  </data>
+  <data name="Validation.Required.SystemName" xml:space="preserve">
+    <value>Sistem adı gereklidir.</value>
+  </data>
+  <data name="Validation.Required.Username" xml:space="preserve">
+    <value>Kullanıcı adı gereklidir.</value>
+  </data>
+  <data name="Validation.Password.MinLength" xml:space="preserve">
+    <value>Şifre en az 8 karakter olmalıdır.</value>
+  </data>
+  <data name="Settings.Title" xml:space="preserve">
+    <value>Ayarlar</value>
+  </data>
+  <data name="Settings.Subtitle" xml:space="preserve">
+    <value>Görünüm ve veri yenileme tercihleri</value>
+  </data>
+  <data name="Settings.Appearance" xml:space="preserve">
+    <value>Görünüm</value>
+  </data>
+  <data name="Settings.Theme" xml:space="preserve">
+    <value>Tema</value>
+  </data>
+  <data name="Settings.ThemeDark" xml:space="preserve">
+    <value>Koyu — düşük ışıklı pist ortamları için optimize edilmiş</value>
+  </data>
+  <data name="Settings.ThemeLight" xml:space="preserve">
+    <value>Açık — parlak ofis ortamları için optimize edilmiş</value>
+  </data>
+  <data name="Settings.Light" xml:space="preserve">
+    <value>Açık</value>
+  </data>
+  <data name="Settings.Dark" xml:space="preserve">
+    <value>Koyu</value>
+  </data>
+  <data name="Settings.DataRefresh" xml:space="preserve">
+    <value>Veri ve Yenileme</value>
+  </data>
+  <data name="Settings.AutoRefresh" xml:space="preserve">
+    <value>Otomatik Yenileme</value>
+  </data>
+  <data name="Settings.AutoRefreshDesc" xml:space="preserve">
+    <value>Gösterge paneli ve uçuş verilerini otomatik olarak yenile</value>
+  </data>
+  <data name="Settings.RefreshInterval" xml:space="preserve">
+    <value>Yenileme Aralığı</value>
+  </data>
+  <data name="Settings.CurrentInterval" xml:space="preserve">
+    <value>Mevcut: her</value>
+  </data>
+  <data name="Settings.Seconds" xml:space="preserve">
+    <value>saniyede bir</value>
+  </data>
+  <data name="Settings.System" xml:space="preserve">
+    <value>Sistem</value>
+  </data>
+  <data name="Settings.Language" xml:space="preserve">
+    <value>Dil</value>
+  </data>
+  <data name="Settings.LanguageDesc" xml:space="preserve">
+    <value>Arayüz görüntüleme dilini seçin</value>
+  </data>
+  <data name="SysConfig.Title" xml:space="preserve">
+    <value>Sistem Yapılandırmaları</value>
+  </data>
+  <data name="SysConfig.Subtitle" xml:space="preserve">
+    <value>Sistemle ilgili referans verileri</value>
+  </data>
+  <data name="SysConfig.AccessRestricted" xml:space="preserve">
+    <value>Erişim Kısıtlandı</value>
+  </data>
+  <data name="SysConfig.AccessRestrictedDesc" xml:space="preserve">
+    <value>Bu sayfaya yalnızca Havalimanı Operatörü personeli erişebilir.</value>
+  </data>
+  <data name="SysConfig.New" xml:space="preserve">
+    <value>Yeni Yapılandırma</value>
+  </data>
+  <data name="SysConfig.EditTitle" xml:space="preserve">
+    <value>Sistem Yapılandırmasını Düzenle</value>
+  </data>
+  <data name="SysConfig.NewTitle" xml:space="preserve">
+    <value>Yeni Sistem Yapılandırması</value>
+  </data>
+  <data name="SysConfig.ColCode" xml:space="preserve">
+    <value>Kod</value>
+  </data>
+  <data name="SysConfig.ColValue" xml:space="preserve">
+    <value>Değer</value>
+  </data>
+  <data name="SysConfig.ColDescription" xml:space="preserve">
+    <value>Açıklama</value>
+  </data>
+  <data name="SysConfig.CodeLabel" xml:space="preserve">
+    <value>Kod</value>
+  </data>
+  <data name="SysConfig.DescriptionLabel" xml:space="preserve">
+    <value>Açıklama</value>
+  </data>
+  <data name="SysConfig.Value" xml:space="preserve">
+    <value>Değer</value>
+  </data>
+</root>

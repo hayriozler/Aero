@@ -1,0 +1,153 @@
+@using AeroFlight.Contracts.Metadatas
+@using AeroFlight.Web.Services.Metadatas
+
+@if (_loading)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="mb-3" />
+}
+else
+{
+    <MudGrid Spacing="2" Class="mb-3">
+        <MudItem xs="12" sm="4">
+            <MudSelect T="string" @bind-Value="_type" Label="Type" Variant="Variant.Outlined" Margin="Margin.Dense">
+                @foreach (var type in ContactTypeOptions.All)
+                {
+                    <MudSelectItem T="string" Value="@type">@type</MudSelectItem>
+                }
+            </MudSelect>
+        </MudItem>
+        <MudItem xs="12" sm="6">
+            <MudTextField @bind-Value="_value" Label="Value" Variant="Variant.Outlined" Margin="Margin.Dense" MaxLength="100" />
+        </MudItem>
+        <MudItem xs="12" sm="2" Class="d-flex align-center">
+            <MudTooltip Text="@(_editingId is null ? "Add" : "Update")">
+                <MudIconButton Icon="@Icons.Material.Filled.Save" Color="Color.Primary" OnClick="SaveAsync" Disabled="@(_saving || string.IsNullOrWhiteSpace(_value))" />
+            </MudTooltip>
+        </MudItem>
+    </MudGrid>
+
+    @if (_editingId is not null)
+    {
+        <MudTooltip Text="Cancel edit">
+            <MudIconButton Icon="@Icons.Material.Filled.Close" Size="Size.Small" Class="mb-3" OnClick="CancelEdit" />
+        </MudTooltip>
+    }
+
+    @if (_contacts.Count == 0)
+    {
+        <MudText Typo="Typo.body2" Color="Color.Secondary">No contacts yet.</MudText>
+    }
+    else
+    {
+        <MudSimpleTable Dense="true" Hover="true">
+            <thead>
+                <tr><th>Type</th><th>Value</th><th></th></tr>
+            </thead>
+            <tbody>
+                @foreach (var contact in _contacts)
+                {
+                    <tr>
+                        <td>@contact.ContactType</td>
+                        <td>@contact.Value</td>
+                        <td class="text-right">
+                            <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" OnClick="@(() => BeginEdit(contact))" />
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error" OnClick="@(() => DeleteAsync(contact.Id))" />
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </MudSimpleTable>
+    }
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public string AirlineCode { get; set; } = null!;
+
+    [Inject]
+    private IAirlineExtrasClient Client { get; set; } = null!;
+
+    [Inject]
+    private ISnackbar Snackbar { get; set; } = null!;
+
+    private IReadOnlyList<AirlineContactResponse> _contacts = [];
+    private bool _loading = true;
+    private bool _saving;
+    private int? _editingId;
+    private string _type = ContactTypeOptions.All[0];
+    private string _value = "";
+
+    protected override async Task OnInitializedAsync() => await ReloadAsync();
+
+    private async Task ReloadAsync()
+    {
+        _loading = true;
+        try
+        {
+            _contacts = await Client.GetContactsAsync(AirlineCode);
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Could not load airline contacts.", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void BeginEdit(AirlineContactResponse contact)
+    {
+        _editingId = contact.Id;
+        _type = contact.ContactType;
+        _value = contact.Value;
+    }
+
+    private void CancelEdit()
+    {
+        _editingId = null;
+        _type = ContactTypeOptions.All[0];
+        _value = "";
+    }
+
+    private async Task SaveAsync()
+    {
+        _saving = true;
+        try
+        {
+            var request = new AirlineContactRequest(_type, _value.Trim());
+            if (_editingId is { } id)
+                await Client.UpdateContactAsync(AirlineCode, id, request);
+            else
+                await Client.AddContactAsync(AirlineCode, request);
+
+            CancelEdit();
+            await ReloadAsync();
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Could not save the contact.", Severity.Error);
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private async Task DeleteAsync(int id)
+    {
+        try
+        {
+            await Client.DeleteContactAsync(AirlineCode, id);
+            await ReloadAsync();
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Could not delete the contact.", Severity.Error);
+        }
+    }
+}

@@ -1,0 +1,89 @@
+@using AeroFids.Infrastructure.Flights
+@using AeroFids.Service.Services
+@inject IFieldMappingService FieldMappingService
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        @if (_error is not null)
+        {
+            <MudAlert Severity="Severity.Error" Variant="Variant.Filled" Dense="true" Class="mb-3">@_error</MudAlert>
+        }
+
+        <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">
+            Matched against the raw external status value for @Existing.TargetField. No match hides the flight from this board.
+        </MudText>
+
+        <MudSelect T="string" @bind-Value="_ruleOperator" Label="Operator" Clearable="true"
+                   Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-3">
+            <MudSelectItem T="string" Value="@FieldMappingRuleOperators.Eq">Equals</MudSelectItem>
+            <MudSelectItem T="string" Value="@FieldMappingRuleOperators.StartsWith">Starts with</MudSelectItem>
+            <MudSelectItem T="string" Value="@FieldMappingRuleOperators.In">In list</MudSelectItem>
+        </MudSelect>
+
+        <MudTextField T="string" @bind-Value="_ruleValue" Label="Value" Disabled="_ruleOperator is null"
+                      HelperText="@(_ruleOperator == FieldMappingRuleOperators.In ? "Comma-separated, e.g. OPN,ACT" : "e.g. OPN")"
+                      Variant="Variant.Outlined" Margin="Margin.Dense" Immediate="true" Class="mb-3" />
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" Disabled="_saving">Cancel</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="SubmitAsync" Disabled="_saving">
+            @if (_saving)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+            }
+            Save
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = null!;
+
+    [Parameter]
+    public FieldMappingResponse Existing { get; set; } = null!;
+
+    private string? _ruleOperator;
+    private string? _ruleValue;
+    private bool _saving;
+    private string? _error;
+
+    protected override void OnInitialized()
+    {
+        _ruleOperator = Existing.RuleOperator;
+        _ruleValue = Existing.RuleValue;
+    }
+
+    private async Task SubmitAsync()
+    {
+        if (_ruleOperator is not null && string.IsNullOrWhiteSpace(_ruleValue))
+        {
+            _error = "Value is required when an operator is selected.";
+            return;
+        }
+
+        _saving = true;
+        _error = null;
+        try
+        {
+            await FieldMappingService.SetRuleAsync(Existing.TargetField, Existing.FlightType, _ruleOperator, _ruleOperator is null ? null : _ruleValue, CancellationToken.None);
+            Snackbar.Add("Rule saved.", Severity.Success);
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (FidsValidationException ex)
+        {
+            _error = ex.Message;
+        }
+        catch (Exception)
+        {
+            _error = "Something went wrong. Please try again.";
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

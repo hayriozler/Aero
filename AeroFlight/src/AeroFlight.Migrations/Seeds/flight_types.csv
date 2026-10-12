@@ -1,0 +1,20 @@
+code,description,display_code
+A,Additional Freight/Mail,I
+B,Shuttle Mode,I
+C,Charter Passenger,P
+D,General/Business Aviation,I
+E,Governmental,I
+F,Scheduled Cargo,I
+G,Transit Passenger,I
+H,Charter Cargo and/or Mail,I
+I,Ambulance / Rescue / Humanitarian,I
+J,Scheduled Passenger,P
+K,Training (School/Crew check),I
+M,Mail only,I
+N,Police,I
+P,Positioning / Ferry,I
+Q,Scheduled Passenger/Cargo Combi,P
+T,Technical Test,I
+V,Service operated by surface vehicle,I
+W,Military,I
+X,Technical Stop,I

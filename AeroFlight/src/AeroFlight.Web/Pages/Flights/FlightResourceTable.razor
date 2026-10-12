@@ -1,0 +1,464 @@
+@using System.Text.Json
+@using AeroFlight.Web.Services.Flights
+@using AeroFlight.Web.Services.Metadatas
+@inject IFlightsClient Flights
+@inject IMetadataClient Metadata
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+
+<div class="d-flex justify-space-between align-center mb-2">
+    <MudText Typo="Typo.subtitle2">@Label allocations</MudText>
+    <div class="d-flex align-center" style="gap:4px">
+        <MudSelect T="string" @bind-Value="_bulkStatusCode" Label="Bulk status" Clearable="true"
+                   Margin="Margin.Dense" Dense="true" Style="min-width:140px">
+            @foreach (var status in StatusOptions)
+            {
+                <MudSelectItem T="string" Value="@status.Code">@status.Label</MudSelectItem>
+            }
+        </MudSelect>
+        <MudTooltip Text="@($"Set status for all {Label} allocations")">
+            <MudIconButton Icon="@Icons.Material.Filled.PlaylistAddCheck" Size="Size.Small" OnClick="BulkUpdateStatusAsync"
+                           Disabled="@(ReadOnly || string.IsNullOrWhiteSpace(_bulkStatusCode) || _items.Count == 0)" />
+        </MudTooltip>
+        <MudTooltip Text="@($"Add {Label}")">
+            <MudIconButton Icon="@Icons.Material.Filled.Add" Size="Size.Small" OnClick="AddAsync" Disabled="@ReadOnly" />
+        </MudTooltip>
+    </div>
+</div>
+
+@if (_loading)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="mb-2" />
+}
+
+<MudTable Items="_items" Dense="true" Hover="true" Bordered="false" Elevation="1" Height="100%" FixedHeader="true">
+    <HeaderContent>
+        <MudTh>Code</MudTh>
+        <MudTh>Status</MudTh>
+        <MudTh>Plan Begin</MudTh>
+        <MudTh>Actual Begin</MudTh>
+        <MudTh>Plan End</MudTh>
+        <MudTh>Actual End</MudTh>
+        <MudTh>Payer</MudTh>
+        <MudTh>Free</MudTh>
+        <MudTh></MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Code">
+            <MudSelect T="string" Value="@(context.Code ?? "")" ValueChanged="@(v => UpdateCodeAsync(context, v))"
+                       Clearable="true" Margin="Margin.Dense" Dense="true" Disabled="@ReadOnly" Style="min-width:110px">
+                @foreach (var option in CodeOptions)
+                {
+                    <MudSelectItem T="string" Value="@option.Code">@option.Label</MudSelectItem>
+                }
+            </MudSelect>
+        </MudTd>
+        <MudTd DataLabel="Status">
+            <MudSelect T="string" Value="@(context.StatusCode ?? "")" ValueChanged="@(v => UpdateStatusAsync(context, v))"
+                       Margin="Margin.Dense" Dense="true" Disabled="@ReadOnly" Style="min-width:110px">
+                @foreach (var status in StatusOptions)
+                {
+                    <MudSelectItem T="string" Value="@status.Code">@status.Label</MudSelectItem>
+                }
+            </MudSelect>
+        </MudTd>
+        <MudTd DataLabel="Plan Begin">
+            <div class="d-flex" style="gap:4px">
+                <MudDatePicker Date="@ToLocalDate(context.BeginPlan)" DateChanged="@(d => UpdateBeginDateAsync(context, d))"
+                               Clearable="true" DateFormat="@_gridDateFormat" AutoClose="true" Margin="Margin.Dense" Disabled="@ReadOnly" Style="min-width:120px" />
+                <TimeMaskTextField Time="@ToLocalTime(context.BeginPlan)" TimeChanged="@(t => UpdateBeginTimeAsync(context, t))"
+                                   Margin="Margin.Dense" Disabled="@ReadOnly" Style="min-width:80px" />
+            </div>
+        </MudTd>
+        <MudTd DataLabel="Actual Begin">
+            <div class="d-flex" style="gap:4px">
+                <MudDatePicker Date="@ToLocalDate(context.BeginActual)" DateChanged="@(d => UpdateActualBeginDateAsync(context, d))"
+                               Clearable="true" DateFormat="@_gridDateFormat" AutoClose="true" Margin="Margin.Dense" Disabled="@ReadOnly" Style="min-width:120px" />
+                <TimeMaskTextField Time="@ToLocalTime(context.BeginActual)" TimeChanged="@(t => UpdateActualBeginTimeAsync(context, t))"
+                                   Margin="Margin.Dense" Disabled="@ReadOnly" Style="min-width:80px"
+                                   OnDoubleClick="@(() => StampActualBeginNowAsync(context))" />
+            </div>
+        </MudTd>
+        <MudTd DataLabel="Plan End">
+            <div class="d-flex" style="gap:4px">
+                <MudDatePicker Date="@ToLocalDate(context.EndPlan)" DateChanged="@(d => UpdateEndDateAsync(context, d))"
+                               Clearable="true" DateFormat="@_gridDateFormat" AutoClose="true" Margin="Margin.Dense" Disabled="@ReadOnly" Style="min-width:120px" />
+                <TimeMaskTextField Time="@ToLocalTime(context.EndPlan)" TimeChanged="@(t => UpdateEndTimeAsync(context, t))"
+                                   Margin="Margin.Dense" Disabled="@ReadOnly" Style="min-width:80px" />
+            </div>
+        </MudTd>
+        <MudTd DataLabel="Actual End">
+            <div class="d-flex" style="gap:4px">
+                <MudDatePicker Date="@ToLocalDate(context.EndActual)" DateChanged="@(d => UpdateActualEndDateAsync(context, d))"
+                               Clearable="true" DateFormat="@_gridDateFormat" AutoClose="true" Margin="Margin.Dense" Disabled="@ReadOnly" Style="min-width:120px" />
+                <TimeMaskTextField Time="@ToLocalTime(context.EndActual)" TimeChanged="@(t => UpdateActualEndTimeAsync(context, t))"
+                                   Margin="Margin.Dense" Disabled="@ReadOnly" Style="min-width:80px"
+                                   OnDoubleClick="@(() => StampActualEndNowAsync(context))" />
+            </div>
+        </MudTd>
+        <MudTd DataLabel="Payer">@(context.PayerCompanyCode ?? "—")</MudTd>
+        <MudTd DataLabel="Free">
+            @if (context.IsComplimentary)
+            {
+                <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Color="Color.Success" />
+            }
+            else
+            {
+                @: —
+            }
+        </MudTd>
+        <MudTd>
+            <div class="d-flex justify-end" style="gap:4px">
+                <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" OnClick="@(() => EditAsync(context))" Disabled="@ReadOnly" />
+                <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error" OnClick="@(() => DeleteAsync(context))" Disabled="@ReadOnly" />
+            </div>
+        </MudTd>
+    </RowTemplate>
+    <NoRecordsContent>
+        <MudText Color="Color.Secondary">No @(Label.ToLowerInvariant()) allocations yet.</MudText>
+    </NoRecordsContent>
+</MudTable>
+
+@code {
+    [Parameter, EditorRequired]
+    public string RouteBase { get; set; } = "";
+
+    [Parameter, EditorRequired]
+    public string Label { get; set; } = "";
+
+    [Parameter, EditorRequired]
+    public string MetadataRoute { get; set; } = "";
+
+    [Parameter, EditorRequired]
+    public string StatusMetadataRoute { get; set; } = "";
+
+    [Parameter, EditorRequired]
+    public string ResourceKind { get; set; } = "";
+
+    [Parameter]
+    public bool ReadOnly { get; set; }
+
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthState { get; set; }
+
+    private List<FlightResourceResponse> _items = [];
+    private List<FlightResourceCodeOption> _codeOptions = [];
+    private List<FlightResourceCodeOption> _statusOptions = [];
+    private int _defaultDurationMinutes = AeroFlight.Contracts.Flights.ResourceDefaultsConstants.FallbackDurationMinutes;
+    private bool _loading;
+    private string? _loadedRoute;
+    private string? _bulkStatusCode;
+    private TimeZoneInfo _tenantTimeZone = TimeZoneInfo.Utc;
+    private string _dateFormat = TenantDateTimeFormat.DefaultDateFormat;
+    private string _timeFormat = TenantDateTimeFormat.DefaultTimeFormat;
+    private string _gridDateFormat = "dd.MM";
+
+    private IReadOnlyList<FlightResourceCodeOption> CodeOptions => _codeOptions;
+    private IReadOnlyList<FlightResourceCodeOption> StatusOptions => _statusOptions;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (AuthState is not null)
+        {
+            var state = await AuthState;
+            _tenantTimeZone = TenantTimeZone.Resolve(state.User);
+            _dateFormat = TenantDateTimeFormat.ResolveDateFormat(state.User);
+            _timeFormat = TenantDateTimeFormat.ResolveTimeFormat(state.User);
+        }
+
+        if (string.IsNullOrWhiteSpace(RouteBase) || RouteBase == _loadedRoute)
+            return;
+
+        _loadedRoute = RouteBase;
+        _codeOptions = await LoadOptionsAsync(MetadataRoute, "Metadata codes");
+        _statusOptions = await LoadOptionsAsync(StatusMetadataRoute, "statuses");
+        await LoadDefaultDurationAsync();
+        await LoadGridDateFormatAsync();
+        await LoadAsync();
+    }
+
+    private async Task LoadGridDateFormatAsync()
+    {
+        try
+        {
+            _gridDateFormat = await Flights.GetResourceGridDateFormatAsync();
+        }
+        catch (Exception)
+        {
+            _gridDateFormat = "dd.MM";
+        }
+    }
+
+    private async Task<List<FlightResourceCodeOption>> LoadOptionsAsync(string route, string what)
+    {
+        try
+        {
+            var rows = await Metadata.GetAllAsync(route);
+            var options = new List<FlightResourceCodeOption>();
+            foreach (var row in rows)
+            {
+                if (!row.TryGetValue("code", out var codeElement) || codeElement.ValueKind != JsonValueKind.String)
+                    continue;
+
+                var code = codeElement.GetString();
+                if (string.IsNullOrWhiteSpace(code))
+                    continue;
+
+                var label = code;
+                if (row.TryGetValue("description", out var descriptionElement) && descriptionElement.ValueKind == JsonValueKind.String)
+                {
+                    var description = descriptionElement.GetString();
+                    if (!string.IsNullOrWhiteSpace(description))
+                        label = $"{code} — {description}";
+                }
+
+                var isDefault = row.TryGetValue("isDefault", out var isDefaultElement) && isDefaultElement.ValueKind is JsonValueKind.True or JsonValueKind.False && isDefaultElement.GetBoolean();
+                var isOpenValue = row.TryGetValue("isOpenValue", out var isOpenValueElement) && isOpenValueElement.ValueKind is JsonValueKind.True or JsonValueKind.False && isOpenValueElement.GetBoolean();
+                var isCloseValue = row.TryGetValue("isCloseValue", out var isCloseValueElement) && isCloseValueElement.ValueKind is JsonValueKind.True or JsonValueKind.False && isCloseValueElement.GetBoolean();
+
+                options.Add(new FlightResourceCodeOption(code, label, isDefault, isOpenValue, isCloseValue));
+            }
+
+            return options;
+        }
+        catch (Exception)
+        {
+            Snackbar.Add($"Could not load {Label.ToLowerInvariant()} {what}.", Severity.Warning);
+            return [];
+        }
+    }
+
+    private async Task LoadDefaultDurationAsync()
+    {
+        try
+        {
+            _defaultDurationMinutes = await Flights.GetResourceDefaultDurationMinutesAsync(ResourceKind);
+        }
+        catch (Exception)
+        {
+            _defaultDurationMinutes = AeroFlight.Contracts.Flights.ResourceDefaultsConstants.FallbackDurationMinutes;
+        }
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        try
+        {
+            _items = (await Flights.GetFlightResourcesAsync(RouteBase)).ToList();
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add($"Failed to load {Label.ToLowerInvariant()} allocations: {ex.Message}", Severity.Error);
+        }
+        catch (Exception)
+        {
+            Snackbar.Add($"Could not reach the API while loading {Label.ToLowerInvariant()} allocations.", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task AddAsync()
+    {
+        var parameters = new DialogParameters<FlightResourceEditDialog>
+        {
+            { x => x.CodeOptions, _codeOptions },
+            { x => x.StatusOptions, _statusOptions },
+            { x => x.DefaultDurationMinutes, _defaultDurationMinutes },
+        };
+        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true };
+        var dialog = await DialogService.ShowAsync<FlightResourceEditDialog>($"Add {Label}", parameters, options);
+        var result = await dialog.Result;
+        if (result is null || result.Canceled || result.Data is not FlightResourceRequest request)
+            return;
+
+        try
+        {
+            await Flights.AddFlightResourceAsync(RouteBase, request);
+            Snackbar.Add($"{Label} added.", Severity.Success);
+            await LoadAsync();
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add($"Failed to add {Label.ToLowerInvariant()}: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task EditAsync(FlightResourceResponse existing)
+    {
+        var parameters = new DialogParameters<FlightResourceEditDialog>
+        {
+            { x => x.Existing, existing },
+            { x => x.CodeOptions, _codeOptions },
+            { x => x.StatusOptions, _statusOptions },
+            { x => x.DefaultDurationMinutes, _defaultDurationMinutes },
+        };
+        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true };
+        var dialog = await DialogService.ShowAsync<FlightResourceEditDialog>($"Edit {Label}", parameters, options);
+        var result = await dialog.Result;
+        if (result is null || result.Canceled || result.Data is not FlightResourceRequest request)
+            return;
+
+        try
+        {
+            await Flights.UpdateFlightResourceAsync($"{RouteBase}/{existing.Id}", request);
+            Snackbar.Add($"{Label} updated.", Severity.Success);
+            await LoadAsync();
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add($"Failed to update {Label.ToLowerInvariant()}: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task BulkUpdateStatusAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_bulkStatusCode) || _items.Count == 0)
+            return;
+
+        var statusLabel = _statusOptions.FirstOrDefault(s => s.Code == _bulkStatusCode)?.Label ?? _bulkStatusCode;
+        var confirmed = await DialogService.ShowMessageBoxAsync(
+            "Set status for all?", $"Set all {_items.Count} {Label.ToLowerInvariant()} allocations to '{statusLabel}'?", yesText: "Apply", cancelText: "Cancel");
+        if (confirmed != true)
+            return;
+
+        try
+        {
+            var result = await Flights.BulkUpdateFlightResourceStatusAsync(RouteBase, _bulkStatusCode);
+            _items = result.ToList();
+            Snackbar.Add($"{Label} statuses updated.", Severity.Success);
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add($"Failed to update {Label.ToLowerInvariant()} statuses: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private Task UpdateCodeAsync(FlightResourceResponse item, string? value) =>
+        UpdateFieldAsync(item, code: value, statusCode: item.StatusCode, beginPlan: item.BeginPlan, endPlan: item.EndPlan, beginActual: item.BeginActual, endActual: item.EndActual);
+
+    // Reverse of the double-click gesture: manually picking Occupied/Closed from the inline Status
+    // dropdown stamps the matching Actual time to now too, same as the edit dialog's Status select.
+    private Task UpdateStatusAsync(FlightResourceResponse item, string? value)
+    {
+        var beginActual = item.BeginActual;
+        var endActual = item.EndActual;
+        var selected = _statusOptions.FirstOrDefault(s => string.Equals(s.Code, value, StringComparison.OrdinalIgnoreCase));
+        if (selected?.IsOpenValue == true)
+            beginActual = NowStamp();
+        else if (selected?.IsCloseValue == true)
+            endActual = NowStamp();
+
+        return UpdateFieldAsync(item, code: item.Code, statusCode: value, beginPlan: item.BeginPlan, endPlan: item.EndPlan, beginActual: beginActual, endActual: endActual);
+    }
+
+    private Task UpdateBeginDateAsync(FlightResourceResponse item, DateTime? date) =>
+        UpdateFieldAsync(item, code: item.Code, statusCode: item.StatusCode, beginPlan: CombineDate(item.BeginPlan, date), endPlan: item.EndPlan, beginActual: item.BeginActual, endActual: item.EndActual);
+
+    private Task UpdateBeginTimeAsync(FlightResourceResponse item, TimeSpan? time) =>
+        UpdateFieldAsync(item, code: item.Code, statusCode: item.StatusCode, beginPlan: CombineTime(item.BeginPlan, time), endPlan: item.EndPlan, beginActual: item.BeginActual, endActual: item.EndActual);
+
+    private Task UpdateEndDateAsync(FlightResourceResponse item, DateTime? date) =>
+        UpdateFieldAsync(item, code: item.Code, statusCode: item.StatusCode, beginPlan: item.BeginPlan, endPlan: CombineDate(item.EndPlan, date), beginActual: item.BeginActual, endActual: item.EndActual);
+
+    private Task UpdateEndTimeAsync(FlightResourceResponse item, TimeSpan? time) =>
+        UpdateFieldAsync(item, code: item.Code, statusCode: item.StatusCode, beginPlan: item.BeginPlan, endPlan: CombineTime(item.EndPlan, time), beginActual: item.BeginActual, endActual: item.EndActual);
+
+    private Task UpdateActualBeginDateAsync(FlightResourceResponse item, DateTime? date) =>
+        UpdateFieldAsync(item, code: item.Code, statusCode: item.StatusCode, beginPlan: item.BeginPlan, endPlan: item.EndPlan, beginActual: CombineDate(item.BeginActual, date), endActual: item.EndActual);
+
+    private Task UpdateActualBeginTimeAsync(FlightResourceResponse item, TimeSpan? time) =>
+        UpdateFieldAsync(item, code: item.Code, statusCode: item.StatusCode, beginPlan: item.BeginPlan, endPlan: item.EndPlan, beginActual: CombineTime(item.BeginActual, time), endActual: item.EndActual);
+
+    private Task UpdateActualEndDateAsync(FlightResourceResponse item, DateTime? date) =>
+        UpdateFieldAsync(item, code: item.Code, statusCode: item.StatusCode, beginPlan: item.BeginPlan, endPlan: item.EndPlan, beginActual: item.BeginActual, endActual: CombineDate(item.EndActual, date));
+
+    private Task UpdateActualEndTimeAsync(FlightResourceResponse item, TimeSpan? time) =>
+        UpdateFieldAsync(item, code: item.Code, statusCode: item.StatusCode, beginPlan: item.BeginPlan, endPlan: item.EndPlan, beginActual: item.BeginActual, endActual: CombineTime(item.EndActual, time));
+
+    // Double-click on the Actual Begin/End time cell is a shortcut for "this just happened, right
+    // now" — same gesture as the edit dialog, applied directly to the grid row and saved
+    // immediately. Nudges status to match the resource kind's own IsOpenValue/IsCloseValue status.
+    private Task StampActualBeginNowAsync(FlightResourceResponse item)
+    {
+        var statusCode = _statusOptions.FirstOrDefault(s => s.IsOpenValue)?.Code ?? item.StatusCode;
+        return UpdateFieldAsync(item, code: item.Code, statusCode: statusCode, beginPlan: item.BeginPlan, endPlan: item.EndPlan, beginActual: NowStamp(), endActual: item.EndActual);
+    }
+
+    private Task StampActualEndNowAsync(FlightResourceResponse item)
+    {
+        var statusCode = _statusOptions.FirstOrDefault(s => s.IsCloseValue)?.Code ?? item.StatusCode;
+        return UpdateFieldAsync(item, code: item.Code, statusCode: statusCode, beginPlan: item.BeginPlan, endPlan: item.EndPlan, beginActual: item.BeginActual, endActual: NowStamp());
+    }
+
+    private DateTimeOffset NowStamp()
+    {
+        var nowLocal = TenantTimeZone.ToLocal(DateTimeOffset.UtcNow, _tenantTimeZone);
+        return TenantTimeZone.ToUtcOffset(nowLocal.Date + nowLocal.TimeOfDay, _tenantTimeZone);
+    }
+
+    private async Task UpdateFieldAsync(FlightResourceResponse item, string? code, string? statusCode, DateTimeOffset? beginPlan, DateTimeOffset? endPlan, DateTimeOffset? beginActual, DateTimeOffset? endActual)
+    {
+        try
+        {
+            var request = new FlightResourceRequest(Blank(code), beginPlan, endPlan, Blank(statusCode), beginActual, endActual, item.PayerCompanyCode, item.IsComplimentary);
+            await Flights.UpdateFlightResourceAsync($"{RouteBase}/{item.Id}", request);
+            await LoadAsync();
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add($"Failed to update {Label.ToLowerInvariant()}: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private DateTimeOffset? CombineDate(DateTimeOffset? existing, DateTime? newDate)
+    {
+        if (newDate is not { } date)
+            return null;
+
+        var time = existing is { } e ? TenantTimeZone.ToLocal(e, _tenantTimeZone).TimeOfDay : TimeSpan.Zero;
+        return TenantTimeZone.ToUtcOffset(date.Date + time, _tenantTimeZone);
+    }
+
+    private DateTimeOffset? CombineTime(DateTimeOffset? existing, TimeSpan? newTime)
+    {
+        if (newTime is not { } time)
+            return null;
+
+        var date = existing is { } e ? TenantTimeZone.ToLocal(e, _tenantTimeZone).Date : DateTime.Today;
+        return TenantTimeZone.ToUtcOffset(date + time, _tenantTimeZone);
+    }
+
+    private DateTime? ToLocalDate(DateTimeOffset? value) =>
+        value is { } v ? TenantTimeZone.ToLocal(v, _tenantTimeZone).Date : null;
+
+    private TimeSpan? ToLocalTime(DateTimeOffset? value) =>
+        value is { } v ? TenantTimeZone.ToLocal(v, _tenantTimeZone).TimeOfDay : null;
+
+    private async Task DeleteAsync(FlightResourceResponse existing)
+    {
+        var confirmed = await DialogService.ShowMessageBoxAsync(
+            $"Delete {Label}", $"Remove {Label.ToLowerInvariant()} '{existing.Code ?? "(no code)"}'?", yesText: "Delete", cancelText: "Cancel");
+        if (confirmed != true)
+            return;
+
+        try
+        {
+            await Flights.DeleteFlightResourceAsync($"{RouteBase}/{existing.Id}");
+            Snackbar.Add($"{Label} removed.", Severity.Success);
+            await LoadAsync();
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add($"Failed to remove {Label.ToLowerInvariant()}: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private static string? Blank(string? value) => string.IsNullOrWhiteSpace(value) ? null : value;
+
+    private string FormatDateTime(DateTimeOffset? value) =>
+        value is { } v ? TenantTimeZone.ToLocal(v, _tenantTimeZone).ToString($"{_dateFormat} {_timeFormat}") : "—";
+}

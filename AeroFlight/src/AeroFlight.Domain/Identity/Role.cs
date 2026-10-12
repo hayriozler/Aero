@@ -1,0 +1,29 @@
+using AeroFlight.Domain.Common;
+
+namespace AeroFlight.Domain.Identity;
+
+public sealed class Role : AuditBase<int>
+{
+    private readonly List<UserRole> _userRoles = [];
+
+    public string Name { get; private set; } = string.Empty;
+    public string? Description { get; private set; }
+
+    public IReadOnlyCollection<UserRole> UserRoles => _userRoles;
+
+    private Role() { }
+
+    private Role(string name, string? description)
+    {
+        Name = name;
+        Description = description;
+    }
+
+    public static Role Create(string name, string? description = null) => new(name, description);
+
+    public void Update(string name, string? description)
+    {
+        Name = name;
+        Description = description;
+    }
+}

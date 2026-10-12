@@ -1,0 +1,161 @@
+.material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    font-family: 'Material Symbols Outlined' !important;
+    font-style: normal !important;
+    font-weight: normal !important;
+    font-size: 24px;
+    display: inline-block;
+    line-height: 1;
+    letter-spacing: normal;
+    word-wrap: normal;
+    white-space: nowrap;
+    direction: ltr;
+    /* Enable OpenType ligatures — without this the icon names render as plain text */
+    font-feature-settings: 'liga' !important;
+    -webkit-font-feature-settings: 'liga' !important;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    /* Override any parent text-transform (e.g. Tailwind .uppercase on NavLink parents) */
+    text-transform: none !important;
+}
+
+body { font-family: 'Inter', sans-serif; }
+h1, h2, h3, .font-headline { font-family: 'Space Grotesk', sans-serif; }
+
+/* ─── Theme CSS variables (RGB channels — space separated for Tailwind opacity) ─ */
+
+/* Light theme (default) */
+:root {
+    --primary:                   125 87 0;
+    --primary-container:         196 130 0;
+    --primary-dim:               160 107 0;
+    --on-primary:                255 255 255;
+    --secondary:                 165 60 0;
+    --secondary-container:       255 219 196;
+    --secondary-dim:             165 60 0;
+    --on-secondary:              255 255 255;
+    --tertiary:                  90 87 0;
+    --tertiary-container:        226 222 138;
+    --on-tertiary:               255 255 255;
+    --on-tertiary-container:     26 25 0;
+    --background:                255 251 240;
+    --on-background:             30 27 19;
+    --surface:                   255 251 240;
+    --on-surface:                30 27 19;
+    --surface-dim:               227 221 209;
+    --surface-bright:            255 251 240;
+    --surface-variant:           236 230 214;
+    --on-surface-variant:        77 70 56;
+    --surface-container-lowest:  255 255 255;
+    --surface-container-low:     249 243 231;
+    --surface-container:         243 237 225;
+    --surface-container-high:    237 231 219;
+    --surface-container-highest: 231 225 213;
+    --outline:                   126 118 103;
+    --outline-variant:           206 197 182;
+    --error:                     186 26 26;
+    --error-container:           255 218 214;
+    --on-error:                  255 255 255;
+    --on-error-container:        65 0 2;
+    --inverse-surface:           52 47 39;
+    --inverse-on-surface:        246 240 228;
+    --inverse-primary:           255 194 74;
+}
+
+/* Dark theme */
+.dark {
+    --primary:                   255 201 101;
+    --primary-container:         254 183 0;
+    --primary-dim:               236 170 0;
+    --on-primary:                95 66 0;
+    --secondary:                 255 117 36;
+    --secondary-container:       160 65 0;
+    --secondary-dim:             255 117 36;
+    --on-secondary:              60 19 0;
+    --tertiary:                  255 246 171;
+    --tertiary-container:        247 233 83;
+    --on-tertiary:               101 93 0;
+    --on-tertiary-container:     92 85 0;
+    --background:                12 14 16;
+    --on-background:             238 238 240;
+    --surface:                   12 14 16;
+    --on-surface:                238 238 240;
+    --surface-dim:               12 14 16;
+    --surface-bright:            41 44 47;
+    --surface-variant:           35 38 41;
+    --on-surface-variant:        170 171 173;
+    --surface-container-lowest:  0 0 0;
+    --surface-container-low:     17 20 22;
+    --surface-container:         23 26 28;
+    --surface-container-high:    29 32 34;
+    --surface-container-highest: 35 38 41;
+    --outline:                   116 117 120;
+    --outline-variant:           70 72 74;
+    --error:                     255 115 81;
+    --error-container:           185 41 2;
+    --on-error:                  69 9 0;
+    --on-error-container:        255 210 200;
+    --inverse-surface:           249 249 252;
+    --inverse-on-surface:        83 85 87;
+    --inverse-primary:           125 88 0;
+}
+
+/* ─── Animations ─────────────────────────────────────────────────────────── */
+
+@keyframes scan-strip {
+    0%   { transform: translateX(-100%); }
+    100% { transform: translateX(400%); }
+}
+
+.animate-scan-strip {
+    animation: scan-strip 3s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.animate-spin {
+    animation: spin 1s linear infinite;
+}
+
+.brs-select {
+    height: 40px;
+    padding: 0 0.625rem;
+    font-family: inherit;
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border: 1px solid rgb(var(--outline-variant));
+    border-radius: 4px;
+    background-color: transparent;
+    color: rgb(var(--on-surface));
+    cursor: pointer;
+    outline: none;
+    appearance: auto;
+}
+.brs-select:focus {
+    border-color: rgb(var(--primary));
+    border-width: 2px;
+}
+.brs-select option {
+    background-color: rgb(var(--surface-container));
+    color: rgb(var(--on-surface));
+    text-transform: uppercase;
+    font-size: 0.75rem;
+}
+
+/* MudDataGrid column filter menu theming */
+.mud-popover .mud-filter-panel,
+.mud-popover .mud-data-grid-filter-panel {
+    background-color: rgb(var(--surface-container)) !important;
+    color: rgb(var(--on-surface)) !important;
+}
+.brs-grid .mud-table-head .mud-icon-button {
+    color: rgb(var(--on-surface-variant)) !important;
+}
+.brs-grid .mud-table-head .mud-icon-button:hover {
+    color: rgb(var(--primary)) !important;
+}

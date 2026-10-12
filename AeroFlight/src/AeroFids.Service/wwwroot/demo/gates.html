@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<style>
+  body { font-family: system-ui, sans-serif; margin: 0; padding: 24px; background: #0b1220; color: #e6edf7; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .meta { color: #93a4bd; font-size: 13px; margin-bottom: 16px; }
+  .status { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; text-transform: uppercase; }
+  .status-connecting { background: #4a3b00; color: #ffd866; }
+  .status-connected { background: #013a1f; color: #5be08a; }
+  .status-reconnecting { background: #4a2600; color: #ffb15c; }
+  .status-failed, .status-closed { background: #4a0000; color: #ff8080; }
+  #error { display: none; margin: 16px 0; padding: 12px; background: #2a0d0d; border: 1px solid #ff8080; border-radius: 6px; color: #ffb3b3; font-size: 13px; white-space: pre-wrap; }
+  table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid #223047; font-size: 14px; }
+  th { color: #93a4bd; font-weight: 600; font-size: 12px; text-transform: uppercase; }
+  tr:hover { background: #111a2b; }
+  #empty { color: #93a4bd; padding: 24px 0; font-size: 14px; }
+  .pill { display: inline-block; padding: 2px 10px; border-radius: 10px; font-size: 12px; font-weight: 600; }
+  .status-open { background: #013a1f; color: #5be08a; }
+  .status-closed { background: #4a0000; color: #ff8080; }
+  .status-neutral { background: #2a3550; color: #b7c4dd; }
+</style>
+</head>
+<body>
+  <h1>Gates</h1>
+  <div class="meta">
+    tenant=<code id="tenant"></code> · name=<code id="clientName"></code> · one row per gate (Gate-type client, no resource code) ·
+    <span id="status" class="status status-connecting">connecting</span>
+  </div>
+  <div id="error"></div>
+  <table id="board" style="display:none">
+    <thead>
+      <tr><th>Gate</th><th>Status</th><th>Flight(s)</th></tr>
+    </thead>
+    <tbody id="rows"></tbody>
+  </table>
+  <div id="empty" style="display:none">No gates assigned yet.</div>
+
+  <script src="/lib/signalr/signalr.min.js"></script>
+  <script src="/js/fids-client.js"></script>
+  <script src="/js/fids-resource-board.js"></script>
+  <script>
+    var params = new URLSearchParams(window.location.search);
+    var tenant = params.get('tenant');
+    var clientName = params.get('name');
+
+    document.getElementById('tenant').textContent = tenant;
+    document.getElementById('clientName').textContent = clientName;
+
+    var statusEl = document.getElementById('status');
+    var errorEl = document.getElementById('error');
+    var boardEl = document.getElementById('board');
+    var emptyEl = document.getElementById('empty');
+    var rowsEl = document.getElementById('rows');
+
+    function setStatus(state) {
+      statusEl.textContent = state;
+      statusEl.className = 'status status-' + state;
+    }
+
+    function render(gates) {
+      errorEl.style.display = 'none';
+      if (gates.length === 0) {
+        boardEl.style.display = 'none';
+        emptyEl.style.display = 'block';
+        return;
+      }
+      emptyEl.style.display = 'none';
+      boardEl.style.display = 'table';
+      rowsEl.innerHTML = gates.map(function (g) {
+        var flightList = g.flights.map(function (f) { return FidsResourceBoard.fmtDesignators(f.designators); }).join(', ');
+        return '<tr>' +
+          '<td>' + g.code + '</td>' +
+          '<td><span class="pill ' + FidsResourceBoard.statusClass(g.status) + '">' + (g.status || 'Unknown') + '</span></td>' +
+          '<td>' + flightList + '</td>' +
+          '</tr>';
+      }).join('');
+    }
+
+    // Assigned to a group with FlightType left unset (both) — gates serve arrivals and departures.
+    FidsClient.connect({
+      tenant: tenant,
+      name: clientName,
+      debug: true,
+      onUpdate: render,
+      onStateChange: setStatus,
+      onError: function (err) {
+        errorEl.style.display = 'block';
+        errorEl.textContent =
+          'Could not load/connect to the board.\n\n' +
+          'Error: ' + (err && err.message ? err.message : err) + '\n\n' +
+          'Is a display client named "' + clientName + '" registered (Admin → Display Clients), Type=Gate with no Resource Code (that gives the all-gates overview)?';
+      }
+    });
+  </script>
+</body>
+</html>

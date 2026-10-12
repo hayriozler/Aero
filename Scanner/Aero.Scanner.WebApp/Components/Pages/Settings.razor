@@ -1,0 +1,178 @@
+@page "/settings"
+@attribute [Authorize]
+@inject ThemeService Theme
+@inject UserSettingsService UserSetting
+@inject IJSRuntime JS
+
+<PageTitle>AeroScan BRS · Settings</PageTitle>
+
+<div class="p-6 space-y-8 max-w-2xl">
+
+    <!-- Header -->
+    <header>
+        <h1 class="text-4xl font-extrabold tracking-tighter text-on-surface uppercase font-headline">Settings</h1>
+        <p class="text-on-surface-variant text-sm font-body mt-1">Appearance and data refresh preferences</p>
+    </header>
+
+    <!-- ── Appearance ──────────────────────────────────────────────────────── -->
+    <section class="bg-surface-container p-6 space-y-5">
+        <h2 class="text-xs font-bold uppercase tracking-widest text-on-surface-variant font-headline flex items-center gap-2">
+            <span class="material-symbols-outlined text-sm">palette</span>
+            Appearance
+        </h2>
+
+        <div class="flex items-center justify-between">
+            <div>
+                <span class="text-sm font-medium text-on-surface font-headline uppercase tracking-wide">Theme</span>
+                <p class="text-xs text-on-surface-variant mt-0.5">
+                    @(Theme.IsDark ? "Dark — optimised for low-light ramp environments" : "Light — optimised for bright office environments")
+                </p>
+            </div>
+
+            <!-- Toggle pill -->
+            <button @onclick="ToggleThemeAsync"
+                    class="relative inline-flex h-8 w-32 items-center rounded-sm border border-outline-variant/50 bg-surface-container-high transition-colors focus:outline-none">
+                <!-- Sliding indicator -->
+                <span class="absolute inset-0.5 w-[calc(50%-2px)] rounded-sm bg-primary-container transition-transform duration-300
+                             @(Theme.IsDark ? "translate-x-[calc(100%+4px)]" : "translate-x-0")">
+                </span>
+                <span class="relative z-10 flex-1 text-center text-[10px] font-bold uppercase font-headline
+                             @(Theme.IsDark ? "text-on-surface/40" : "text-on-primary")">
+                    Light
+                </span>
+                <span class="relative z-10 flex-1 text-center text-[10px] font-bold uppercase font-headline
+                             @(Theme.IsDark ? "text-on-primary" : "text-on-surface/40")">
+                    Dark
+                </span>
+            </button>
+        </div>
+    </section>
+
+    <!-- ── Data & Refresh ──────────────────────────────────────────────────── -->
+    <section class="bg-surface-container p-6 space-y-5">
+        <h2 class="text-xs font-bold uppercase tracking-widest text-on-surface-variant font-headline flex items-center gap-2">
+            <span class="material-symbols-outlined text-sm">refresh</span>
+            Data & Refresh
+        </h2>
+
+        <!-- Auto-refresh toggle -->
+        <div class="flex items-center justify-between">
+            <div>
+                <span class="text-sm font-medium text-on-surface font-headline uppercase tracking-wide">Auto-Refresh</span>
+                <p class="text-xs text-on-surface-variant mt-0.5">Automatically reload dashboard and flight data</p>
+            </div>
+            <button @onclick="ToggleAutoRefreshAsync"
+                    class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors
+                           @(UserSetting.AutoRefreshEnabled ? "bg-primary-container" : "bg-surface-container-highest")">
+                <span class="inline-block h-4 w-4 transform rounded-full bg-surface transition-transform duration-200
+                    @(UserSetting.AutoRefreshEnabled ? "translate-x-6" : "translate-x-1")">
+                </span>
+            </button>
+        </div>
+
+        <!-- Interval options -->
+        <div class="@(!UserSetting.AutoRefreshEnabled ? "opacity-40 pointer-events-none" : "")">
+            <span class="text-sm font-medium text-on-surface font-headline uppercase tracking-wide block mb-3">
+                Refresh Interval
+            </span>
+            <div class="flex flex-wrap gap-2">
+                @foreach (var seconds in UserSettingsService.RefreshOptions)
+                {
+                    var isActive = UserSetting.RefreshIntervalSeconds == seconds;
+                    <button @onclick="() => SetIntervalAsync(seconds)"
+                            class="px-4 py-2 text-xs font-bold uppercase font-headline tracking-widest border transition-all
+                                   @(isActive
+                                       ? "bg-primary-container text-on-primary border-primary-container"
+                                       : "bg-surface-container-high text-on-surface-variant border-outline-variant/50 hover:border-primary-container hover:text-primary-container")">
+                        @seconds s
+                    </button>
+                }
+            </div>
+            <p class="text-xs text-on-surface-variant mt-2">
+                Current: every <span class="font-bold text-primary-container">@UserSetting.RefreshIntervalSeconds seconds</span>
+            </p>
+        </div>
+    </section>
+
+    <!-- ── Language ─────────────────────────────────────────────────────────── -->
+    <section class="bg-surface-container p-6 space-y-5">
+        <h2 class="text-xs font-bold uppercase tracking-widest text-on-surface-variant font-headline flex items-center gap-2">
+            <span class="material-symbols-outlined text-sm">language</span>
+            Language
+        </h2>
+        <div class="flex items-center justify-between">
+            <div>
+                <span class="text-sm font-medium text-on-surface font-headline uppercase tracking-wide">Display Language</span>
+                <p class="text-xs text-on-surface-variant mt-0.5">Select the display language for the interface</p>
+            </div>
+            <div class="flex items-center gap-1">
+                <button @onclick='() => SetCultureAsync("en")'
+                        class="px-4 py-2 text-xs font-bold uppercase font-headline tracking-widest border transition-all
+                               @(_currentCulture == "en"
+                                   ? "bg-primary-container text-on-primary border-primary-container"
+                                   : "bg-surface-container-high text-on-surface-variant border-outline-variant/50 hover:border-primary-container hover:text-primary-container")">
+                    EN
+                </button>
+                <button @onclick='() => SetCultureAsync("tr")'
+                        class="px-4 py-2 text-xs font-bold uppercase font-headline tracking-widest border transition-all
+                               @(_currentCulture == "tr"
+                                   ? "bg-primary-container text-on-primary border-primary-container"
+                                   : "bg-surface-container-high text-on-surface-variant border-outline-variant/50 hover:border-primary-container hover:text-primary-container")">
+                    TR
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- ── About ───────────────────────────────────────────────────────────── -->
+    <section class="bg-surface-container p-6 space-y-3">
+        <h2 class="text-xs font-bold uppercase tracking-widest text-on-surface-variant font-headline flex items-center gap-2">
+            <span class="material-symbols-outlined text-sm">info</span>
+            System
+        </h2>
+        <div class="grid grid-cols-2 gap-y-2 text-xs font-mono">
+            <span class="text-on-surface-variant uppercase tracking-widest">Application</span>
+            <span class="text-on-surface font-bold">AeroScan BRS</span>
+            <span class="text-on-surface-variant uppercase tracking-widest">Stack</span>
+            <span class="text-on-surface font-bold">.NET 10 · Blazor Server · PostgreSQL</span>
+            <span class="text-on-surface-variant uppercase tracking-widest">Rendering</span>
+            <span class="text-on-surface font-bold">Interactive Server (SignalR)</span>
+        </div>
+    </section>
+
+</div>
+
+@code {
+    private string _currentCulture = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        await UserSetting.LoadAsync(JS);
+        StateHasChanged();
+    }
+
+    private async Task SetCultureAsync(string culture)
+    {
+        if (_currentCulture == culture) return;
+        await JS.InvokeVoidAsync("brs.setCulture", culture);
+    }
+
+    private async Task ToggleThemeAsync()
+    {
+        await Theme.ToggleAsync(JS);
+        StateHasChanged();
+    }
+
+    private async Task ToggleAutoRefreshAsync()
+    {
+        await UserSetting.SetAutoRefreshAsync(JS, !UserSetting.AutoRefreshEnabled);
+        StateHasChanged();
+    }
+
+    private async Task SetIntervalAsync(int seconds)
+    {
+        await UserSetting.SetRefreshIntervalAsync(JS, seconds);
+        StateHasChanged();
+    }
+}

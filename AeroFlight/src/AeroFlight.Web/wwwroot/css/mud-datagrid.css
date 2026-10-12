@@ -1,0 +1,126 @@
+/* MudDataGrid-specific hover styles - keeps changes isolated from site.css */
+
+/* Target MudBlazor DataGrid rows and table rows inside data grid components */
+.mud-data-grid .mud-table-row:hover,
+.mud-data-grid .mud-table-row:hover > td,
+.mud-data-grid-row:hover,
+.mud-data-grid-row:hover > td {
+    background-color: var(--color-accent-100, #fffaee) !important;
+}
+
+/* Fallback: target general MudBlazor table rows only when inside a mud-data-grid container */
+.mud-data-grid .mud-table-body .mud-table-row:hover,
+.mud-data-grid .mud-table-body .mud-table-row:hover > td {
+    background-color: var(--color-accent-100, #fffaee) !important;
+}
+
+/* Blueprint restyle — hairline borders + tabular numerals on time/number-looking cells */
+.mud-data-grid.mud-table {
+    background: transparent;
+    box-shadow: none !important;
+}
+
+.mud-data-grid .mud-table-container {
+    border: 1px solid var(--color-divider);
+    background: transparent;
+}
+
+.mud-data-grid .mud-table-head {
+    background: transparent;
+}
+
+.mud-data-grid .mud-table-head .mud-table-cell {
+    border-bottom: 1px solid var(--color-divider);
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    color: color-mix(in srgb, var(--color-text) 60%, transparent);
+    padding-top: 6px;
+    padding-bottom: 6px;
+}
+
+.mud-data-grid .mud-table-body .mud-table-row {
+    background: transparent;
+}
+
+.mud-data-grid .mud-table-body .mud-table-row > .mud-table-cell {
+    border-bottom: 1px solid var(--color-divider);
+    padding-top: 4px;
+    padding-bottom: 4px;
+}
+
+.mud-data-grid .mud-table-cell {
+    font-variant-numeric: tabular-nums;
+    font-size: 13px;
+}
+
+/* Arrival/Departure group banner sitting above the movements grid header — see
+   movementsGroupHeader.js for the geometry sync (MudDataGrid has no native group-header row). */
+.movements-group-header-root {
+    position: relative;
+}
+
+.movements-group-banner {
+    position: relative;
+    height: 22px;
+    margin-bottom: 2px;
+}
+
+.movements-group-banner-bar {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    border-radius: 3px 3px 0 0;
+    white-space: nowrap;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.movements-group-banner-arrival {
+    background: var(--mud-palette-warning);
+    color: var(--mud-palette-warning-text);
+}
+
+.movements-group-banner-departure {
+    background: var(--mud-palette-success);
+    color: var(--mud-palette-success-text);
+}
+
+/* Colorizes the closed Status select on the movements grid like a chip, while the select itself
+   keeps showing only the bare status code (Code — Description stays open-dropdown-only).
+   Applied via MudSelect's InputClass (not Class) — InputClass lands on the actual visible
+   .mud-input box (MudInputCssHelper.GetClassname adds baseInput.Class there), whereas Class
+   only reaches the loosely-fit outer .mud-input-control wrapper, which paints nothing visible.
+   MudBlazor's own .mud-chip-color-* classes don't work standalone either — every rule is
+   compound, e.g. ".mud-chip-filled.mud-chip-color-success", so these are our own equivalents. */
+.status-select-pill.mud-input {
+    border-radius: 14px !important;
+    min-height: 26px;
+}
+
+.status-select-pill.mud-input:before,
+.status-select-pill.mud-input:after {
+    border-bottom: none !important;
+    content: none !important;
+}
+
+.status-select-pill-default { background-color: var(--mud-palette-action-disabled-background); color: var(--mud-palette-text-primary); }
+.status-select-pill-primary { background-color: var(--mud-palette-primary); color: var(--mud-palette-primary-text); }
+.status-select-pill-secondary { background-color: var(--mud-palette-secondary); color: var(--mud-palette-secondary-text); }
+.status-select-pill-tertiary { background-color: var(--mud-palette-tertiary); color: var(--mud-palette-tertiary-text); }
+.status-select-pill-info { background-color: var(--mud-palette-info); color: var(--mud-palette-info-text); }
+.status-select-pill-success { background-color: var(--mud-palette-success); color: var(--mud-palette-success-text); }
+.status-select-pill-warning { background-color: var(--mud-palette-warning); color: var(--mud-palette-warning-text); }
+.status-select-pill-error { background-color: var(--mud-palette-error); color: var(--mud-palette-error-text); }
+.status-select-pill-dark { background-color: var(--mud-palette-dark); color: var(--mud-palette-dark-text); }
+.status-select-pill-surface { background-color: var(--mud-palette-surface); color: var(--mud-palette-text-primary); }

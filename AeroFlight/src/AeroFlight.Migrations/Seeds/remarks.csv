@@ -1,0 +1,28 @@
+﻿code,description
+130,1hr 30min Delay
+ABB,Baggages on belt
+ABE,Belt Closed
+ABL,Last Bag
+ABS,Waiting for delivery
+AELY,Estimated
+ARR,Arrived
+BOA,Boarding
+BOE,Gate Closed
+CIO,Checkin Open
+CNX,Cancelled
+DEP,Departed
+DIV,Diverted
+DLY,Delayed
+EBO,End Boarding
+EXP,Expected
+FNC,Final Call
+GEO,Gate Open
+LAN,Landed
+NOOP,Non Operational
+ONB,Arrived
+RESA,RESA ya transfer olacak uçuşlar
+RFA,Returned from airborne
+RFT,Return from taxi
+TMO,Expected
+TRSFR,Transfer to Intranet
+XLD,Canceled

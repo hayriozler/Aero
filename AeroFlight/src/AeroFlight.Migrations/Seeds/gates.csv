@@ -1,0 +1,21 @@
+code,gate_type_code,description,capacity,has_loading_bridge,has_pca,terminal_code
+04,T,Domestic Bridge,2,true,true,D
+05,T,Domestic Bridge,2,true,true,D
+06,T,Domestic Bridge,2,true,true,D
+07,T,Domestic Bridge,2,true,true,D
+08,T,T1 Bridge,4,true,true,T1
+09,T,T1 Bridge,4,true,true,T1
+10,T,T1 Bridge,4,true,true,T1
+11,T,T1 Bridge,4,true,true,T1
+12,T,T1 Bridge,4,true,true,T1
+13,T,T1 Bridge,4,true,true,T1
+14,T,T1 Bridge,2,true,true,T1
+15,T,T1 Bridge,2,true,true,T1
+60,T,T2 Bridge,1,true,true,T2
+61,T,T2 Bridge,3,true,true,T2
+62,T,T2 Bridge,3,true,true,T2
+63,T,T2 Bridge,3,true,true,T2
+64,T,T2 Bridge,3,true,true,T2
+65,T,T2 Bridge,3,true,true,T2
+66,T,T2 Bridge,3,true,true,T2
+67,T,T2 Bridge,3,true,true,T2

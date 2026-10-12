@@ -1,0 +1,251 @@
+@inject AuditApiClient Api
+@inject IJSRuntime JS
+@using System.Text.Json
+
+<MudDrawer @bind-Open="IsOpen" Anchor="Anchor.End" Elevation="2" Variant="DrawerVariant.Temporary"
+           Width="480px" Class="bg-surface">
+
+    <div class="flex flex-col h-full overflow-hidden">
+
+        <!-- Header -->
+        <div class="flex items-center justify-between px-6 py-4 border-b border-outline-variant/40 flex-shrink-0">
+            <div>
+                <p class="text-[0.6rem] font-headline uppercase tracking-widest text-on-surface/40">Audit History</p>
+                <p class="font-headline font-bold text-on-surface uppercase text-sm">@Label</p>
+            </div>
+            <button @onclick="Close" class="material-symbols-outlined text-on-surface-variant hover:text-on-surface transition-colors">
+                close
+            </button>
+        </div>
+
+        <!-- Body -->
+        <div class="flex-1 overflow-y-auto px-6 py-4">
+
+            @if (_loading)
+            {
+                <div class="flex justify-center py-12">
+                    <MudProgressCircular Indeterminate="true" Color="Color.Warning" Size="Size.Small" />
+                </div>
+            }
+            else if (_entries.Count == 0)
+            {
+                <div class="text-center py-12 text-on-surface-variant/50 font-headline uppercase text-xs tracking-widest">
+                    No audit records found
+                </div>
+            }
+            else
+            {
+                <ol class="relative border-l border-outline-variant/40 ml-3 space-y-6">
+                    @foreach (var entry in _entries)
+                    {
+                        <li class="ml-6">
+                            <!-- Dot -->
+                            <span class="absolute -left-2 flex h-4 w-4 items-center justify-center rounded-full @DotClass(entry.Action) ring-4 ring-surface">
+                            </span>
+
+                            <!-- Header row -->
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-[0.6rem] font-headline font-bold uppercase px-2 py-0.5 @BadgeClass(entry.Action)">
+                                    @entry.Action
+                                </span>
+                                <span class="text-[0.65rem] font-mono text-on-surface-variant">
+                                    @FormatLocalTime(entry.Timestamp)
+                                </span>
+                                <span class="text-[0.65rem] text-on-surface-variant/60">
+                                    by <span class="font-medium text-on-surface-variant">@entry.ChangedBy</span>
+                                </span>
+                            </div>
+
+                            <!-- Snapshot -->
+                            @if (!string.IsNullOrWhiteSpace(entry.Snapshot) && entry.Snapshot != "{}")
+                            {
+                                <div class="mt-2 text-xs">
+                                    @if (entry.Action == "Modified")
+                                    {
+                                        @RenderModifiedSnapshot(entry.Snapshot)
+                                    }
+                                    else
+                                    {
+                                        @RenderFullSnapshot(entry.Snapshot)
+                                    }
+                                </div>
+                            }
+                        </li>
+                    }
+                </ol>
+            }
+        </div>
+    </div>
+</MudDrawer>
+
+@code {
+    [Parameter] public string EntityType  { get; set; } = string.Empty;
+    [Parameter] public string PrimaryKey  { get; set; } = string.Empty;
+    [Parameter] public string Label       { get; set; } = string.Empty;
+
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public EventCallback<bool> IsOpenChanged { get; set; }
+
+    private IReadOnlyList<AuditEntryDto> _entries = [];
+    private bool _loading;
+    private string _loadedForPk = string.Empty;
+    private int _utcOffsetMinutes;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+            _utcOffsetMinutes = await JS.InvokeAsync<int>("brs.getUtcOffsetMinutes");
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!IsOpen || PrimaryKey.Length == 0) return;
+        if (PrimaryKey == _loadedForPk) return;
+
+        _loadedForPk = PrimaryKey;
+        _loading = true;
+        _entries = await Api.GetHistoryAsync(EntityType, PrimaryKey);
+        _loading = false;
+    }
+
+    private async Task Close()
+    {
+        _loadedForPk = string.Empty;
+        _entries = [];
+        await IsOpenChanged.InvokeAsync(false);
+    }
+
+    // ── Time formatting ───────────────────────────────────────────────────
+    private string FormatLocalTime(DateTime utc)
+    {
+        var local = utc.AddMinutes(_utcOffsetMinutes);
+        var sign  = _utcOffsetMinutes >= 0 ? "+" : "-";
+        var hours = Math.Abs(_utcOffsetMinutes) / 60;
+        var mins  = Math.Abs(_utcOffsetMinutes) % 60;
+        var offset = mins > 0 ? $"{hours}:{mins:D2}" : $"{hours}";
+        return $"{local:yyyy-MM-dd HH:mm:ss} (UTC{sign}{offset})";
+    }
+
+    // ── Styling helpers ───────────────────────────────────────────────────
+    private static string DotClass(string action) => action switch
+    {
+        "Added"    => "bg-success",
+        "Deleted"  => "bg-error",
+        _          => "bg-warning"
+    };
+
+    private static string BadgeClass(string action) => action switch
+    {
+        "Added"    => "bg-success/15 text-success",
+        "Deleted"  => "bg-error/15 text-error",
+        _          => "bg-warning/15 text-warning"
+    };
+
+    // ── Snapshot renderers ────────────────────────────────────────────────
+    private RenderFragment RenderModifiedSnapshot(string json) => builder =>
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            int seq = 0;
+
+            builder.OpenElement(seq++, "table");
+            builder.AddAttribute(seq++, "class", "w-full text-[0.65rem] border-collapse");
+
+            builder.OpenElement(seq++, "thead");
+            builder.OpenElement(seq++, "tr");
+            foreach (var th in new[] { "Field", "Before", "After" })
+            {
+                builder.OpenElement(seq++, "th");
+                builder.AddAttribute(seq++, "class", "text-left font-headline uppercase tracking-widest text-on-surface-variant/60 pb-1 pr-3");
+                builder.AddContent(seq++, th);
+                builder.CloseElement();
+            }
+            builder.CloseElement();
+            builder.CloseElement();
+
+            builder.OpenElement(seq++, "tbody");
+            foreach (var prop in doc.RootElement.EnumerateObject())
+            {
+                builder.OpenElement(seq++, "tr");
+                builder.AddAttribute(seq++, "class", "border-t border-outline-variant/20");
+
+                // Field name
+                builder.OpenElement(seq++, "td");
+                builder.AddAttribute(seq++, "class", "py-1 pr-3 font-medium text-on-surface-variant font-mono");
+                builder.AddContent(seq++, prop.Name);
+                builder.CloseElement();
+
+                var oldVal = prop.Value.TryGetProperty("old", out var ov) ? ov.ToString() : "";
+                var newVal = prop.Value.TryGetProperty("new", out var nv) ? nv.ToString() : "";
+
+                // Old value
+                builder.OpenElement(seq++, "td");
+                builder.AddAttribute(seq++, "class", "py-1 pr-3 font-mono text-error/80 line-through opacity-70");
+                builder.AddContent(seq++, oldVal);
+                builder.CloseElement();
+
+                // New value
+                builder.OpenElement(seq++, "td");
+                builder.AddAttribute(seq++, "class", "py-1 font-mono text-success");
+                builder.AddContent(seq++, newVal);
+                builder.CloseElement();
+
+                builder.CloseElement(); // tr
+            }
+            builder.CloseElement(); // tbody
+            builder.CloseElement(); // table
+        }
+        catch
+        {
+            builder.OpenElement(0, "pre");
+            builder.AddAttribute(1, "class", "font-mono text-on-surface-variant whitespace-pre-wrap break-all");
+            builder.AddContent(2, json);
+            builder.CloseElement();
+        }
+    };
+
+    private RenderFragment RenderFullSnapshot(string json) => builder =>
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            int seq = 0;
+
+            builder.OpenElement(seq++, "table");
+            builder.AddAttribute(seq++, "class", "w-full text-[0.65rem] border-collapse");
+            builder.OpenElement(seq++, "tbody");
+
+            foreach (var prop in doc.RootElement.EnumerateObject())
+            {
+                var val = prop.Value.ToString();
+                if (string.IsNullOrEmpty(val) || val == "null") continue;
+
+                builder.OpenElement(seq++, "tr");
+                builder.AddAttribute(seq++, "class", "border-t border-outline-variant/20");
+
+                builder.OpenElement(seq++, "td");
+                builder.AddAttribute(seq++, "class", "py-1 pr-4 font-medium text-on-surface-variant font-mono w-1/3");
+                builder.AddContent(seq++, prop.Name);
+                builder.CloseElement();
+
+                builder.OpenElement(seq++, "td");
+                builder.AddAttribute(seq++, "class", "py-1 font-mono text-on-surface break-all");
+                builder.AddContent(seq++, val);
+                builder.CloseElement();
+
+                builder.CloseElement();
+            }
+
+            builder.CloseElement();
+            builder.CloseElement();
+        }
+        catch
+        {
+            builder.OpenElement(0, "pre");
+            builder.AddAttribute(1, "class", "font-mono text-on-surface-variant whitespace-pre-wrap break-all");
+            builder.AddContent(2, json);
+            builder.CloseElement();
+        }
+    };
+}

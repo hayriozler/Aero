@@ -1,0 +1,27 @@
+<Solution>
+  <Folder Name="/Fids/" />
+  <Folder Name="/Flight/" />
+  <Folder Name="/MessageProcessor/" />
+  <Folder Name="/Scanner/">
+    <Project Path="Scanner/Aero.Scanner.Domain/Aero.Scanner.Domain.csproj" />
+    <Project Path="Scanner/Aero.Scanner.Mobile/Aero.Scanner.Mobile.csproj">
+      <Deploy Solution="Debug|*" />
+    </Project>
+    <Project Path="Scanner/Aero.Scanner.Shared/Aero.Scanner.Shared.csproj" />
+    <Project Path="Scanner/Aero.Scanner.WebApp/Aero.Scanner.WebApp.csproj" />
+  </Folder>
+  <Folder Name="/Shared/">
+    <Project Path="Shared/Aero.Shared.Domain/Aero.Shared.Domain.csproj" />
+    <Project Path="Shared/Aero.Shared.Infrastructure/Aero.Shared.Infrastructure.csproj" />
+    <Project Path="Shared/Aero.Shared.Services/Aero.Shared.Services.csproj" />
+    <Project Path="Shared/Aero.Shared.WebUtilities/Aero.Shared.WebUtilities.csproj" />
+  </Folder>
+
+  <Folder Name="/Solution Items/">
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+  </Folder>
+  <Project Path="Aero.ServiceDefaults/Aero.ServiceDefaults.csproj" Id="6eafa26c-fc29-47b9-8b56-a8b804ba6c14" />
+  <Project Path="AeroGateway/AeroGateway.csproj" Id="f8353ee3-1f06-48f5-b701-68bef759d53d" />
+  <Project Path="AeroHost/AeroHost.csproj" Id="4a3fa958-abbf-49b3-bc6d-a0a479f34f28" />
+</Solution>

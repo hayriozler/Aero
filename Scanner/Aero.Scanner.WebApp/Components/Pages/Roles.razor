@@ -1,0 +1,262 @@
+@page "/roles"
+@using Aero.Scanner.Shared.Consts
+@using Aero.Scanner.Shared.Requests
+@using Aero.Scanner.WebApp.Resources
+@attribute [Authorize(Roles = SystemDefinedRoles.Admin+ "," + SystemDefinedRoles.RamSupervisor)]
+@inject RoleApiClient Api
+@inject ISnackbar Snackbar
+@inject AuthenticationStateProvider AuthState
+@inject IStringLocalizer<SharedResources> L
+
+<PageTitle>AeroScan BRS · Role Management</PageTitle>
+
+<div class="p-6 space-y-6">
+
+    @if (!_isAirportOperator)
+    {
+        <div class="bg-secondary/10 border border-secondary/30 p-6 text-center">
+            <span class="material-symbols-outlined text-secondary text-4xl block mb-2">block</span>
+            <p class="text-secondary font-headline uppercase tracking-widest text-sm font-bold">Access Restricted</p>
+            <p class="text-on-surface-variant text-xs mt-1">Role management is only accessible to Airport Operator personnel.</p>
+        </div>
+        return;
+    }
+
+    <!-- Header -->
+    <header class="flex justify-between items-end flex-wrap gap-4">
+        <div>
+            <h1 class="text-4xl font-extrabold tracking-tighter text-on-surface uppercase font-headline">Role Management</h1>
+            <p class="text-on-surface-variant text-sm font-body">Define roles and assign permissions</p>
+        </div>
+        <button @onclick="OpenAddForm"
+                class="flex items-center gap-2 px-4 py-2 bg-primary-container text-on-primary font-headline text-xs uppercase tracking-widest hover:opacity-90">
+            <span class="material-symbols-outlined text-sm">add</span>
+            Add Role
+        </button>
+    </header>
+
+    <!-- Add / Edit form -->
+    @if (_formVisible)
+    {
+        <section class="bg-surface-container p-6 space-y-5 border border-outline-variant/40">
+            <h2 class="text-xs font-bold uppercase tracking-widest text-on-surface-variant font-headline">
+                @(!string.IsNullOrWhiteSpace(_editName) ? "Edit Role" : "New Role")
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                @if (!string.IsNullOrWhiteSpace(_editName))
+                {
+                    <div class="space-y-1">
+                        <label class="text-xs font-headline uppercase tracking-widest text-on-surface-variant">System Name *</label>
+                        <MudTextField @bind-Value="_form.Name" Placeholder="e.g. ramp-supervisor" Variant="Variant.Outlined"
+                                      Margin="Margin.Dense" MaxLength="50" HelperText="Lowercase, no spaces — used in code" />
+                    </div>
+                }
+                <div class="@(string.IsNullOrWhiteSpace(_editName)? "space-y-1 md:col-span-2" : "space-y-1")">
+                    <label class="text-xs font-headline uppercase tracking-widest text-on-surface-variant">Display Name *</label>
+                    <MudTextField @bind-Value="_form.DisplayName" Placeholder="e.g. Ramp Supervisor" Variant="Variant.Outlined"
+                                  Margin="Margin.Dense" MaxLength="100" />
+                </div>
+            </div>
+
+            <!-- Permissions grouped by category -->
+            <div class="space-y-3">
+                <p class="text-xs font-headline uppercase tracking-widest text-on-surface-variant">Permissions</p>
+                @foreach (var group in _allPermissions.GroupBy(p => p.Group).OrderBy(g => g.Key))
+                {
+                    <div class="bg-surface-container-low p-3 space-y-2">
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">@group.Key</p>
+                        <div class="flex flex-wrap gap-x-4 gap-y-1">
+                            @foreach (var perm in group.OrderBy(p => p.DisplayName))
+                            {
+                                <label class="flex items-center gap-2 cursor-pointer text-xs text-on-surface">
+                                    <input type="checkbox"
+                                           checked="@_form.SelectedPermissionIds.Contains(perm.Id)"
+                                           @onchange="e => TogglePermission(perm.Id, (bool)(e.Value ?? false))"
+                                           class="accent-primary" />
+                                    @perm.DisplayName
+                                </label>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <div class="flex items-center gap-3 pt-2">
+                <button @onclick="SaveAsync" disabled="@_saving"
+                        class="px-6 py-2 bg-primary-container text-on-primary font-headline text-xs uppercase tracking-widest hover:opacity-90 disabled:opacity-50">
+                    @(_saving ? "Saving…" : "Save")
+                </button>
+                <button @onclick="CloseForm"
+                        class="px-6 py-2 bg-surface-container-high text-on-surface-variant font-headline text-xs uppercase tracking-widest hover:text-on-surface">
+                    Cancel
+                </button>
+                @if (!string.IsNullOrEmpty(_formError))
+                {
+                    <span class="text-xs text-error font-body">@_formError</span>
+                }
+            </div>
+        </section>
+    }
+
+    <!-- Roles grid -->
+    <div class="space-y-3">
+        @if (_loading)
+        {
+            <div class="text-center py-12 text-on-surface-variant font-headline uppercase tracking-widest text-xs">Loading roles…</div>
+        }
+        else
+        {
+            @foreach (var role in _roles)
+            {
+                <div class="bg-surface-container p-5 shadow-sm">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <span class="font-headline font-bold text-on-surface text-base">@role.DisplayName</span>
+                            <span class="ml-2 font-mono text-xs text-on-surface-variant bg-surface-container-high px-2 py-0.5">@role.Name</span>
+                            <span class="ml-2 text-xs text-on-surface-variant">@role.UserCount user(s)</span>
+                        </div>
+                        <div class="flex gap-2">
+                            <button @onclick="() => OpenEditForm(role)" title="Edit"
+                                    class="text-on-surface-variant hover:text-primary-container transition-colors">
+                                <span class="material-symbols-outlined text-sm">edit</span>
+                            </button>
+                            @if (role.UserCount == 0)
+                            {
+                                <button @onclick="() => DeleteAsync(role)" title="Delete"
+                                        class="text-on-surface-variant hover:text-error transition-colors">
+                                    <span class="material-symbols-outlined text-sm">delete</span>
+                                </button>
+                            }
+                        </div>
+                    </div>
+                    @if (role.Permissions.Count > 0)
+                    {
+                        <div class="mt-3 flex flex-wrap gap-1">
+                            @foreach (var perm in role.Permissions.OrderBy(p => p.Group).ThenBy(p => p.DisplayName))
+                            {
+                                <span class="text-[10px] px-2 py-0.5 bg-primary-container/10 text-primary-container font-mono rounded-sm">@perm.Name</span>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="mt-2 text-[10px] text-on-surface-variant/50 italic">No permissions assigned</p>
+                    }
+                </div>
+            }
+        }
+    </div>
+</div>
+
+@code {
+    private IReadOnlyList<RoleDto> _roles = [];
+    private IReadOnlyList<PermissionDto> _allPermissions = [];
+    private bool _loading;
+    private bool _formVisible;
+    private bool _saving;
+    private string _formError = string.Empty;
+    private string? _editName;
+    private bool _isAirportOperator;
+
+    private RoleFormModel _form = new();
+
+    private sealed class RoleFormModel
+    {
+        public string Name        { get; set; } = string.Empty;
+        public string DisplayName { get; set; } = string.Empty;
+        public HashSet<int> SelectedPermissionIds { get; set; } = [];
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthState.GetAuthenticationStateAsync();
+        var companyType = authState.User.FindFirst("company_type")?.Value ?? string.Empty;
+        _isAirportOperator = string.Equals(companyType, Policies.AirportOperator, StringComparison.OrdinalIgnoreCase);
+        if (!_isAirportOperator) return;
+
+        _loading = true;
+        var rolesTask = Api.GetAllAsync();
+        var permsTask = Api.GetPermissionsAsync();
+        await Task.WhenAll(rolesTask, permsTask);
+        _roles = rolesTask.Result;
+        _allPermissions = permsTask.Result;
+        _loading = false;
+    }
+
+    private void OpenAddForm()
+    {
+        _editName = null;
+        _form = new();
+        _formError = string.Empty;
+        _formVisible = true;
+    }
+
+    private void OpenEditForm(RoleDto role)
+    {
+        _editName = role.Name;
+        _form = new()
+        {
+            Name        = role.Name,
+            DisplayName = role.DisplayName,
+            SelectedPermissionIds = role.Permissions.Select(p => p.Id).ToHashSet()
+        };
+        _formError = string.Empty;
+        _formVisible = true;
+    }
+
+    private void CloseForm() { _formVisible = false; _formError = string.Empty; }
+
+    private void TogglePermission(int id, bool selected)
+    {
+        if (selected) _form.SelectedPermissionIds.Add(id);
+        else _form.SelectedPermissionIds.Remove(id);
+    }
+
+    private async Task SaveAsync()
+    {
+        _formError = string.Empty;
+        if (string.IsNullOrWhiteSpace(_form.DisplayName)) { _formError = L["Validation.Required.DisplayName"]; return; }
+        if (!string.IsNullOrWhiteSpace(_editName) && string.IsNullOrWhiteSpace(_form.Name)) { _formError = L["Validation.Required.SystemName"]; return; }
+
+        _saving = true;
+        bool success; string? error;
+
+        var permIds = _form.SelectedPermissionIds.ToList();
+
+        if (!string.IsNullOrWhiteSpace(_editName))
+        {
+            var req = new UpdateRoleRequest(_form.DisplayName, permIds);
+            (success, _, error) = await Api.UpdateAsync(_editName, req);
+        }
+        else
+        {
+            var req = new CreateRoleRequest(_form.Name, _form.DisplayName, permIds);
+            (success, _, error) = await Api.CreateAsync(req);
+        }
+        _saving = false;
+
+        if (success)
+        {
+            Snackbar.Add(!string.IsNullOrWhiteSpace(_editName) ? "Role updated." : "Role created.", Severity.Success);
+            CloseForm();
+            _roles = await Api.GetAllAsync();
+        }
+        else
+        {
+            _formError = error ?? "An unexpected error occurred.";
+        }
+    }
+
+    private async Task DeleteAsync(RoleDto role)
+    {
+        if (await Api.DeleteAsync(role.Name))
+        {
+            Snackbar.Add($"Role '{role.DisplayName}' deleted.", Severity.Info);
+            _roles = await Api.GetAllAsync();
+        }
+        else
+        {
+            Snackbar.Add("Failed to delete role.", Severity.Error);
+        }
+    }
+}

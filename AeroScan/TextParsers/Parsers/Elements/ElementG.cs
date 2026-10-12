@@ -1,0 +1,24 @@
+﻿
+
+
+using IataText.Parser.Contracts;
+
+namespace IataText.Parser.Parsers.Elements;
+
+public class ElementG(IElementValidator validator) : Element(Consts.G)
+{
+    public string EarliestDeliveryDateTime { get; private set; } = string.Empty;
+    public string LatestDeliveryDateTime   { get; private set; } = string.Empty;
+    public string FreeText                 { get; private set; } = string.Empty;
+    public override ElementResult Parse(ElementDetail elementDetail)
+    {
+        var validationResult = validator.Validate(elementDetail);
+        if (!validationResult.IsValid) return new(this, validationResult);
+        var parsedText = elementDetail.ParsedText;
+
+        EarliestDeliveryDateTime = parsedText.Length > 1 ? parsedText[1].ToString() : string.Empty;
+        LatestDeliveryDateTime   = parsedText.Length > 2 ? parsedText[2].ToString() : string.Empty;
+        FreeText                 = parsedText.Length > 3 ? parsedText[3].ToString() : string.Empty;
+        return new(this, validationResult);
+    }
+}

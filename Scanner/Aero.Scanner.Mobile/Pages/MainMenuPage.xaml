@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="Aero.Scanner.Mobile.Pages.MainMenuPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:vm="clr-namespace:Aero.Scanner.Mobile.ViewModels"
+    Shell.NavBarIsVisible="False"
+    BackgroundColor="#121212">
+
+    <Grid RowDefinitions="Auto,*,Auto">
+
+        <!-- Header -->
+        <Grid Grid.Row="0"
+              BackgroundColor="#1565C0"
+              Padding="16,12"
+              ColumnDefinitions="*,Auto">
+
+            <StackLayout Grid.Column="0" Orientation="Vertical" Spacing="2">
+                <Label Text="{Binding AppTitle}"
+                       TextColor="White"
+                       FontSize="22"
+                       FontAttributes="Bold" />
+                <Label Text="{Binding DeviceName}"
+                       TextColor="#BBDEFB"
+                       FontSize="14" />
+            </StackLayout>
+
+            <Button Grid.Column="1"
+                    Text="{Binding ExitLabel}"
+                    BackgroundColor="#B71C1C"
+                    TextColor="White"
+                    FontSize="16"
+                    FontAttributes="Bold"
+                    CornerRadius="6"
+                    Padding="20,10"
+                    Command="{Binding ShowExitOverlayCommand}" />
+        </Grid>
+
+        <!-- Menu grid -->
+        <CollectionView Grid.Row="1"
+                        ItemsSource="{Binding MenuItems}"
+                        Margin="8">
+            <CollectionView.ItemsLayout>
+                <GridItemsLayout Orientation="Vertical"
+                                 Span="3"
+                                 HorizontalItemSpacing="6"
+                                 VerticalItemSpacing="6" />
+            </CollectionView.ItemsLayout>
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="vm:MenuItemViewModel">
+                    <Button Text="{Binding Title}"
+                            BackgroundColor="{Binding Background}"
+                            TextColor="White"
+                            FontSize="15"
+                            FontAttributes="Bold"
+                            HeightRequest="90"
+                            CornerRadius="8"
+                            Command="{Binding NavigateCommand}"
+                            CommandParameter="{Binding Route}"
+                            Margin="2" />
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+
+        <!-- Status bar -->
+        <Label Grid.Row="2"
+               Text="{Binding StatusText}"
+               BackgroundColor="#1E1E1E"
+               TextColor="#78909C"
+               FontSize="12"
+               Padding="16,6"
+               HorizontalTextAlignment="Center" />
+
+        <!-- Exit password overlay -->
+        <Grid Grid.RowSpan="3"
+              IsVisible="{Binding IsExitOverlayVisible}"
+              BackgroundColor="#CC000000">
+            <Border BackgroundColor="#1E1E1E"
+                    StrokeShape="RoundRectangle 12"
+                    StrokeThickness="0"
+                    Padding="32"
+                    HorizontalOptions="Center"
+                    VerticalOptions="Center"
+                    WidthRequest="340">
+                <StackLayout Spacing="20">
+                    <Label Text="{Binding ExitPasswordTitle}"
+                           TextColor="White"
+                           FontSize="20"
+                           FontAttributes="Bold"
+                           HorizontalTextAlignment="Center" />
+
+                    <Entry Text="{Binding ExitPassword}"
+                           Placeholder="{Binding ExitPasswordHint}"
+                           IsPassword="True"
+                           PlaceholderColor="#9E9E9E"
+                           TextColor="White"
+                           BackgroundColor="#2C2C2C"
+                           FontSize="18"
+                           HorizontalTextAlignment="Center" />
+
+                    <Label Text="{Binding ExitPasswordError}"
+                           TextColor="#EF5350"
+                           FontSize="14"
+                           HorizontalTextAlignment="Center"
+                           IsVisible="{Binding HasExitPasswordError}" />
+
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                        <Button Grid.Column="0"
+                                Text="{Binding CancelLabel}"
+                                BackgroundColor="#424242"
+                                TextColor="White"
+                                CornerRadius="8"
+                                Command="{Binding CancelExitCommand}" />
+                        <Button Grid.Column="1"
+                                Text="{Binding ConfirmLabel}"
+                                BackgroundColor="#B71C1C"
+                                TextColor="White"
+                                CornerRadius="8"
+                                Command="{Binding ConfirmExitCommand}" />
+                    </Grid>
+                </StackLayout>
+            </Border>
+        </Grid>
+
+    </Grid>
+</ContentPage>

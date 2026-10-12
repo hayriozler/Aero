@@ -1,0 +1,349 @@
+@page "/flights/new"
+@attribute [Authorize]
+@using System.Text.Json
+@using AeroFlight.Web.Services.Flights
+@using AeroFlight.Web.Services.Metadatas
+@inject IApiClient Api
+@inject IFlightsClient Flights
+@inject IMetadataClient MetadataData
+@inject ISnackbar Snackbar
+@inject NavigationManager Navigation
+
+<PageTitle>Create New Flight — AeroFlight</PageTitle>
+
+<div class="d-flex align-center mb-4" style="gap:8px">
+    <MudIconButton Icon="@Icons.Material.Filled.ArrowBack" OnClick="@(() => Navigation.NavigateTo("/"))" />
+    <div>
+        <MudText Typo="Typo.h5">Create New Flight</MudText>
+        <MudText Typo="Typo.body2" Color="Color.Secondary">Enter operational details to schedule a new movement.</MudText>
+    </div>
+</div>
+
+<MudPaper Class="pa-6" Elevation="1">
+    <MudForm @ref="_form" Model="_model">
+        <MudText Typo="Typo.h6" Class="mb-3">Core Identifiers</MudText>
+        <MudGrid Spacing="3" Class="mb-6">
+            <MudItem xs="12" md="4">
+                <MudSelect T="string" @bind-Value="_model.MovementType" Label="Movement Type" Required="true"
+                           RequiredError="Movement type is required">
+                    <MudSelectItem T="string" Value="@("Arrival")">Arrival</MudSelectItem>
+                    <MudSelectItem T="string" Value="@("Departure")">Departure</MudSelectItem>
+                </MudSelect>
+            </MudItem>
+
+            <MudItem xs="12" md="4">
+                <MudTextField @bind-Value="_model.FlightNumber" Label="Flight Number" Required="true"
+                              RequiredError="Flight number is required" MaxLength="FlightNumberFormat.MaxLength"
+                              Validation="@(new Func<string, string?>(FlightNumberFormat.Validate))"
+                              OnBlur="@(() => _model.FlightNumber = FlightNumberFormat.Normalize(_model.FlightNumber))"
+                              Placeholder="e.g., TK 2563" />
+            </MudItem>
+            <MudItem xs="12" md="4">
+                <MudAutocomplete T="string" @bind-Value="_model.AirlineCode" Label="Carrier" Required="true"
+                                 RequiredError="Carrier is required" SearchFunc="SearchAirlinesAsync"
+                                 ToStringFunc="@(code => LabelFor(_airlineLabels, code))"
+                                 MinCharacters="0" CoerceText="false" />
+            </MudItem>
+        </MudGrid>
+
+        <MudText Typo="Typo.h6" Class="mb-3">Logistics &amp; Equipment</MudText>
+        <MudGrid Spacing="3" Class="mb-6">
+            <MudItem xs="12" md="3">
+                <MudDatePicker @bind-Date="_model.ScheduledDate" Label="Scheduled Date" Required="true" DateFormat="@_dateFormat" />
+            </MudItem>
+            <MudItem xs="12" md="3">
+                <TimeMaskTextField @bind-Time="_model.ScheduledTime" Label="Scheduled Time (Local)" Required="true" />
+            </MudItem>
+            <MudItem xs="12" md="3">
+                <MudAutocomplete T="string" @bind-Value="_model.AircraftType" Label="Aircraft Type" Clearable="true"
+                                 SearchFunc="SearchAircraftTypesAsync"
+                                 ToStringFunc="@(code => LabelFor(_aircraftTypeLabels, code))"
+                                 MinCharacters="0" CoerceText="false" />
+            </MudItem>
+            <MudItem xs="12" md="3">
+                <MudAutocomplete T="string" @bind-Value="_model.Registration" Label="Aircraft Registration" Clearable="true"
+                                 SearchFunc="SearchAircraftAsync"
+                                 ToStringFunc="@(code => LabelFor(_aircraftLabels, code))"
+                                 MinCharacters="0" CoerceText="false" />
+            </MudItem>
+            <MudItem xs="12" md="3">
+                <MudSelect T="string" @bind-Value="_model.FlightTypeCode" Label="Flight Type" Required="true"
+                           RequiredError="Flight type is required">
+                    @foreach (var flightType in _flightTypes)
+                    {
+                        <MudSelectItem T="string" Value="@flightType.Code">@flightType.Label</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+        </MudGrid>
+
+        <MudText Typo="Typo.h6" Class="mb-3">Routing</MudText>
+        <MudGrid Spacing="3" Class="mb-4">
+            <MudItem xs="12" md="5">
+                <MudAutocomplete T="string" @bind-Value="_model.Origin"
+                                 Label="@(_model.MovementType == "Departure" ? "Next (IATA)" : "Origin (IATA)")"
+                                 Required="true"
+                                 RequiredError="@(_model.MovementType == "Departure" ? "Next is required" : "Origin is required")"
+                                 SearchFunc="SearchAirportsAsync"
+                                 ToStringFunc="@(code => LabelFor(_airportLabels, code))"
+                                 MinCharacters="0" CoerceText="false" />
+            </MudItem>
+            <MudItem xs="12" md="2" Class="d-flex justify-center align-center">
+                <MudIcon Icon="@Icons.Material.Filled.ArrowRightAlt" />
+            </MudItem>
+            <MudItem xs="12" md="5">
+                <MudAutocomplete T="string" @bind-Value="_model.Destination"
+                                 Label="@(_model.MovementType == "Departure" ? "Final Dest. (IATA)" : "Previous (IATA)")"
+                                 Required="true"
+                                 RequiredError="@(_model.MovementType == "Departure" ? "Final destination is required" : "Previous is required")"
+                                 SearchFunc="SearchAirportsAsync"
+                                 ToStringFunc="@(code => LabelFor(_airportLabels, code))"
+                                 MinCharacters="0" CoerceText="false" />
+            </MudItem>
+        </MudGrid>
+
+        <MudDivider Class="mb-4" />
+        <div class="d-flex justify-end" style="gap:8px">
+            <MudTooltip Text="Cancel">
+                <MudIconButton Icon="@Icons.Material.Filled.Close" OnClick="@(() => Navigation.NavigateTo("/"))" />
+            </MudTooltip>
+            <MudTooltip Text="Save Flight">
+                <MudIconButton Icon="@Icons.Material.Filled.Save" Color="Color.Primary" OnClick="SubmitAsync" />
+            </MudTooltip>
+        </div>
+    </MudForm>
+</MudPaper>
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthState { get; set; }
+
+    private MudForm _form = null!;
+    private readonly FlightFormModel _model = new();
+    private List<MetadataOption> _flightTypes = [];
+    private Dictionary<string, string> _airlineLabels = [];
+    private Dictionary<string, string> _airportLabels = [];
+    private Dictionary<string, string> _aircraftTypeLabels = [];
+    private Dictionary<string, string> _aircraftLabels = [];
+    private TimeZoneInfo _tenantTimeZone = TimeZoneInfo.Utc;
+    private string _dateFormat = TenantDateTimeFormat.DefaultDateFormat;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (AuthState is not null)
+        {
+            var state = await AuthState;
+            _tenantTimeZone = TenantTimeZone.Resolve(state.User);
+            _dateFormat = TenantDateTimeFormat.ResolveDateFormat(state.User);
+        }
+        try
+        {
+            var flightTypesTask = LoadMetadataOptionsAsync(MetadataCatalog.RouteOf("flighttypes"));
+            var airlineLabelsTask = LoadCodeLabelsAsync(MetadataCatalog.RouteOf("airlines"), "name");
+            var airportLabelsTask = LoadCodeLabelsAsync(MetadataCatalog.RouteOf("airports"), "name");
+            var aircraftTypeLabelsTask = LoadCodeLabelsAsync(MetadataCatalog.RouteOf("aircrafttypes"), "model");
+            var aircraftLabelsTask = LoadCodeLabelsAsync(MetadataCatalog.RouteOf("aircraft"), "owner");
+
+            await Task.WhenAll(flightTypesTask, airlineLabelsTask, airportLabelsTask, aircraftTypeLabelsTask, aircraftLabelsTask);
+
+            _flightTypes = await flightTypesTask;
+            _airlineLabels = await airlineLabelsTask;
+            _airportLabels = await airportLabelsTask;
+            _aircraftTypeLabels = await aircraftTypeLabelsTask;
+            _aircraftLabels = await aircraftLabelsTask;
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add($"Failed to load required entities: {ex.Message}", Severity.Error);
+        }
+    }
+
+    // Airlines (~5.6k rows), Aircraft (~28k rows), Airports and AircraftTypes are far too large for
+    // a fully-enumerated dropdown — rendering every option freezes the page. These search the
+    // cached full list (one fetch per tenant, see MetadataDataClient.GetAllAsync) as the
+    // user types instead.
+    private Task<IEnumerable<string>> SearchAirlinesAsync(string search, CancellationToken ct) => SearchCodesAsync(MetadataCatalog.RouteOf("airlines"), search, ct);
+    private Task<IEnumerable<string>> SearchAircraftAsync(string search, CancellationToken ct) => SearchCodesAsync(MetadataCatalog.RouteOf("aircraft"), search, ct);
+    private Task<IEnumerable<string>> SearchAircraftTypesAsync(string search, CancellationToken ct) => SearchCodesAsync(MetadataCatalog.RouteOf("aircrafttypes"), search, ct);
+    private Task<IEnumerable<string>> SearchAirportsAsync(string search, CancellationToken ct) => SearchCodesAsync(MetadataCatalog.RouteOf("airports"), search, ct);
+
+    private async Task<IEnumerable<string>> SearchCodesAsync(string route, string search, CancellationToken ct)
+    {
+        if (ct.IsCancellationRequested)
+            return [];
+
+        try
+        {
+            var rows = await MetadataData.GetAllAsync(route, ct);
+            IEnumerable<IReadOnlyDictionary<string, JsonElement>> matches = rows;
+
+            if (!string.IsNullOrWhiteSpace(search))
+                matches = matches.Where(row => RowMatches(row, search)).OrderBy(row => MatchRank(row, search));
+
+            return matches
+                .Select(row => row.TryGetValue("code", out var code) && code.ValueKind == JsonValueKind.String ? code.GetString() : null)
+                .Where(code => !string.IsNullOrWhiteSpace(code))
+                .Take(20)!;
+        }
+        catch (OperationCanceledException)
+        {
+            return [];
+        }
+        catch (Exception)
+        {
+            return [];
+        }
+    }
+
+    // An exact/prefix code match must never be pushed out of the Take(20) cap by a pile of
+    // looser name/description matches sorted ahead of it alphabetically (e.g. "SAW" the code
+    // losing to "Warsaw"/"Massawa" in the name field) — rank code matches first.
+    private static int MatchRank(IReadOnlyDictionary<string, JsonElement> row, string search)
+    {
+        var code = row.TryGetValue("code", out var c) && c.ValueKind == JsonValueKind.String ? c.GetString() : null;
+        if (code is null) return 3;
+        if (string.Equals(code, search, StringComparison.OrdinalIgnoreCase)) return 0;
+        if (code.StartsWith(search, StringComparison.OrdinalIgnoreCase)) return 1;
+        return 2;
+    }
+
+    // Matches on any string field in the row (code, name, displayName, etc.) so typing part of
+    // an airline/airport/aircraft NAME finds it, not just typing the code.
+    private static bool RowMatches(IReadOnlyDictionary<string, JsonElement> row, string search)
+    {
+        foreach (var value in row.Values)
+        {
+            if (value.ValueKind == JsonValueKind.String)
+            {
+                var s = value.GetString();
+                if (!string.IsNullOrEmpty(s) && s.Contains(search, StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+        }
+        return false;
+    }
+
+    private async Task<List<MetadataOption>> LoadMetadataOptionsAsync(string route)
+    {
+        var rows = await MetadataData.GetAllAsync(route);
+        var options = new List<MetadataOption>();
+        foreach (var row in rows)
+        {
+            if (!row.TryGetValue("code", out var codeElement) || codeElement.ValueKind != JsonValueKind.String)
+                continue;
+
+            var code = codeElement.GetString();
+            if (string.IsNullOrWhiteSpace(code))
+                continue;
+
+            var label = code;
+            if (row.TryGetValue("description", out var descriptionElement) && descriptionElement.ValueKind == JsonValueKind.String)
+            {
+                var description = descriptionElement.GetString();
+                if (!string.IsNullOrWhiteSpace(description))
+                    label = $"{code} — {description}";
+            }
+
+            options.Add(new MetadataOption(code, label));
+        }
+
+        return options;
+    }
+
+    private async Task<Dictionary<string, string>> LoadCodeLabelsAsync(string route, string descriptionField)
+    {
+        var rows = await MetadataData.GetAllAsync(route);
+        var labels = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var row in rows)
+        {
+            if (!row.TryGetValue("code", out var codeElement) || codeElement.ValueKind != JsonValueKind.String)
+                continue;
+
+            var code = codeElement.GetString();
+            if (string.IsNullOrWhiteSpace(code))
+                continue;
+
+            var label = code;
+            if (row.TryGetValue(descriptionField, out var descriptionElement) && descriptionElement.ValueKind == JsonValueKind.String)
+            {
+                var description = descriptionElement.GetString();
+                if (!string.IsNullOrWhiteSpace(description))
+                    label = $"{code} — {description}";
+            }
+
+            labels[code] = label;
+        }
+
+        return labels;
+    }
+
+    private static string LabelFor(Dictionary<string, string> labels, string? code) =>
+        string.IsNullOrWhiteSpace(code) ? "" : labels.TryGetValue(code, out var label) ? label : code;
+
+    private async Task SubmitAsync()
+    {
+        await _form.ValidateAsync();
+        if (!_form.IsValid)
+            return;
+
+        var localDate = _model.ScheduledDate ?? DateTime.Today;
+        var localTime = _model.ScheduledTime ?? TimeSpan.Zero;
+        var scheduled = TenantTimeZone.ToUtcOffset(localDate.Date + localTime, _tenantTimeZone);
+        var aircraftType = string.IsNullOrWhiteSpace(_model.AircraftType) ? null : _model.AircraftType;
+        var registration = string.IsNullOrWhiteSpace(_model.Registration) ? null : _model.Registration;
+
+        try
+        {
+            FlightResponse response;
+            if (_model.MovementType == "Arrival")
+            {
+                var request = new ArrivalCreateRequest(
+                    _model.AirlineCode,
+                    _model.FlightNumber,
+                    scheduled,
+                    _model.Origin,
+                    _model.FlightTypeCode,
+                    AircraftCode: registration,
+                    AircraftTypeCode: aircraftType,
+                    PreviousAirportCode: string.IsNullOrWhiteSpace(_model.Destination) ? null : _model.Destination);
+                response = await Flights.CreateArrivalAsync(request);
+            }
+            else
+            {
+                var request = new DepartureCreateRequest(
+                    _model.AirlineCode,
+                    _model.FlightNumber,
+                    scheduled,
+                    _model.Destination,
+                    _model.FlightTypeCode,
+                    AircraftCode: registration,
+                    AircraftTypeCode: aircraftType,
+                    NextAirportCode: string.IsNullOrWhiteSpace(_model.Origin) ? null : _model.Origin);
+                response = await Flights.CreateDepartureAsync(request);
+            }
+
+            Snackbar.Add($"Flight {response.AirlineCode}{response.FlightNumber} created.", Severity.Success);
+            Navigation.NavigateTo("/flights");
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add($"Failed to create flight: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private sealed class FlightFormModel
+    {
+        public string FlightNumber { get; set; } = "";
+        public string AirlineCode { get; set; } = "";
+        public string MovementType { get; set; } = "Arrival";
+        public DateTime? ScheduledDate { get; set; } = DateTime.Today;
+        public TimeSpan? ScheduledTime { get; set; }
+        public string AircraftType { get; set; } = "";
+        public string Registration { get; set; } = "";
+        public string FlightTypeCode { get; set; } = "J";
+        public string Origin { get; set; } = "";
+        public string Destination { get; set; } = "";
+    }
+
+    private sealed record MetadataOption(string Code, string Label);
+}

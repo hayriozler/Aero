@@ -1,0 +1,137 @@
+@using AeroFlight.Web.Services.Metadatas
+@using Microsoft.AspNetCore.Components.Forms
+
+@if (_loading)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="mb-3" />
+}
+else
+{
+    <MudFileUpload T="IReadOnlyList<IBrowserFile>" FilesChanged="UploadAsync" Accept="image/*" AppendMultipleFiles="true">
+        <CustomContent Context="fileUpload">
+            <MudTooltip Text="Add Image(s)">
+                <MudIconButton Icon="@Icons.Material.Filled.Upload" Color="Color.Primary"
+                               Disabled="@_busy" Class="mb-3" OnClick="@fileUpload.OpenFilePickerAsync" />
+            </MudTooltip>
+        </CustomContent>
+    </MudFileUpload>
+
+    @if (_images.Count == 0)
+    {
+        <MudText Typo="Typo.body2" Color="Color.Secondary">No images yet.</MudText>
+    }
+    else
+    {
+        <MudGrid Spacing="3">
+            @foreach (var image in _images)
+            {
+                <MudItem xs="12" sm="4">
+                    <MudPaper Class="pa-2 d-flex flex-column align-center" Outlined="true">
+                        @if (_previews.TryGetValue(image.Id, out var dataUri))
+                        {
+                            <MudImage Src="@dataUri" Height="120" Width="160" ObjectFit="ObjectFit.Cover" Class="mb-2" />
+                        }
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error" Disabled="@_busy" OnClick="@(() => DeleteAsync(image.Id))" />
+                    </MudPaper>
+                </MudItem>
+            }
+        </MudGrid>
+    }
+}
+
+@code {
+    private const long MaxFileSize = 5 * 1024 * 1024;
+
+    [Parameter, EditorRequired]
+    public string AirportCode { get; set; } = null!;
+
+    [Inject]
+    private IAirportImagesClient Client { get; set; } = null!;
+
+    [Inject]
+    private ISnackbar Snackbar { get; set; } = null!;
+
+    private IReadOnlyList<AirportImageResponse> _images = [];
+    private readonly Dictionary<int, string> _previews = [];
+    private bool _loading = true;
+    private bool _busy;
+
+    protected override async Task OnInitializedAsync() => await ReloadAsync();
+
+    private async Task ReloadAsync()
+    {
+        _loading = true;
+        try
+        {
+            _images = await Client.GetImagesAsync(AirportCode);
+            foreach (var image in _images)
+            {
+                if (_previews.ContainsKey(image.Id)) continue;
+                var data = await Client.GetImageAsync(AirportCode, image.Id);
+                if (data is { } img)
+                    _previews[image.Id] = ToDataUri(img.Data, img.ContentType);
+            }
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Could not load destination images.", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task UploadAsync(IReadOnlyList<IBrowserFile>? files)
+    {
+        if (files is null || files.Count == 0) return;
+
+        _busy = true;
+        try
+        {
+            foreach (var file in files)
+            {
+                using var stream = file.OpenReadStream(MaxFileSize);
+                using var buffer = new MemoryStream();
+                await stream.CopyToAsync(buffer);
+
+                await Client.UploadImageAsync(AirportCode, buffer.ToArray(), file.Name, file.ContentType, null);
+            }
+
+            await ReloadAsync();
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Could not upload one or more images.", Severity.Error);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task DeleteAsync(int id)
+    {
+        _busy = true;
+        try
+        {
+            await Client.DeleteImageAsync(AirportCode, id);
+            _previews.Remove(id);
+            await ReloadAsync();
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Could not delete the image.", Severity.Error);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private static string ToDataUri(byte[] data, string contentType) => $"data:{contentType};base64,{Convert.ToBase64String(data)}";
+}

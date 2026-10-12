@@ -1,0 +1,439 @@
+@page "/flights/departures"
+@using Aero.Scanner.Shared.Consts
+@using Aero.Scanner.Domain.Enums
+@using Microsoft.Extensions.Localization
+@using System.Text.Json
+@attribute [Authorize]
+@implements IAsyncDisposable
+@inject DepartureFlightApiClient Api
+@inject ContainerApiClient ContainerApi
+@inject SystemConfigurationApiClient SystemConfigApi
+@inject UserSettingsService Settings
+@inject ClientTimeService Time
+@inject IJSRuntime JS
+@inject ISnackbar Snackbar
+@inject AuthenticationStateProvider AuthState
+@inject IStringLocalizer<SharedResources> L
+
+<PageTitle>AeroScan BRS · Departure Flights</PageTitle>
+
+<style>
+    .brs-grid,
+    .brs-grid .mud-table-root,
+    .brs-grid .mud-table-container {
+        background-color: rgb(var(--surface)) !important;
+    }
+    .brs-grid .mud-table-head .mud-table-cell {
+        background-color: rgb(var(--surface-container)) !important;
+        color: rgb(var(--on-surface)) !important;
+        font-weight: 700;
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        border-bottom: 2px solid rgb(var(--outline-variant)) !important;
+    }
+    .brs-grid .mud-table-head tr:last-child .mud-table-cell {
+        background-color: rgb(var(--surface-container-low)) !important;
+        border-bottom: 1px solid rgb(var(--outline-variant)) !important;
+    }
+    .brs-grid .mud-table-head tr:last-child .mud-input,
+    .brs-grid .mud-table-head tr:last-child .mud-input-slot,
+    .brs-grid .mud-table-head tr:last-child input {
+        color: rgb(var(--on-surface)) !important;
+    }
+    .brs-grid tbody .mud-table-cell {
+        background-color: rgb(var(--surface)) !important;
+        color: rgb(var(--on-surface)) !important;
+        border-bottom: 1px solid rgb(var(--outline-variant) / 0.4) !important;
+    }
+    .brs-grid tbody .mud-table-row:hover .mud-table-cell {
+        background-color: rgb(var(--surface-container-high)) !important;
+    }
+    .brs-grid .mud-table-no-records {
+        background-color: rgb(var(--surface)) !important;
+        color: rgb(var(--on-surface-variant)) !important;
+    }
+    .brs-grid .mud-table-pagination,
+    .brs-grid .mud-table-pagination p,
+    .brs-grid .mud-table-pagination .mud-select-input,
+    .brs-grid .mud-table-pagination .mud-select-value {
+        background-color: rgb(var(--surface)) !important;
+        color: rgb(var(--on-surface-variant)) !important;
+    }
+    .brs-grid .mud-table-pagination .mud-icon-button {
+        color: rgb(var(--on-surface-variant)) !important;
+    }
+    .bag-count-cell { font-variant-numeric: tabular-nums; }
+    .bag-count-warn { color: rgb(var(--error)); font-weight: 700; }
+</style>
+
+<div class="p-6 space-y-6">
+
+  @*   <!-- Header -->
+    <header class="flex justify-between items-end flex-wrap gap-4">
+        <div>
+            <h1 class="text-4xl font-extrabold tracking-tighter text-on-surface uppercase font-headline">Departure Flights</h1>
+            <p class="text-on-surface-variant text-sm font-body">@L["Flights.Subtitle"]</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <MudTextField @bind-Value="_searchText"
+                          Placeholder="@L["Flights.SearchPlaceholder"]"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Search"
+                          IconSize="Size.Small"
+                          Class="mud-input-filled"
+                          Style="min-width:220px"
+                          Immediate="true" />
+            <button @onclick="RefreshAsync"
+                    class="flex items-center gap-2 px-4 py-2 bg-surface-container text-on-surface-variant hover:text-primary-container font-headline text-xs uppercase tracking-widest transition-colors"
+                    disabled="@_loading">
+                <span class="material-symbols-outlined text-sm @(_loading ? "animate-spin" : "")">refresh</span>
+                <span>@(_loading ? L["Common.Loading"].Value : Settings.AutoRefreshEnabled ? "Auto" : L["Common.Refresh"].Value)</span>
+            </button>
+        </div>
+    </header> *@
+
+    <!-- Filter toolbar -->
+    <div class="flex flex-wrap items-center gap-3 p-4 bg-surface-container rounded-sm">
+        <span class="font-headline text-xs uppercase tracking-widest text-on-surface-variant font-medium">@L["Common.Filter"]:</span>
+        <MudDatePicker Label="@L["Common.From"]"
+                       Date="_fromDate"
+                       DateChanged="@((v) => _fromDate = v)"
+                       Variant="Variant.Outlined"
+                       Margin="Margin.Dense"
+                       DateFormat="dd MMM yyyy"
+                       Style="min-width:140px" />
+        <MudDatePicker Label="@L["Common.To"]"
+                       Date="_toDate"
+                       DateChanged="@((v) => _toDate = v)"
+                       Variant="Variant.Outlined"
+                       Margin="Margin.Dense"
+                       DateFormat="dd MMM yyyy"
+                       Style="min-width:140px" />
+        <select @bind="_statusFilterStr"
+                class="brs-select"
+                style="min-width:160px">
+            <option value="">@L["Flights.AllStatuses"]</option>
+            @foreach (var s in Enum.GetValues<DepartureFlightStatus>())
+            {
+                <option value="@s.ToString()">@s.ToString()</option>
+            }
+        </select>
+        <MudCheckBox T="bool"
+                     @bind-Value="_showAll"
+                     Label="@L["Flights.ShowAll"]"
+                     Size="Size.Small"
+                     Color="Color.Default"
+                     Class="font-headline text-xs uppercase tracking-widest text-on-surface-variant" />
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Warning"
+                   Size="Size.Small"
+                   StartIcon="@Icons.Material.Filled.Search"
+                   OnClick="RefreshAsync"
+                   Disabled="@_loading"
+                   Class="font-headline text-xs font-bold uppercase tracking-widest">
+            @L["Flights.LoadFlights"]
+        </MudButton>
+        @if (HasActiveFilters)
+        {
+            <MudButton Variant="Variant.Text" Size="Size.Small"
+                       StartIcon="@Icons.Material.Filled.FilterAltOff"
+                       Color="Color.Default" OnClick="ClearFilters"
+                       Class="font-headline text-xs uppercase tracking-widest">
+                @L["Common.Clear"]
+            </MudButton>
+        }
+        <div class="ml-auto text-xs font-headline text-on-surface-variant uppercase tracking-widest">
+            @FilteredFlights.Count() @L["Flights.Count"]
+        </div>
+    </div>
+
+    <!-- Main DataGrid with hierarchy expansion -->
+    <MudDataGrid T="DepartureFlightDto"
+                 Items="@FilteredFlights"
+                 SortMode="SortMode.Multiple"
+                 Filterable="true"
+                 FilterMode="DataGridFilterMode.ColumnFilterMenu"
+                 Dense="true"
+                 Hover="true"
+                 Striped="false"
+                 Loading="@_loading"
+                 LoadingProgressColor="Color.Warning"
+                 Class="brs-grid">
+
+        <Columns>
+            <HierarchyColumn T="DepartureFlightDto" />
+
+            <PropertyColumn Property="f => f.AirlineCode" Title="@L["Flights.ColAirline"]" Sortable="true" Filterable="true">
+                <CellTemplate>
+                    <span class="font-mono text-sm text-on-surface">@context.Item.AirlineCode</span>
+                </CellTemplate>
+            </PropertyColumn>
+
+            <PropertyColumn Property="f => f.FlightNumber" Title="@L["Flights.ColFlight"]" Sortable="true" Filterable="true">
+                <CellTemplate>
+                    <span class="font-headline font-bold text-primary-container">@context.Item.FlightNumber</span>
+                </CellTemplate>
+            </PropertyColumn>
+
+            <PropertyColumn Property="f => f.Destination" Title="@L["Flights.ColOrigin"]" Sortable="true" Filterable="false">
+                <CellTemplate>
+                    <span class="font-mono text-on-surface-variant">@context.Item.Destination</span>
+                </CellTemplate>
+            </PropertyColumn>
+
+            <PropertyColumn Property="f => f.OperationDateTime" Title="Ope." Sortable="true" Filterable="false">
+                <CellTemplate>
+                    <span class="font-mono text-on-surface-variant text-xs">
+                        @context.Item.FlightIataDate<span class="opacity-40">/</span>@Time.FormatTime(context.Item.OperationDateTime)
+                    </span>
+                </CellTemplate>
+            </PropertyColumn>
+
+            <PropertyColumn Property="f => f.Status" Title="@L["Flights.ColStatus"]" Sortable="true" Filterable="false">
+                <CellTemplate>
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Filled"
+                             Color="@StatusChipColor(context.Item.Status)">
+                        @context.Item.Status.ToString().ToUpperInvariant()
+                    </MudChip>
+                </CellTemplate>
+            </PropertyColumn>
+
+            <!-- Bag count columns -->
+            <PropertyColumn Property="f => f.ExpectedBagCount" Title="Exp" Sortable="false" Filterable="false">
+                <CellTemplate>
+                    <span class="bag-count-cell text-xs font-mono text-on-surface-variant">@context.Item.ExpectedBagCount</span>
+                </CellTemplate>
+            </PropertyColumn>
+
+            <PropertyColumn Property="f => f.LoadedBagCount" Title="Loaded" Sortable="false" Filterable="false">
+                <CellTemplate>
+                    <span class="bag-count-cell text-xs font-mono text-on-surface">@context.Item.LoadedBagCount</span>
+                </CellTemplate>
+            </PropertyColumn>
+
+            <PropertyColumn Property="f => f.MissingBagCount" Title="Missing" Sortable="false" Filterable="false">
+                <CellTemplate>
+                    <span class="bag-count-cell text-xs font-mono @(context.Item.MissingBagCount > 0 ? "bag-count-warn" : "text-on-surface-variant")">
+                        @context.Item.MissingBagCount
+                    </span>
+                </CellTemplate>
+            </PropertyColumn>
+
+            <PropertyColumn Property="f => f.OffloadedCount" Title="Offld" Sortable="false" Filterable="false">
+                <CellTemplate>
+                    <span class="bag-count-cell text-xs font-mono @(context.Item.OffloadedCount > 0 ? "text-warning" : "text-on-surface-variant")">
+                        @context.Item.OffloadedCount
+                    </span>
+                </CellTemplate>
+            </PropertyColumn>
+
+            <PropertyColumn Property="f => f.WaitingToLoadBagCount" Title="Waiting" Sortable="false" Filterable="false">
+                <CellTemplate>
+                     <span class="bag-count-cell text-xs font-mono ">
+                        @context.Item.WaitingToLoadBagCount
+                    </span>
+                </CellTemplate>
+            </PropertyColumn>
+
+            @if (_isAirportOperator)
+            {
+                <PropertyColumn Property="f => f.HandlingCompanyCode" Title="Handler" Sortable="true" Filterable="false">
+                    <CellTemplate>
+                        <span class="text-xs font-mono text-on-surface-variant">@(context.Item.HandlingCompanyCode ?? "—")</span>
+                    </CellTemplate>
+                </PropertyColumn>
+
+                <TemplateColumn T="DepartureFlightDto" Sortable="false" Filterable="false" CellClass="text-right">
+                    <CellTemplate>
+                        <MudIconButton Icon="@Icons.Material.Outlined.History"
+                                       Size="Size.Small"
+                                       OnClick="@(() => OpenAudit(context.Item.Id, context.Item.AirlineCode, context.Item.FlightNumber, context.Item.FlightIataDate))" />
+                    </CellTemplate>
+                </TemplateColumn>
+            }
+        </Columns>
+
+        <!-- Expandable row — Container list per flight -->
+        <ChildRowContent Context="flightRow">
+            <ContainerRowPanel Flight="@flightRow.Item"
+                               IsAirportOperator="@_isAirportOperator"
+                               IsHandlingCompany="@_isHandlingCompany"
+                               ContainerApi="@ContainerApi"
+                               SystemConfigApi="@SystemConfigApi"
+                               OnMessage="@((msg) => { Snackbar.Add(msg.Text, msg.Severity); })"
+                               OnFormStateChanged="OnContainerFormStateChanged" />
+        </ChildRowContent>
+
+        <NoRecordsContent>
+            <div style="padding:3rem 0;text-align:center;color:var(--mud-palette-text-secondary);
+                        font-size:0.7rem;text-transform:uppercase;letter-spacing:0.08em;font-weight:600;">
+                @(_loading ? L["Flights.LoadingFlights"].Value
+                    : HasActiveFilters || !string.IsNullOrEmpty(_searchText)
+                        ? L["Flights.NoMatch"].Value
+                        : L["Flights.NoFlights"].Value)
+            </div>
+        </NoRecordsContent>
+        <PagerContent>
+            <MudDataGridPager T="DepartureFlightDto" PageSizeOptions="[15, 30, 50]" />
+        </PagerContent>
+    </MudDataGrid>
+</div>
+
+@if (_isAirportOperator)
+{
+    <AuditDrawer EntityType="DepartureFlight"
+                 PrimaryKey="@_auditPk"
+                 Label="@_auditLabel"
+                 IsOpen="@_auditOpen"
+                 IsOpenChanged="@(v => { _auditOpen = v; StateHasChanged(); })" />
+}
+
+@code {
+    private IReadOnlyList<DepartureFlightDto> _flights = [];
+    private string _searchText = string.Empty;
+    private DepartureFlightStatus? _statusFilter;
+    private DateTime? _fromDate = DateTime.Today.AddDays(-3);
+    private DateTime? _toDate   = DateTime.Today.AddDays(3);
+    private bool _showAll;
+    private bool _loading;
+    private bool _isAirportOperator;
+    private bool _isHandlingCompany;
+    private int _secondsUntilRefresh;
+    private CancellationTokenSource _cts = new();
+    // Tracks how many container forms are currently open; refresh is blocked while > 0
+    private int _openFormCount;
+
+    // Audit drawer state
+    private bool _auditOpen;
+    private string _auditPk = string.Empty;
+    private string _auditLabel = string.Empty;
+
+    private string _statusFilterStr
+    {
+        get => _statusFilter?.ToString() ?? string.Empty;
+        set => _statusFilter = string.IsNullOrEmpty(value) ? null
+                   : Enum.TryParse<DepartureFlightStatus>(value, out var v) ? v : null;
+    }
+
+    private bool HasActiveFilters => _statusFilter.HasValue || _showAll;
+
+    private IEnumerable<DepartureFlightDto> FilteredFlights
+    {
+        get
+        {
+            var result = _flights.AsEnumerable();
+            if (!string.IsNullOrWhiteSpace(_searchText))
+                result = result.Where(f =>
+                    f.AirlineCode.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ||
+                    f.FlightNumber.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ||
+                    f.FlightIataDate.Contains(_searchText, StringComparison.OrdinalIgnoreCase));
+            if (_statusFilter.HasValue)
+                result = result.Where(f => f.Status == _statusFilter.Value);
+            return result;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        var authState = await AuthState.GetAuthenticationStateAsync();
+        var companyType = authState.User.FindFirst("company_type")?.Value;
+        _isAirportOperator  = string.Equals(companyType, Policies.AirportOperator, StringComparison.OrdinalIgnoreCase);
+        _isHandlingCompany  = string.Equals(companyType, "HandlingAgent", StringComparison.OrdinalIgnoreCase);
+
+        await Task.WhenAll(Settings.LoadAsync(JS), Time.LoadAsync(JS));
+        _secondsUntilRefresh = Settings.RefreshIntervalSeconds;
+        await RefreshAsync();
+        Settings.OnSettingsChanged += OnSettingsChanged;
+        _ = RunPollingAsync();
+    }
+
+    private void ClearFilters()
+    {
+        _statusFilter = null;
+        _showAll = false;
+        _fromDate = DateTime.Today.AddDays(-3);
+        _toDate   = DateTime.Today.AddDays(3);
+        _ = RefreshAsync();
+    }
+
+    private void OnSettingsChanged()
+    {
+        _secondsUntilRefresh = Settings.RefreshIntervalSeconds;
+        InvokeAsync(StateHasChanged);
+    }
+
+    private async Task RunPollingAsync()
+    {
+        try
+        {
+            while (!_cts.Token.IsCancellationRequested)
+            {
+                await Task.Delay(1_000, _cts.Token);
+                if (!Settings.AutoRefreshEnabled) continue;
+
+                _secondsUntilRefresh--;
+                if (_secondsUntilRefresh > 0) continue;
+
+                _secondsUntilRefresh = Settings.RefreshIntervalSeconds;
+                await RefreshAsync();
+            }
+        }
+        catch (OperationCanceledException) { }
+    }
+
+    private async Task RefreshAsync()
+    {
+        if (_openFormCount > 0) return;
+
+        _loading = true;
+        await InvokeAsync(StateHasChanged);
+        try
+        {
+            _flights = await Api.GetFlightsAsync(_showAll, _fromDate, _toDate, _cts.Token);
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"{L["Flights.ErrorLoad"]}: {ex.Message}", Severity.Error);
+            _flights = [];
+        }
+        _loading = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void OnContainerFormStateChanged(bool isOpen)
+    {
+        _openFormCount = Math.Max(0, _openFormCount + (isOpen ? 1 : -1));
+    }
+
+    private void OpenAudit(int flightId, string airlineCode, string flightNumber, string flightIataDate)
+    {
+        _auditPk    = JsonSerializer.Serialize(new { Id = flightId });
+        _auditLabel = $"{airlineCode}/{flightNumber}/{flightIataDate}";
+        _auditOpen  = true;
+        StateHasChanged();
+    }
+
+    private static Color StatusChipColor(DepartureFlightStatus status) => status switch
+    {
+        DepartureFlightStatus.Scheduled => Color.Default,
+        DepartureFlightStatus.CheckInOpen => Color.Warning,
+        DepartureFlightStatus.Boarding    => Color.Secondary,
+        DepartureFlightStatus.FinalCall   => Color.Error,
+        DepartureFlightStatus.Departed    => Color.Default,
+        DepartureFlightStatus.Cancelled   => Color.Error,
+        _                                     => Color.Default
+    };
+
+    public async ValueTask DisposeAsync()
+    {
+        Settings.OnSettingsChanged -= OnSettingsChanged;
+        await _cts.CancelAsync();
+        _cts.Dispose();
+    }
+
+    // Message type for snackbar forwarding from child component
+    public sealed record SnackbarMessage(string Text, Severity Severity);
+}

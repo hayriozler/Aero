@@ -1,0 +1,227 @@
+@using AeroFlight.Contracts.Flights
+@using AeroFlight.Web.Services
+@using AeroFlight.Web.Services.Flights
+@using AeroFlight.Web.Services.Metadatas
+@inject IMetadataClient Metadata
+
+<MudDialog>
+    <DialogContent>
+        <MudForm @ref="_form" Model="_model">
+            <MudGrid Spacing="3">
+                <MudItem xs="12" md="6">
+                    <MudSelect T="string" @bind-Value="_model.Code" Label="Park Position Code" Clearable="true"
+                               HelperText="Optional — leave blank to add a placeholder and assign a code later">
+                        @foreach (var option in CodeOptions)
+                        {
+                            <MudSelectItem T="string" Value="@option.Code">@option.Label</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudDatePicker @bind-Date="_beginDate" Label="Begin Date" Required="true" DateFormat="@_dateFormat" />
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <TimeMaskTextField @bind-Time="_beginTime" Label="Begin Time" Required="true" />
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudDatePicker @bind-Date="_endDate" Label="End Date" Required="true" DateFormat="@_dateFormat" />
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <TimeMaskTextField Time="_endTime" TimeChanged="OnEndTimeChanged" Label="End Time" Required="true" />
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudDatePicker @bind-Date="_actualBeginDate" Label="Actual Begin Date" Clearable="true" DateFormat="@_dateFormat" />
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <TimeMaskTextField Time="_actualBeginTime" TimeChanged="OnActualBeginTimeChanged" Label="Actual Begin Time" Clearable="true"
+                                       OnDoubleClick="StampActualBeginNowAndSaveAsync" />
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudDatePicker @bind-Date="_actualEndDate" Label="Actual End Date" Clearable="true" DateFormat="@_dateFormat" />
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <TimeMaskTextField Time="_actualEndTime" TimeChanged="OnActualEndTimeChanged" Label="Actual End Time" Clearable="true"
+                                       OnDoubleClick="StampActualEndNowAndSaveAsync" />
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudAutocomplete T="string" @bind-Value="_model.PayerCompanyCode" Label="Payer" Clearable="true"
+                                     SearchFunc="SearchPayerCompaniesAsync" MinCharacters="0" CoerceText="false" />
+                </MudItem>
+            </MudGrid>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudTooltip Text="Cancel">
+            <MudIconButton Icon="@Icons.Material.Filled.Close" OnClick="Cancel" />
+        </MudTooltip>
+        <MudTooltip Text="Save">
+            <MudIconButton Icon="@Icons.Material.Filled.Save" Color="Color.Primary" OnClick="SubmitAsync" />
+        </MudTooltip>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = null!;
+
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthState { get; set; }
+
+    [Parameter]
+    public OpsParkPositionResponse? Existing { get; set; }
+
+    [Parameter]
+    public IReadOnlyList<FlightResourceCodeOption> CodeOptions { get; set; } = [];
+
+    [Parameter]
+    public int DefaultDurationMinutes { get; set; } = AeroFlight.Contracts.Flights.ResourceDefaultsConstants.FallbackDurationMinutes;
+
+    private MudForm _form = null!;
+    private readonly EditModel _model = new();
+    private DateTime? _beginDate;
+    private TimeSpan? _beginTime;
+    private DateTime? _endDate;
+    private TimeSpan? _endTime;
+    private DateTime? _actualBeginDate;
+    private TimeSpan? _actualBeginTime;
+    private DateTime? _actualEndDate;
+    private TimeSpan? _actualEndTime;
+    private TimeZoneInfo _tenantTimeZone = TimeZoneInfo.Utc;
+    private string _dateFormat = TenantDateTimeFormat.DefaultDateFormat;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (AuthState is not null)
+        {
+            var state = await AuthState;
+            _tenantTimeZone = TenantTimeZone.Resolve(state.User);
+            _dateFormat = TenantDateTimeFormat.ResolveDateFormat(state.User);
+        }
+
+        if (Existing is { } e)
+        {
+            _model.Code = e.Code ?? "";
+            _model.PayerCompanyCode = e.PayerCompanyCode ?? "";
+
+            var beginLocal = TenantTimeZone.ToLocal(e.BeginPlan, _tenantTimeZone);
+            _beginDate = beginLocal.Date;
+            _beginTime = beginLocal.TimeOfDay;
+
+            var endLocal = TenantTimeZone.ToLocal(e.EndPlan, _tenantTimeZone);
+            _endDate = endLocal.Date;
+            _endTime = endLocal.TimeOfDay;
+
+            if (e.BeginActual is { } ba)
+            {
+                var local = TenantTimeZone.ToLocal(ba, _tenantTimeZone);
+                _actualBeginDate = local.Date;
+                _actualBeginTime = local.TimeOfDay;
+            }
+            if (e.EndActual is { } ea)
+            {
+                var local = TenantTimeZone.ToLocal(ea, _tenantTimeZone);
+                _actualEndDate = local.Date;
+                _actualEndTime = local.TimeOfDay;
+            }
+        }
+        else
+        {
+            var nowLocal = TenantTimeZone.ToLocal(DateTimeOffset.UtcNow, _tenantTimeZone);
+            var endLocal = nowLocal.AddMinutes(DefaultDurationMinutes);
+            _beginDate = nowLocal.Date;
+            _beginTime = nowLocal.TimeOfDay;
+            _endDate = endLocal.Date;
+            _endTime = endLocal.TimeOfDay;
+        }
+    }
+
+    private async Task SubmitAsync()
+    {
+        await _form.ValidateAsync();
+        if (!_form.IsValid || _beginDate is null || _endDate is null)
+            return;
+
+        var beginPlan = TenantTimeZone.ToUtcOffset(_beginDate.Value.Date + (_beginTime ?? TimeSpan.Zero), _tenantTimeZone);
+        var endPlan = TenantTimeZone.ToUtcOffset(_endDate.Value.Date + (_endTime ?? TimeSpan.Zero), _tenantTimeZone);
+        var beginActual = Combine(_actualBeginDate, _actualBeginTime);
+        var endActual = Combine(_actualEndDate, _actualEndTime);
+
+        var request = new OpsParkPositionRequest(
+            Blank(_model.Code),
+            beginPlan,
+            endPlan,
+            beginActual,
+            endActual,
+            Blank(_model.PayerCompanyCode));
+
+        MudDialog.Close(DialogResult.Ok(request));
+    }
+
+    // Entering a time with no date yet is ambiguous, so default it to the Plan Begin date rather
+    // than leaving it blank — End/Actual Begin/Actual End are almost always the same day.
+    private void OnEndTimeChanged(TimeSpan? value)
+    {
+        _endTime = value;
+        _endDate ??= _beginDate;
+    }
+
+    private void OnActualBeginTimeChanged(TimeSpan? value)
+    {
+        _actualBeginTime = value;
+        _actualBeginDate ??= _beginDate;
+    }
+
+    private void OnActualEndTimeChanged(TimeSpan? value)
+    {
+        _actualEndTime = value;
+        _actualEndDate ??= _beginDate;
+    }
+
+    // Double-click on the Actual Begin/End Time field is a shortcut for "this just happened, right
+    // now" — stamps today's date/time instead of the operator typing both fields. Park positions
+    // have no status field, so there's nothing to nudge beyond the timestamp itself.
+    private void StampActualBeginNow()
+    {
+        var nowLocal = TenantTimeZone.ToLocal(DateTimeOffset.UtcNow, _tenantTimeZone);
+        _actualBeginDate = nowLocal.Date;
+        _actualBeginTime = nowLocal.TimeOfDay;
+    }
+
+    private void StampActualEndNow()
+    {
+        var nowLocal = TenantTimeZone.ToLocal(DateTimeOffset.UtcNow, _tenantTimeZone);
+        _actualEndDate = nowLocal.Date;
+        _actualEndTime = nowLocal.TimeOfDay;
+    }
+
+    // The double-click gesture itself saves immediately — matching the park position grid's own
+    // double-click, which persists the row right away rather than waiting for a separate Save click.
+    private async Task StampActualBeginNowAndSaveAsync()
+    {
+        StampActualBeginNow();
+        await SubmitAsync();
+    }
+
+    private async Task StampActualEndNowAndSaveAsync()
+    {
+        StampActualEndNow();
+        await SubmitAsync();
+    }
+
+    private DateTimeOffset? Combine(DateTime? date, TimeSpan? time) =>
+        date is { } d ? TenantTimeZone.ToUtcOffset(d.Date + (time ?? TimeSpan.Zero), _tenantTimeZone) : null;
+
+    private static string? Blank(string? value) => string.IsNullOrWhiteSpace(value) ? null : value;
+
+    private async Task<IEnumerable<string>> SearchPayerCompaniesAsync(string search, CancellationToken ct) =>
+        await MetadataCodeSearch.SearchAsync(Metadata, MetadataCatalog.RouteOf("companies"), search, ct);
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private sealed class EditModel
+    {
+        public string Code { get; set; } = "";
+        public string HandlingAgentCode { get; set; } = "";
+        public string PayerCompanyCode { get; set; } = "";
+    }
+}

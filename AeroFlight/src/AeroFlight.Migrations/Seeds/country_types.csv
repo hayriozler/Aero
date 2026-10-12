@@ -1,0 +1,5 @@
+code,description,severity
+D,Domestic,1
+T,Transborder,30
+I,International,60
+A,All,99

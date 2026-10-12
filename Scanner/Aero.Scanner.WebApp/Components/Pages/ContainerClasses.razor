@@ -1,0 +1,221 @@
+@page "/container-classes"
+@using System.Text.Json
+@attribute [Authorize]
+@inject ContainerApiClient Api
+@inject ISnackbar Snackbar
+@inject AuthenticationStateProvider AuthState
+@inject IStringLocalizer<SharedResources> L
+
+<PageTitle>AeroScan BRS · Container Classes</PageTitle>
+
+<div class="p-6 space-y-6">
+
+    @if (!_isAirportOperator)
+    {
+        <div class="bg-secondary/10 border border-secondary/30 p-6 text-center">
+            <span class="material-symbols-outlined text-secondary text-4xl block mb-2">block</span>
+            <p class="text-secondary font-headline uppercase tracking-widest text-sm font-bold">Access Restricted</p>
+            <p class="text-on-surface-variant text-xs mt-1">This page is only accessible to Airport Operator personnel.</p>
+        </div>
+        return;
+    }
+
+    <header class="flex justify-between items-end flex-wrap gap-4">
+        <div>
+            <h1 class="text-4xl font-extrabold tracking-tighter text-on-surface uppercase font-headline">Container Classes</h1>
+            <p class="text-on-surface-variant text-sm font-body">Container class reference data per type</p>
+        </div>
+        <button @onclick="OpenAddForm"
+                class="flex items-center gap-2 px-4 py-2 bg-primary-container text-on-primary font-headline text-xs uppercase tracking-widest transition-colors hover:opacity-90">
+            <span class="material-symbols-outlined text-sm">add</span>
+            Add Class
+        </button>
+    </header>
+
+    @if (_formVisible)
+    {
+        <section class="bg-surface-container p-6 space-y-4 border border-outline-variant/40">
+            <h2 class="text-xs font-bold uppercase tracking-widest text-on-surface-variant font-headline">
+                @(_editTypeCode is not null ? "Edit Container Class" : "New Container Class")
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="space-y-1">
+                    <label class="text-xs font-headline uppercase tracking-widest text-on-surface-variant">Type Code *</label>
+                    <MudTextField @bind-Value="_form.ContainerTypeCode" Placeholder="e.g. A" Variant="Variant.Outlined"
+                                  Margin="Margin.Dense" MaxLength="1" Disabled="@(_editTypeCode is not null)" />
+                </div>
+                <div class="space-y-1">
+                    <label class="text-xs font-headline uppercase tracking-widest text-on-surface-variant">Class Code *</label>
+                    <MudTextField @bind-Value="_form.ClassCode" Placeholder="e.g. A" Variant="Variant.Outlined"
+                                  Margin="Margin.Dense" MaxLength="1" Disabled="@(_editTypeCode is not null)" />
+                </div>
+                <div class="space-y-1">
+                    <label class="text-xs font-headline uppercase tracking-widest text-on-surface-variant">Description *</label>
+                    <MudTextField @bind-Value="_form.Description" Placeholder="e.g. Standard ULD" Variant="Variant.Outlined" Margin="Margin.Dense" MaxLength="20" />
+                </div>
+            </div>
+            <div class="flex items-center gap-3 pt-2">
+                <button @onclick="SaveAsync" disabled="@_saving"
+                        class="px-6 py-2 bg-primary-container text-on-primary font-headline text-xs uppercase tracking-widest transition-colors hover:opacity-90 disabled:opacity-50">
+                    @(_saving ? "Saving…" : "Save")
+                </button>
+                <button @onclick="CloseForm"
+                        class="px-6 py-2 bg-surface-container-high text-on-surface-variant font-headline text-xs uppercase tracking-widest transition-colors hover:text-on-surface">
+                    Cancel
+                </button>
+                @if (!string.IsNullOrEmpty(_formError))
+                {
+                    <span class="text-xs text-error font-body">@_formError</span>
+                }
+            </div>
+        </section>
+    }
+
+    <MudDataGrid T="ContainerClassDto" Items="@_items" SortMode="SortMode.Single" Dense="true" Hover="true"
+                 Loading="@_loading" LoadingProgressColor="Color.Warning" Class="brs-grid">
+        <Columns>
+            <PropertyColumn Property="c => c.ContainerTypeCode" Title="Type Code" Sortable="true">
+                <CellTemplate>
+                    <span class="font-mono font-bold text-primary-container">@context.Item.ContainerTypeCode</span>
+                </CellTemplate>
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.ClassCode" Title="Class Code" Sortable="true">
+                <CellTemplate>
+                    <span class="font-mono text-on-surface">@context.Item.ClassCode</span>
+                </CellTemplate>
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.Description" Title="Description" Sortable="true" />
+            <TemplateColumn Title="" CellClass="text-right">
+                <CellTemplate>
+                    <div class="flex justify-end gap-3">
+                        <button @onclick="() => OpenEditForm(context.Item)"
+                                class="text-on-surface-variant hover:text-primary-container transition-colors" title="Edit">
+                            <span class="material-symbols-outlined text-base">edit</span>
+                        </button>
+                        <button @onclick="() => DeleteAsync(context.Item)"
+                                class="text-on-surface-variant hover:text-error transition-colors" title="Delete">
+                            <span class="material-symbols-outlined text-base">delete</span>
+                        </button>
+                        <button @onclick="() => OpenAudit(context.Item)"
+                                    class="text-on-surface-variant hover:text-warning transition-colors" title="Audit History">
+                                <span class="material-symbols-outlined text-base">history</span>
+                            </button>
+                    </div>
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+        <NoRecordsContent>
+            <div style="padding:3rem 0;text-align:center;color:var(--mud-palette-text-secondary);font-size:0.7rem;text-transform:uppercase;letter-spacing:0.08em;font-weight:600;">
+                @(_loading ? "Loading…" : "No container classes found")
+            </div>
+        </NoRecordsContent>
+        <PagerContent>
+            <MudDataGridPager T="ContainerClassDto" PageSizeOptions="[15, 30, 50]" />
+        </PagerContent>
+    </MudDataGrid>
+</div>
+<AuditDrawer EntityType="ContainerTypeClass" PrimaryKey="@_auditPk" Label="@_auditLabel" @bind-IsOpen="_auditOpen" />
+
+@code {
+    private IReadOnlyList<ContainerClassDto> _items = [];
+    private bool _loading;
+    private bool _formVisible;
+    private bool _saving;
+    private string _formError = string.Empty;
+    private string? _editTypeCode;
+    private bool _isAirportOperator;
+
+     private bool   _auditOpen;
+    private string _auditPk    = string.Empty;
+    private string _auditLabel = string.Empty;
+
+    private ClassFormModel _form = new();
+
+    private sealed class ClassFormModel
+    {
+        public string ContainerTypeCode { get; set; } = string.Empty;
+        public string ClassCode { get; set; } = string.Empty;
+        public string? Description { get; set; }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthState.GetAuthenticationStateAsync();
+        _isAirportOperator = string.Equals(
+            authState.User.FindFirst("company_type")?.Value,
+            Policies.AirportOperator, StringComparison.OrdinalIgnoreCase);
+
+        if (!_isAirportOperator) return;
+
+        _loading = true;
+        _items = await Api.GetContainerClassesAsync();
+        _loading = false;
+    }
+
+    private void OpenAddForm() { _editTypeCode = null; _form = new(); _formError = string.Empty; _formVisible = true; }
+
+    private void OpenEditForm(ContainerClassDto c)
+    {
+        _editTypeCode = c.ContainerTypeCode;
+        _form = new() { ContainerTypeCode = c.ContainerTypeCode, ClassCode = c.ClassCode, Description = c.Description };
+        _formError = string.Empty;
+        _formVisible = true;
+    }
+
+    private void CloseForm() { _formVisible = false; _formError = string.Empty; }
+    private void OpenAudit(ContainerClassDto item)
+    {
+        _auditPk = JsonSerializer.Serialize(new Dictionary<string, object>
+        {
+            ["TypeCode"]   = item.ContainerTypeCode
+        });
+        _auditLabel = item.ContainerTypeCode;
+        _auditOpen  = true;
+    }
+
+    private async Task SaveAsync()
+    {
+        _formError = string.Empty;
+        if (string.IsNullOrWhiteSpace(_form.ContainerTypeCode)) { _formError = L["Validation.Required.TypeCode"]; return; }
+        if (string.IsNullOrWhiteSpace(_form.ClassCode))         { _formError = L["Validation.Required.ClassCode"]; return; }
+        if (string.IsNullOrWhiteSpace(_form.Description))       { _formError = L["Validation.Required.Description"]; return; }
+
+        _saving = true;
+        bool success; string? error;
+
+        if (_editTypeCode is not null)
+        {
+            (success, _, error) = await Api.UpdateContainerClassAsync(_editTypeCode, new Aero.Scanner.Shared.Requests.UpdateContainerClassRequest(_form.Description));
+        }
+        else
+        {
+            (success, _, error) = await Api.CreateContainerClassAsync(new Aero.Scanner.Shared.Requests.CreateContainerClassRequest(_form.ContainerTypeCode, _form.ClassCode, _form.Description));
+        }
+
+        _saving = false;
+
+        if (success)
+        {
+            Snackbar.Add(_editTypeCode is not null ? "Class updated." : "Class created.", Severity.Success);
+            CloseForm();
+            _items = await Api.GetContainerClassesAsync();
+        }
+        else
+        {
+            _formError = error ?? "An unexpected error occurred.";
+        }
+    }
+
+    private async Task DeleteAsync(ContainerClassDto c)
+    {
+        if (await Api.DeleteContainerClassAsync(c.ContainerTypeCode))
+        {
+            Snackbar.Add($"Class '{c.ContainerTypeCode}' deleted.", Severity.Info);
+            _items = await Api.GetContainerClassesAsync();
+        }
+        else
+        {
+            Snackbar.Add("Failed to delete class.", Severity.Error);
+        }
+    }
+}

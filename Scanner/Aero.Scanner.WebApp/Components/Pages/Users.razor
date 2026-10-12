@@ -1,0 +1,396 @@
+@page "/users"
+@using System.Text.Json
+@using Aero.Scanner.Shared.Consts
+@using Aero.Scanner.Shared.Requests
+@using Aero.Scanner.WebApp.Resources
+@attribute [Authorize(Roles = SystemDefinedRoles.RamSupervisor+","+SystemDefinedRoles.Admin)]
+@inject UserApiClient Api
+@inject CompanyApiClient CompanyApi
+@inject RoleApiClient RoleApi
+@inject ISnackbar Snackbar
+@inject AuthenticationStateProvider AuthState
+@inject IStringLocalizer<SharedResources> L
+
+<PageTitle>AeroScan BRS · User Management</PageTitle>
+
+<div class="p-6 space-y-6">
+
+    <!-- Header -->
+    <header class="flex justify-between items-end flex-wrap gap-4">
+        <div>
+            <h1 class="text-4xl font-extrabold tracking-tighter text-on-surface uppercase font-headline">User Management</h1>
+            <p class="text-on-surface-variant text-sm font-body">
+                @if (_isAirportOperator)
+                { <span>All system users</span> }
+                else
+                { <span>Users in your company</span> }
+            </p>
+        </div>
+        <button @onclick="OpenAddForm"
+                class="flex items-center gap-2 px-4 py-2 bg-primary-container text-on-primary font-headline text-xs uppercase tracking-widest hover:opacity-90">
+            <span class="material-symbols-outlined text-sm">person_add</span>
+            Add User
+        </button>
+    </header>
+
+    <!-- Add / Edit form -->
+    @if (_formVisible)
+    {
+        <section class="bg-surface-container p-6 space-y-5 border border-outline-variant/40">
+            <h2 class="text-xs font-bold uppercase tracking-widest text-on-surface-variant font-headline">
+                @(_editId.HasValue ? "Edit User" : "New User")
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                @if (!_editId.HasValue)
+                {
+                    <div class="space-y-1">
+                        <label class="text-xs font-headline uppercase tracking-widest text-on-surface-variant">Username *</label>
+                        <MudTextField @bind-Value="_form.Username" Placeholder="e.g. john.doe" Variant="Variant.Outlined"
+                                      Margin="Margin.Dense" MaxLength="50" />
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-xs font-headline uppercase tracking-widest text-on-surface-variant">Password *</label>
+                        <MudTextField @bind-Value="_form.Password" InputType="InputType.Password" Placeholder="Min. 8 characters"
+                                      Variant="Variant.Outlined" Margin="Margin.Dense" />
+                    </div>
+                }
+
+                <div class="space-y-1">
+                    <label class="text-xs font-headline uppercase tracking-widest text-on-surface-variant">Display Name *</label>
+                    <MudTextField @bind-Value="_form.DisplayName" Placeholder="e.g. John Doe" Variant="Variant.Outlined"
+                                  Margin="Margin.Dense" MaxLength="100" />
+                </div>
+
+                @if (_isAirportOperator && !_editId.HasValue)
+                {
+                    <div class="space-y-1">
+                        <label class="text-xs font-headline uppercase tracking-widest text-on-surface-variant">Company *</label>
+                        <MudSelect T="string" @bind-Value="_form.CompanyCode" Placeholder="Select company"
+                                   Variant="Variant.Outlined" Margin="Margin.Dense">
+                            @foreach (var c in _allCompanies)
+                            {
+                                <MudSelectItem T="string" Value="@c.Code">@c.Name (@c.Type)</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </div>
+                }
+
+                <div class="space-y-1 md:col-span-2">
+                    <label class="text-xs font-headline uppercase tracking-widest text-on-surface-variant">Roles</label>
+                    <div class="flex flex-wrap gap-x-4 gap-y-1 p-3 bg-surface-container-low">
+                        @foreach (var role in _allRoles)
+                        {
+                            <label class="flex items-center gap-2 cursor-pointer text-xs text-on-surface">
+                                <input type="checkbox"
+                                       checked="@_form.SelectedRoleNames.Contains(role.Name)"
+                                       @onchange="e => ToggleRole(role.Name, (bool)(e.Value ?? false))"
+                                       class="accent-primary" />
+                                @role.DisplayName
+                                <span class="font-mono text-[10px] text-on-surface-variant">(@role.Name)</span>
+                            </label>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3 pt-2">
+                <button @onclick="SaveAsync" disabled="@_saving"
+                        class="px-6 py-2 bg-primary-container text-on-primary font-headline text-xs uppercase tracking-widest hover:opacity-90 disabled:opacity-50">
+                    @(_saving ? "Saving…" : "Save")
+                </button>
+                <button @onclick="CloseForm"
+                        class="px-6 py-2 bg-surface-container-high text-on-surface-variant font-headline text-xs uppercase tracking-widest hover:text-on-surface">
+                    Cancel
+                </button>
+                @if (!string.IsNullOrEmpty(_formError))
+                {
+                    <span class="text-xs text-error font-body">@_formError</span>
+                }
+            </div>
+        </section>
+    }
+
+    <!-- Password reset dialog -->
+    @if (_resetPasswordUserId.HasValue)
+    {
+        <section class="bg-surface-container p-6 space-y-4 border border-secondary/40">
+            <h2 class="text-xs font-bold uppercase tracking-widest text-secondary font-headline">Reset Password — @_resetPasswordUsername</h2>
+            <div class="max-w-sm space-y-1">
+                <label class="text-xs font-headline uppercase tracking-widest text-on-surface-variant">New Password *</label>
+                <MudTextField @bind-Value="_newPassword" InputType="InputType.Password" Placeholder="Min. 8 characters"
+                              Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </div>
+            <div class="flex gap-3">
+                <button @onclick="ConfirmResetPasswordAsync" disabled="@_saving"
+                        class="px-6 py-2 bg-secondary text-on-secondary font-headline text-xs uppercase tracking-widest hover:opacity-90 disabled:opacity-50">
+                    @(_saving ? "Saving…" : "Reset Password")
+                </button>
+                <button @onclick="() => { _resetPasswordUserId = null; _newPassword = string.Empty; }"
+                        class="px-6 py-2 bg-surface-container-high text-on-surface-variant font-headline text-xs uppercase tracking-widest hover:text-on-surface">
+                    Cancel
+                </button>
+            </div>
+        </section>
+    }
+
+    <!-- Users data grid -->
+    <MudDataGrid T="UserDto" Items="@_users" SortMode="SortMode.Multiple" Filterable="true"
+                 FilterMode="DataGridFilterMode.ColumnFilterRow" Dense="true" Hover="true"
+                 Loading="@_loading" LoadingProgressColor="Color.Warning" Class="brs-grid">
+        <Columns>
+            <PropertyColumn Property="u => u.Username" Title="Username" Sortable="true" Filterable="true">
+                <CellTemplate>
+                    <span class="font-mono font-bold text-primary-container">@context.Item.Username</span>
+                </CellTemplate>
+            </PropertyColumn>
+            <PropertyColumn Property="u => u.DisplayName" Title="Display Name" Sortable="true" Filterable="true" />
+            <PropertyColumn Property="u => u.CompanyCode" Title="Company" Sortable="true" Filterable="true">
+                <CellTemplate>
+                    <div>
+                        <span class="text-on-surface">@context.Item.CompanyCode</span>
+                        <span class="ml-1 text-[10px] font-mono text-on-surface-variant">(@context.Item.CompanyType)</span>
+                    </div>
+                </CellTemplate>
+            </PropertyColumn>
+            <PropertyColumn Property="u => u.Roles" Title="Roles" Sortable="false" Filterable="false">
+                <CellTemplate>
+                    <div class="flex flex-wrap gap-1">
+                        @foreach (var r in context.Item.Roles)
+                        {
+                            <span class="text-[10px] px-1.5 py-0.5 bg-surface-container-high font-mono text-on-surface-variant">@r</span>
+                        }
+                    </div>
+                </CellTemplate>
+            </PropertyColumn>            
+            <TemplateColumn Title="Actions" Sortable="false" Filterable="false">
+                <CellTemplate>
+                    @{
+                        var canEdit = CanEdit(context.Item);
+                    }
+                    <div class="flex items-center gap-2">
+                        @if (canEdit)
+                        {
+                            <button @onclick="() => OpenEditForm(context.Item)" title="Edit"
+                                    class="text-on-surface-variant hover:text-primary-container transition-colors">
+                                <span class="material-symbols-outlined text-sm">edit</span>
+                            </button>
+                            <button @onclick="() => OpenResetPassword(context.Item)" title="Reset Password"
+                                    class="text-on-surface-variant hover:text-secondary transition-colors">
+                                <span class="material-symbols-outlined text-sm">lock_reset</span>
+                            </button>
+                        }
+                        else
+                        {
+                            <span class="text-[10px] text-on-surface-variant/40 italic">Read-only</span>
+                        }
+                        <button @onclick="() => OpenAudit(context.Item.Id, context.Item.Username)" title="Audit History"
+                                class="text-on-surface-variant hover:text-warning transition-colors">
+                            <span class="material-symbols-outlined text-sm">history</span>
+                        </button>
+                    </div>
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+        <NoRecordsContent>
+            <div style="padding:3rem 0;text-align:center;color:var(--mud-palette-text-secondary);font-size:0.7rem;text-transform:uppercase;letter-spacing:0.08em;font-weight:600;">
+                @(_loading ? "Loading users…" : "No users found")
+            </div>
+        </NoRecordsContent>
+        <PagerContent>
+            <MudDataGridPager T="UserDto" PageSizeOptions="[15, 30, 50]" />
+        </PagerContent>
+    </MudDataGrid>
+</div>
+
+<AuditDrawer EntityType="User" PrimaryKey="@_auditPk" Label="@_auditLabel" @bind-IsOpen="_auditOpen" />
+
+@code {
+    private IReadOnlyList<UserDto> _users = [];
+    private IReadOnlyList<CompanyDto> _allCompanies = [];
+    private IReadOnlyList<RoleDto> _allRoles = [];
+    private bool _loading;
+    private bool _formVisible;
+    private bool _saving;
+    private string _formError = string.Empty;
+    private int? _editId;
+
+    // Current user context
+    private bool _isAirportOperator;
+    private string _myCompanyCode = string.Empty;
+
+    private bool _auditOpen;
+    private string _auditPk = string.Empty;
+    private string _auditLabel = string.Empty;
+
+    // Password reset state
+    private int? _resetPasswordUserId;
+    private string _resetPasswordUsername = string.Empty;
+    private string _newPassword = string.Empty;
+
+    private UserFormModel _form = new();
+
+    private sealed class UserFormModel
+    {
+        public string Username    { get; set; } = string.Empty;
+        public string DisplayName { get; set; } = string.Empty;
+        public string Password    { get; set; } = string.Empty;
+        public string CompanyCode { get; set; } = string.Empty;
+        public HashSet<string> SelectedRoleNames { get; set; } = [];
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthState.GetAuthenticationStateAsync();
+        var user = authState.User;
+        var companyType = user.FindFirst("company_type")?.Value ?? string.Empty;
+        _isAirportOperator = string.Equals(companyType, Policies.AirportOperator, StringComparison.OrdinalIgnoreCase);
+        var companyCode = user.FindFirst("company_code");
+        if (companyCode is not null)
+            _myCompanyCode = companyCode.Value;
+
+        _loading = true;
+        try
+        {
+            var usersTask     = Api.GetAllAsync();
+            var companiesTask = _isAirportOperator ? CompanyApi.GetAllAsync() : Task.FromResult<IReadOnlyList<CompanyDto>>([]);
+            var rolesTask     = RoleApi.GetAllAsync();
+            await Task.WhenAll(usersTask, companiesTask, rolesTask);
+            _users        = usersTask.Result;
+            _allCompanies = companiesTask.Result;
+            _allRoles     = rolesTask.Result;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    // Airport operators can edit all users.
+    // Handling agents can only edit users within their own company.
+    private bool CanEdit(UserDto u)
+    {
+        if (_isAirportOperator) return true;
+        return u.CompanyCode == _myCompanyCode;
+    }
+
+    private void OpenAudit(int id, string label)
+    {
+        _auditPk = JsonSerializer.Serialize(new { Id = id });
+        _auditLabel = label;
+        _auditOpen = true;
+    }
+
+    private void OpenAddForm()
+    {
+        _editId = null;
+        _form = new() { CompanyCode = _myCompanyCode };
+        _formError = string.Empty;
+        _formVisible = true;
+    }
+
+    private void OpenEditForm(UserDto u)
+    {
+        _editId = u.Id;
+        _form = new()
+        {
+            DisplayName = u.DisplayName,
+            CompanyCode = u.CompanyCode,
+            SelectedRoleNames = _allRoles.Where(r => u.Roles.Contains(r.Name)).Select(r => r.Name).ToHashSet()
+        };
+        _formError = string.Empty;
+        _formVisible = true;
+    }
+
+    private void CloseForm() { _formVisible = false; _formError = string.Empty; }
+
+    private void ToggleRole(string roleName, bool selected)
+    {
+        if (selected) _form.SelectedRoleNames.Add(roleName);
+        else _form.SelectedRoleNames.Remove(roleName);
+    }
+
+    private async Task SaveAsync()
+    {
+        _formError = string.Empty;
+        if (string.IsNullOrWhiteSpace(_form.DisplayName)) { _formError = L["Validation.Required.DisplayName"]; return; }
+        if (!_editId.HasValue)
+        {
+            if (string.IsNullOrWhiteSpace(_form.Username))          { _formError = L["Validation.Required.Username"]; return; }
+            if (string.IsNullOrWhiteSpace(_form.Password) || _form.Password.Length < 8) { _formError = L["Validation.Password.MinLength"]; return; }
+        }
+
+        _saving = true;
+        bool success; string? error;
+        var roleNames = _form.SelectedRoleNames.ToList();
+
+        if (_editId.HasValue)
+        {
+            var req = new UpdateUserRequest(_form.DisplayName, roleNames);
+            (success, _, error) = await Api.UpdateAsync(_editId.Value, req);
+        }
+        else
+        {
+            var req = new CreateUserRequest(_form.Username, _form.DisplayName, _form.Password, _form.CompanyCode, roleNames);
+            (success, _, error) = await Api.CreateAsync(req);
+        }
+        _saving = false;
+
+        if (success)
+        {
+            Snackbar.Add(_editId.HasValue ? "User updated." : "User created.", Severity.Success);
+            CloseForm();
+            _users = await Api.GetAllAsync();
+        }
+        else
+        {
+            _formError = error ?? "An unexpected error occurred.";
+        }
+    }
+
+    private async Task DeactivateAsync(UserDto u)
+    {
+        var (ok, err) = await Api.DeactivateAsync(u.Id);
+        if (ok)
+        {
+            Snackbar.Add($"User '{u.Username}' deactivated.", Severity.Info);
+            _users = await Api.GetAllAsync();
+        }
+        else
+        {
+            Snackbar.Add(err ?? "Failed to deactivate user.", Severity.Error);
+        }
+    }
+
+    private void OpenResetPassword(UserDto u)
+    {
+        _resetPasswordUserId = u.Id;
+        _resetPasswordUsername = u.Username;
+        _newPassword = string.Empty;
+    }
+
+    private async Task ConfirmResetPasswordAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_newPassword) || _newPassword.Length < 8)
+        {
+            Snackbar.Add("Password must be at least 8 characters.", Severity.Warning);
+            return;
+        }
+        _saving = true;
+        var ok = await Api.ResetPasswordAsync(
+            _resetPasswordUserId!.Value,
+            new Aero.Scanner.Shared.Requests.AdminResetPasswordRequest(_newPassword));
+        _saving = false;
+
+        if (ok)
+        {
+            Snackbar.Add("Password reset successfully.", Severity.Success);
+            _resetPasswordUserId = null;
+            _newPassword = string.Empty;
+        }
+        else
+        {
+            Snackbar.Add("Failed to reset password.", Severity.Error);
+        }
+    }
+}

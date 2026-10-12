@@ -1,0 +1,78 @@
+@page "/login"
+@layout LoginLayout
+
+<PageTitle>Sign In — AeroFlight</PageTitle>
+
+<div class="login-backdrop">
+    <div class="login-brand">
+        <MudIcon Icon="@Icons.Material.Filled.FlightTakeoff" Class="login-brand__icon" />
+        <span class="login-brand__name">AeroFlight</span>
+        <span class="login-brand__tag">Airport Operational Database</span>
+    </div>
+
+    <MudPaper Class="login-card" Elevation="0">
+        <div class="login-card__header">
+            <MudText Typo="Typo.h5" Class="login-card__title">Welcome back</MudText>
+            <MudText Typo="Typo.body2" Class="login-card__subtitle">Sign in to the AODB Tactical Hub</MudText>
+        </div>
+
+        @if (Error == "1")
+        {
+            <MudAlert Severity="Severity.Error" Class="mb-4" Variant="Variant.Filled" Dense="true">
+                Invalid username or password.
+            </MudAlert>
+        }
+
+        @* Native POST — cookie sign-in needs a real HTTP request, not the interactive circuit. *@
+        <form method="post" action="/login" class="login-form">
+            <AntiforgeryToken />
+            <input type="hidden" name="ReturnUrl" value="@ReturnUrl" />
+
+            <div class="login-field">
+                <label class="login-field__label" for="login-tenant">Tenant</label>
+                <div class="login-field__control">
+                    <MudIcon Icon="@Icons.Material.Filled.Business" Class="login-field__icon" />
+                    <input id="login-tenant" name="TenantId" class="login-field__input"
+                           autocomplete="organization" autofocus required placeholder="Enter your tenant" />
+                </div>
+            </div>
+
+            <div class="login-field">
+                <label class="login-field__label" for="login-username">Username</label>
+                <div class="login-field__control">
+                    <MudIcon Icon="@Icons.Material.Filled.PersonOutline" Class="login-field__icon" />
+                    <input id="login-username" name="Username" class="login-field__input"
+                           autocomplete="username" required
+                           placeholder="Enter your username" />
+                </div>
+            </div>
+
+            <div class="login-field">
+                <label class="login-field__label" for="login-password">Password</label>
+                <div class="login-field__control">
+                    <MudIcon Icon="@Icons.Material.Filled.Lock" Class="login-field__icon" />
+                    <input id="login-password" name="Password" type="password" class="login-field__input"
+                           autocomplete="current-password" required
+                           placeholder="Enter your password" />
+                </div>
+            </div>
+
+            <button type="submit" class="login-submit">
+                <span>Sign In</span>
+                <MudIcon Icon="@Icons.Material.Filled.Login" Class="login-submit__icon" />
+            </button>
+        </form>
+    </MudPaper>
+
+    <MudText Typo="Typo.caption" Class="login-footer">© AeroFlight — authorized operators only</MudText>
+</div>
+
+@code {
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? Error { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? ReturnUrl { get; set; }
+}

@@ -1,0 +1,669 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Nav.Dashboard" xml:space="preserve">
+    <value>Dashboard</value>
+  </data>
+  <data name="Nav.Flights" xml:space="preserve">
+    <value>Flights</value>
+  </data>
+  <data name="Nav.Flights.Departures" xml:space="preserve">
+    <value>Departures</value>
+  </data>
+  <data name="Nav.Flights.Arrivals" xml:space="preserve">
+    <value>Arrivals</value>
+  </data>
+  <data name="Nav.Scanning" xml:space="preserve">
+    <value>Scanning</value>
+  </data>
+  <data name="Nav.Reports" xml:space="preserve">
+    <value>Reports</value>
+  </data>
+  <data name="Nav.Handling" xml:space="preserve">
+    <value>Handling</value>
+  </data>
+  <data name="Nav.Companies" xml:space="preserve">
+    <value>Companies</value>
+  </data>
+  <data name="Nav.Users" xml:space="preserve">
+    <value>Users</value>
+  </data>
+  <data name="Nav.Roles" xml:space="preserve">
+    <value>Roles</value>
+  </data>
+  <data name="Nav.Hht" xml:space="preserve">
+    <value>HHT Terminals</value>
+  </data>
+  <data name="Nav.HandlingContracts" xml:space="preserve">
+    <value>Handling Contracts</value>
+  </data>
+  <data name="Nav.SystemConfigurations" xml:space="preserve">
+    <value>System Configurations</value>
+  </data>
+  <data name="Nav.ContainerRefs" xml:space="preserve">
+    <value>Container Refs</value>
+  </data>
+  <data name="Nav.ContainerTypes" xml:space="preserve">
+    <value>Container Types</value>
+  </data>
+  <data name="Nav.ContainerStatuses" xml:space="preserve">
+    <value>Container Statuses</value>
+  </data>
+  <data name="Nav.ContainerClasses" xml:space="preserve">
+    <value>Container Classes</value>
+  </data>
+  <data name="Nav.Mappings" xml:space="preserve">
+    <value>Mappings</value>
+  </data>
+  <data name="Nav.AirlineClassMaps" xml:space="preserve">
+    <value>Airline Class Maps</value>
+  </data>
+  <data name="Nav.ResourceStatusMaps" xml:space="preserve">
+    <value>Resource Status Maps</value>
+  </data>
+  <data name="Nav.MobileDash" xml:space="preserve">
+    <value>Dash</value>
+  </data>
+  <data name="Nav.MobileScan" xml:space="preserve">
+    <value>Scan</value>
+  </data>
+  <data name="Nav.Settings" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="Nav.ChangePassword" xml:space="preserve">
+    <value>Change Password</value>
+  </data>
+  <data name="Nav.SignOut" xml:space="preserve">
+    <value>Sign Out</value>
+  </data>
+  <data name="Login.Title" xml:space="preserve">
+    <value>Terminal Access</value>
+  </data>
+  <data name="Login.SecureArea" xml:space="preserve">
+    <value>Secure Area</value>
+  </data>
+  <data name="Login.UserName" xml:space="preserve">
+    <value>User Name</value>
+  </data>
+  <data name="Login.Password" xml:space="preserve">
+    <value>Password</value>
+  </data>
+  <data name="Login.Submit" xml:space="preserve">
+    <value>Secure Login</value>
+  </data>
+  <data name="Login.ResetHint" xml:space="preserve">
+    <value>Contact system administrator to reset credentials</value>
+  </data>
+  <data name="Login.SystemStatus" xml:space="preserve">
+    <value>System Status</value>
+  </data>
+  <data name="Login.Online" xml:space="preserve">
+    <value>Online</value>
+  </data>
+  <data name="Login.ErrInvalid" xml:space="preserve">
+    <value>Invalid username or password.</value>
+  </data>
+  <data name="Login.ErrMissing" xml:space="preserve">
+    <value>Please enter your username and password.</value>
+  </data>
+  <data name="Login.ErrServer" xml:space="preserve">
+    <value>Authentication service is unavailable. Please try again.</value>
+  </data>
+  <data name="Common.From" xml:space="preserve">
+    <value>From</value>
+  </data>
+  <data name="Common.To" xml:space="preserve">
+    <value>To</value>
+  </data>
+  <data name="Common.Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="Common.Saving" xml:space="preserve">
+    <value>Saving…</value>
+  </data>
+  <data name="Common.Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Common.Add" xml:space="preserve">
+    <value>Add</value>
+  </data>
+  <data name="Common.Edit" xml:space="preserve">
+    <value>Edit</value>
+  </data>
+  <data name="Common.Deactivate" xml:space="preserve">
+    <value>Deactivate</value>
+  </data>
+  <data name="Common.Active" xml:space="preserve">
+    <value>Active</value>
+  </data>
+  <data name="Common.Inactive" xml:space="preserve">
+    <value>Inactive</value>
+  </data>
+  <data name="Common.Loading" xml:space="preserve">
+    <value>Loading…</value>
+  </data>
+  <data name="Common.Refresh" xml:space="preserve">
+    <value>Refresh</value>
+  </data>
+  <data name="Common.Refreshing" xml:space="preserve">
+    <value>Refreshing…</value>
+  </data>
+  <data name="Common.NoRecords" xml:space="preserve">
+    <value>No records found</value>
+  </data>
+  <data name="Common.Notes" xml:space="preserve">
+    <value>Notes</value>
+  </data>
+  <data name="Common.AllFlights" xml:space="preserve">
+    <value>All flights</value>
+  </data>
+  <data name="Common.Search" xml:space="preserve">
+    <value>Search</value>
+  </data>
+  <data name="Common.Filter" xml:space="preserve">
+    <value>Filter</value>
+  </data>
+  <data name="Common.Clear" xml:space="preserve">
+    <value>Clear</value>
+  </data>
+  <data name="Dashboard.Title" xml:space="preserve">
+    <value>Operational Canvas</value>
+  </data>
+  <data name="Dashboard.StatusNominal" xml:space="preserve">
+    <value>NOMINAL</value>
+  </data>
+  <data name="Dashboard.StatusLoading" xml:space="preserve">
+    <value>LOADING…</value>
+  </data>
+  <data name="Dashboard.GlobalStatus" xml:space="preserve">
+    <value>Global System Status</value>
+  </data>
+  <data name="Dashboard.ActiveFlights" xml:space="preserve">
+    <value>Active Flights</value>
+  </data>
+  <data name="Dashboard.BagsScannedToday" xml:space="preserve">
+    <value>Bags Scanned Today</value>
+  </data>
+  <data name="Dashboard.ReconcilErrors" xml:space="preserve">
+    <value>Reconciliation Errors</value>
+  </data>
+  <data name="Dashboard.SystemThroughput" xml:space="preserve">
+    <value>System Throughput</value>
+  </data>
+  <data name="Dashboard.BagsPerMinute" xml:space="preserve">
+    <value>Bags per minute</value>
+  </data>
+  <data name="Dashboard.ActionRequired" xml:space="preserve">
+    <value>Action Required</value>
+  </data>
+  <data name="Dashboard.ReconcilProgress" xml:space="preserve">
+    <value>Flight Reconciliation Progress</value>
+  </data>
+  <data name="Dashboard.LiveTelemetry" xml:space="preserve">
+    <value>Live Telemetry Feed</value>
+  </data>
+  <data name="Dashboard.NoActiveFlight" xml:space="preserve">
+    <value>No active flights</value>
+  </data>
+  <data name="Dashboard.NoTelemetry" xml:space="preserve">
+    <value>No recent telemetry events</value>
+  </data>
+  <data name="Dashboard.LastUpdate" xml:space="preserve">
+    <value>Last Update</value>
+  </data>
+  <data name="Dashboard.NextRefresh" xml:space="preserve">
+    <value>Next refresh</value>
+  </data>
+  <data name="Dashboard.AutoRefreshOff" xml:space="preserve">
+    <value>Auto-refresh off</value>
+  </data>
+  <data name="Dashboard.ColFlightNo" xml:space="preserve">
+    <value>Flight No</value>
+  </data>
+  <data name="Dashboard.ColDestination" xml:space="preserve">
+    <value>Destination</value>
+  </data>
+  <data name="Dashboard.ColDeparture" xml:space="preserve">
+    <value>Departure (UTC)</value>
+  </data>
+  <data name="Dashboard.ColReconcil" xml:space="preserve">
+    <value>Reconciliation</value>
+  </data>
+  <data name="Dashboard.ColActions" xml:space="preserve">
+    <value>Actions</value>
+  </data>
+  <data name="Dashboard.Mismatch" xml:space="preserve">
+    <value>Mismatch</value>
+  </data>
+  <data name="Dashboard.Unscanned" xml:space="preserve">
+    <value>Unscanned</value>
+  </data>
+  <data name="Flights.Title" xml:space="preserve">
+    <value>Flight Overview</value>
+  </data>
+  <data name="Flights.Subtitle" xml:space="preserve">
+    <value>All active and scheduled flights</value>
+  </data>
+  <data name="Flights.SearchPlaceholder" xml:space="preserve">
+    <value>Search flights…</value>
+  </data>
+  <data name="Flights.ColFlight" xml:space="preserve">
+    <value>Flight</value>
+  </data>
+  <data name="Flights.ColAirline" xml:space="preserve">
+    <value>Airline</value>
+  </data>
+  <data name="Flights.ColOrigin" xml:space="preserve">
+    <value>Origin</value>
+  </data>
+  <data name="Flights.ColDestination" xml:space="preserve">
+    <value>Destination</value>
+  </data>
+  <data name="Flights.ColDeparture" xml:space="preserve">
+    <value>Departure (UTC)</value>
+  </data>
+  <data name="Flights.ColStatus" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="Flights.ColBags" xml:space="preserve">
+    <value>Bags</value>
+  </data>
+  <data name="Flights.FilterAirline" xml:space="preserve">
+    <value>Airline code</value>
+  </data>
+  <data name="Flights.FilterRoute" xml:space="preserve">
+    <value>Origin / Destination</value>
+  </data>
+  <data name="Flights.ShowAll" xml:space="preserve">
+    <value>Show all</value>
+  </data>
+  <data name="Flights.AllStatuses" xml:space="preserve">
+    <value>All statuses</value>
+  </data>
+  <data name="Flights.LoadFlights" xml:space="preserve">
+    <value>Load Flights</value>
+  </data>
+  <data name="Flights.LoadArrivals" xml:space="preserve">
+    <value>Load Arrivals</value>
+  </data>
+  <data name="Flights.ErrorLoad" xml:space="preserve">
+    <value>Failed to load flights. Please try again.</value>
+  </data>
+  <data name="Flights.History" xml:space="preserve">
+    <value>Audit History</value>
+  </data>
+  <data name="Flights.NoFlights" xml:space="preserve">
+    <value>No flights found</value>
+  </data>
+  <data name="Flights.NoMatch" xml:space="preserve">
+    <value>No flights match the current filters</value>
+  </data>
+  <data name="Flights.LoadingFlights" xml:space="preserve">
+    <value>Loading flights…</value>
+  </data>
+  <data name="Flights.Count" xml:space="preserve">
+    <value>flights</value>
+  </data>
+  <data name="Arrivals.Title" xml:space="preserve">
+    <value>Arrival Flights</value>
+  </data>
+  <data name="Arrivals.Subtitle" xml:space="preserve">
+    <value>All active and scheduled arrival flights</value>
+  </data>
+  <data name="Arrivals.NoFlights" xml:space="preserve">
+    <value>No arrival flights found</value>
+  </data>
+  <data name="Handling.Title" xml:space="preserve">
+    <value>Handling Contracts</value>
+  </data>
+  <data name="Handling.Subtitle" xml:space="preserve">
+    <value>Airline ↔ ground handling company assignments</value>
+  </data>
+  <data name="Handling.AddContract" xml:space="preserve">
+    <value>Add Contract</value>
+  </data>
+  <data name="Handling.EditContract" xml:space="preserve">
+    <value>Edit Contract</value>
+  </data>
+  <data name="Handling.NewContract" xml:space="preserve">
+    <value>New Contract</value>
+  </data>
+  <data name="Handling.AirlineCode" xml:space="preserve">
+    <value>Airline Code</value>
+  </data>
+  <data name="Handling.HandlingCompany" xml:space="preserve">
+    <value>Handling Company</value>
+  </data>
+  <data name="Handling.ValidFrom" xml:space="preserve">
+    <value>Valid From (UTC)</value>
+  </data>
+  <data name="Handling.ValidTo" xml:space="preserve">
+    <value>Valid To (UTC)</value>
+  </data>
+  <data name="Handling.FlightNumbers" xml:space="preserve">
+    <value>Specific Flight Numbers</value>
+  </data>
+  <data name="Handling.FlightNumbersHint" xml:space="preserve">
+    <value>(leave empty to apply to all flights of the airline)</value>
+  </data>
+  <data name="Handling.ColAirline" xml:space="preserve">
+    <value>Airline</value>
+  </data>
+  <data name="Handling.ColCompany" xml:space="preserve">
+    <value>Handling Company</value>
+  </data>
+  <data name="Handling.ColValidFrom" xml:space="preserve">
+    <value>Valid From</value>
+  </data>
+  <data name="Handling.ColValidTo" xml:space="preserve">
+    <value>Valid To</value>
+  </data>
+  <data name="Handling.ColFlights" xml:space="preserve">
+    <value>Flights</value>
+  </data>
+  <data name="Handling.ColStatus" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="Handling.ColActions" xml:space="preserve">
+    <value>Actions</value>
+  </data>
+  <data name="Handling.AllFlightsLabel" xml:space="preserve">
+    <value>All flights</value>
+  </data>
+  <data name="Handling.FlightCount" xml:space="preserve">
+    <value>flight(s)</value>
+  </data>
+  <data name="Handling.NoContracts" xml:space="preserve">
+    <value>No handling contracts found</value>
+  </data>
+  <data name="Handling.LoadingContracts" xml:space="preserve">
+    <value>Loading contracts…</value>
+  </data>
+  <data name="Handling.Deactivated" xml:space="preserve">
+    <value>Contract deactivated.</value>
+  </data>
+  <data name="Handling.Created" xml:space="preserve">
+    <value>Contract created.</value>
+  </data>
+  <data name="Handling.Updated" xml:space="preserve">
+    <value>Contract updated.</value>
+  </data>
+  <data name="Handling.SelectCompany" xml:space="preserve">
+    <value>Select company</value>
+  </data>
+  <data name="Validation.Required.AirlineCode" xml:space="preserve">
+    <value>Airline code is required.</value>
+  </data>
+  <data name="Validation.Required.SourceClass" xml:space="preserve">
+    <value>Source class is required.</value>
+  </data>
+  <data name="Validation.Required.TargetClass" xml:space="preserve">
+    <value>Target class is required.</value>
+  </data>
+  <data name="Validation.Required.TypeCode" xml:space="preserve">
+    <value>Type code is required.</value>
+  </data>
+  <data name="Validation.Required.ClassCode" xml:space="preserve">
+    <value>Class code is required.</value>
+  </data>
+  <data name="Validation.Required.Description" xml:space="preserve">
+    <value>Description is required.</value>
+  </data>
+  <data name="Validation.Required.Key" xml:space="preserve">
+    <value>Configuration key is required.</value>
+  </data>
+  <data name="Validation.Required.Value" xml:space="preserve">
+    <value>Value is required.</value>
+  </data>
+  <data name="Validation.Required.Code" xml:space="preserve">
+    <value>Code is required.</value>
+  </data>
+  <data name="Validation.Required.CompanyName" xml:space="preserve">
+    <value>Company name is required.</value>
+  </data>
+  <data name="Validation.Required.CompanyCode" xml:space="preserve">
+    <value>Company code is required.</value>
+  </data>
+  <data name="Validation.Required.HandlingCompany" xml:space="preserve">
+    <value>Please select a handling company.</value>
+  </data>
+  <data name="Validation.Required.Dates" xml:space="preserve">
+    <value>Both dates are required.</value>
+  </data>
+  <data name="Validation.DateRange.ValidToAfterFrom" xml:space="preserve">
+    <value>Valid To must be after Valid From.</value>
+  </data>
+  <data name="Validation.Required.Name" xml:space="preserve">
+    <value>Name is required.</value>
+  </data>
+  <data name="Validation.Required.DeviceId" xml:space="preserve">
+    <value>Device ID is required.</value>
+  </data>
+  <data name="Validation.Required.SourceResourceName" xml:space="preserve">
+    <value>Source resource name is required.</value>
+  </data>
+  <data name="Validation.Required.SourceStatus" xml:space="preserve">
+    <value>Source status is required.</value>
+  </data>
+  <data name="Validation.Required.TargetStatus" xml:space="preserve">
+    <value>Target status is required.</value>
+  </data>
+  <data name="Validation.Required.DisplayName" xml:space="preserve">
+    <value>Display name is required.</value>
+  </data>
+  <data name="Validation.Required.SystemName" xml:space="preserve">
+    <value>System name is required.</value>
+  </data>
+  <data name="Validation.Required.Username" xml:space="preserve">
+    <value>Username is required.</value>
+  </data>
+  <data name="Validation.Password.MinLength" xml:space="preserve">
+    <value>Password must be at least 8 characters.</value>
+  </data>
+  <data name="Settings.Title" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="Settings.Subtitle" xml:space="preserve">
+    <value>Appearance and data refresh preferences</value>
+  </data>
+  <data name="Settings.Appearance" xml:space="preserve">
+    <value>Appearance</value>
+  </data>
+  <data name="Settings.Theme" xml:space="preserve">
+    <value>Theme</value>
+  </data>
+  <data name="Settings.ThemeDark" xml:space="preserve">
+    <value>Dark — optimised for low-light ramp environments</value>
+  </data>
+  <data name="Settings.ThemeLight" xml:space="preserve">
+    <value>Light — optimised for bright office environments</value>
+  </data>
+  <data name="Settings.Light" xml:space="preserve">
+    <value>Light</value>
+  </data>
+  <data name="Settings.Dark" xml:space="preserve">
+    <value>Dark</value>
+  </data>
+  <data name="Settings.DataRefresh" xml:space="preserve">
+    <value>Data &amp; Refresh</value>
+  </data>
+  <data name="Settings.AutoRefresh" xml:space="preserve">
+    <value>Auto-Refresh</value>
+  </data>
+  <data name="Settings.AutoRefreshDesc" xml:space="preserve">
+    <value>Automatically reload dashboard and flight data</value>
+  </data>
+  <data name="Settings.RefreshInterval" xml:space="preserve">
+    <value>Refresh Interval</value>
+  </data>
+  <data name="Settings.CurrentInterval" xml:space="preserve">
+    <value>Current: every</value>
+  </data>
+  <data name="Settings.Seconds" xml:space="preserve">
+    <value>seconds</value>
+  </data>
+  <data name="Settings.System" xml:space="preserve">
+    <value>System</value>
+  </data>
+  <data name="Settings.Language" xml:space="preserve">
+    <value>Language</value>
+  </data>
+  <data name="Settings.LanguageDesc" xml:space="preserve">
+    <value>Select the display language for the interface</value>
+  </data>
+  <data name="SysConfig.Title" xml:space="preserve">
+    <value>System Configurations</value>
+  </data>
+  <data name="SysConfig.Subtitle" xml:space="preserve">
+    <value>System related reference data</value>
+  </data>
+  <data name="SysConfig.AccessRestricted" xml:space="preserve">
+    <value>Access Restricted</value>
+  </data>
+  <data name="SysConfig.AccessRestrictedDesc" xml:space="preserve">
+    <value>This page is only accessible to Airport Operator personnel.</value>
+  </data>
+  <data name="SysConfig.New" xml:space="preserve">
+    <value>New Configuration</value>
+  </data>
+  <data name="SysConfig.EditTitle" xml:space="preserve">
+    <value>Edit System Configuration</value>
+  </data>
+  <data name="SysConfig.NewTitle" xml:space="preserve">
+    <value>New System Configuration</value>
+  </data>
+  <data name="SysConfig.ColCode" xml:space="preserve">
+    <value>Code</value>
+  </data>
+  <data name="SysConfig.ColValue" xml:space="preserve">
+    <value>Value</value>
+  </data>
+  <data name="SysConfig.ColDescription" xml:space="preserve">
+    <value>Description</value>
+  </data>
+  <data name="SysConfig.CodeLabel" xml:space="preserve">
+    <value>Code</value>
+  </data>
+  <data name="SysConfig.DescriptionLabel" xml:space="preserve">
+    <value>Description</value>
+  </data>
+  <data name="SysConfig.Value" xml:space="preserve">
+    <value>Value</value>
+  </data>
+</root>

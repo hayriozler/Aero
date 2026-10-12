@@ -1,0 +1,30 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<OutputType>Exe</OutputType>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+	  <UserSecretsId>59eb9fed-b6e6-482d-8a78-0b2621df07bd</UserSecretsId>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+	<PackageReference Include="Aspire.Npgsql.EntityFrameworkCore.PostgreSQL" />
+	<PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectMetadata Include="..\AeroFlight.Infrastructure\AeroFlight.Infrastructure.csproj" />
+	<ProjectMetadata Include="..\AeroFlight.ServiceDefaults\AeroFlight.ServiceDefaults.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Seeds\*.csv" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\AeroFlight.Application\AeroFlight.Application.csproj" />
+    <ProjectReference Include="..\AeroFlight.Infrastructure\AeroFlight.Infrastructure.csproj" />
+    <ProjectReference Include="..\AeroFlight.ServiceDefaults\AeroFlight.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\AeroFids.Infrastructure\AeroFids.Infrastructure.csproj" />
+  </ItemGroup>
+</Project>

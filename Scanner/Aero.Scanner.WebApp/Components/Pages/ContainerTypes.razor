@@ -1,0 +1,255 @@
+@page "/container-types"
+@using System.Text.Json
+@attribute [Authorize]
+@inject ContainerApiClient Api
+@inject ISnackbar Snackbar
+@inject AuthenticationStateProvider AuthState
+@inject IStringLocalizer<SharedResources> L
+
+<PageTitle>AeroScan BRS · Container Types</PageTitle>
+
+<div class="p-6 space-y-6">
+
+    @if (!_isAirportOperator)
+    {
+        <div class="bg-secondary/10 border border-secondary/30 p-6 text-center">
+            <span class="material-symbols-outlined text-secondary text-4xl block mb-2">block</span>
+            <p class="text-secondary font-headline uppercase tracking-widest text-sm font-bold">Access Restricted</p>
+            <p class="text-on-surface-variant text-xs mt-1">This page is only accessible to Airport Operator personnel.</p>
+        </div>
+        return;
+    }
+
+    <header class="flex justify-between items-end flex-wrap gap-4">
+        <div>
+            <h1 class="text-4xl font-extrabold tracking-tighter text-on-surface uppercase font-headline">Container Types
+            </h1>
+            <p class="text-on-surface-variant text-sm font-body">ULD and container type reference data</p>
+        </div>
+        <button @onclick="OpenAddForm"
+                class="flex items-center gap-2 px-4 py-2 bg-primary-container text-on-primary font-headline text-xs uppercase tracking-widest transition-colors hover:opacity-90">
+            <span class="material-symbols-outlined text-sm">add</span>
+            Add Type
+        </button>
+    </header>
+
+    @if (_formVisible)
+    {
+        <section class="bg-surface-container p-6 space-y-4 border border-outline-variant/40">
+            <h2 class="text-xs font-bold uppercase tracking-widest text-on-surface-variant font-headline">
+                @(_editCode is not null ? "Edit Container Type" : "New Container Type")
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="space-y-1">
+                    <label class="text-xs font-headline uppercase tracking-widest text-on-surface-variant">Code *</label>
+                    <MudTextField @bind-Value="_form.Code" Placeholder="e.g. A" Variant="Variant.Outlined"
+                                  Margin="Margin.Dense" MaxLength="1" Disabled="@(_editCode is not null)" />
+                </div>
+                <div class="space-y-1 md:col-span-1 lg:col-span-2">
+                    <label class="text-xs font-headline uppercase tracking-widest text-on-surface-variant">Description
+                        *</label>
+                        <MudTextField @bind-Value="_form.Description" Placeholder="e.g. Unit Load Device"
+                                      Variant="Variant.Outlined" Margin="Margin.Dense" MaxLength="20" />
+                    </div>
+                    <div class="space-y-3">
+                        <MudCheckBox @bind-Value="_form.IsAllDestination" Label="All Destination" Color="Color.Primary" />
+                        <MudCheckBox @bind-Value="_form.IsTransfer" Label="Transfer" Color="Color.Primary" />
+                    </div>
+                </div>
+                <div class="flex items-center gap-3 pt-2">
+                    <button @onclick="SaveAsync" disabled="@_saving"
+                            class="px-6 py-2 bg-primary-container text-on-primary font-headline text-xs uppercase tracking-widest transition-colors hover:opacity-90 disabled:opacity-50">
+                        @(_saving ? "Saving…" : "Save")
+                    </button>
+                    <button @onclick="CloseForm"
+                            class="px-6 py-2 bg-surface-container-high text-on-surface-variant font-headline text-xs uppercase tracking-widest transition-colors hover:text-on-surface">
+                        Cancel
+                    </button>
+                    @if (!string.IsNullOrEmpty(_formError))
+                    {
+                        <span class="text-xs text-error font-body">@_formError</span>
+                    }
+                </div>
+            </section>
+        }
+
+        <MudDataGrid T="ContainerTypeDto" Items="@_items" SortMode="SortMode.Single" Dense="true" Hover="true"
+                     Loading="@_loading" LoadingProgressColor="Color.Warning" Class="brs-grid">
+            <Columns>
+                <PropertyColumn Property="t => t.Code" Title="Code" Sortable="true">
+                    <CellTemplate>
+                        <span class="font-mono font-bold text-primary-container">@context.Item.Code</span>
+                    </CellTemplate>
+                </PropertyColumn>
+                <PropertyColumn Property="t => t.Description" Title="Description" Sortable="true" />
+                <PropertyColumn Property="t => t.IsAllDestination" Title="All Dest" Sortable="true">
+                    <CellTemplate>
+                        <MudIcon
+                        Icon="@(context.Item.IsAllDestination ? Icons.Material.Filled.CheckCircle : Icons.Material.Outlined.Circle)"
+                        Color="@(context.Item.IsAllDestination ? Color.Success : Color.Default)" Size="Size.Small" />
+                    </CellTemplate>
+                </PropertyColumn>
+                <PropertyColumn Property="t => t.IsTransfer" Title="Transfer" Sortable="true">
+                    <CellTemplate>
+                        <MudIcon
+                        Icon="@(context.Item.IsTransfer ? Icons.Material.Filled.CheckCircle : Icons.Material.Outlined.Circle)"
+                        Color="@(context.Item.IsTransfer ? Color.Success : Color.Default)" Size="Size.Small" />
+                    </CellTemplate>
+                </PropertyColumn>
+                <TemplateColumn Title="" CellClass="text-right">
+                    <CellTemplate>
+                        <div class="flex justify-end gap-3">
+                            <button @onclick="() => OpenEditForm(context.Item)"
+                                    class="text-on-surface-variant hover:text-primary-container transition-colors" title="Edit">
+                                <span class="material-symbols-outlined text-base">edit</span>
+                            </button>
+                            <button @onclick="() => DeleteAsync(context.Item)"
+                                    class="text-on-surface-variant hover:text-error transition-colors" title="Delete">
+                                <span class="material-symbols-outlined text-base">delete</span>
+                            </button>
+                            <button @onclick="() => OpenAudit(context.Item)"
+                                    class="text-on-surface-variant hover:text-warning transition-colors" title="Audit History">
+                                <span class="material-symbols-outlined text-base">history</span>
+                            </button>
+                        </div>
+                    </CellTemplate>
+                </TemplateColumn>
+            </Columns>
+            <NoRecordsContent>
+                <div
+                    style="padding:3rem 0;text-align:center;color:var(--mud-palette-text-secondary);font-size:0.7rem;text-transform:uppercase;letter-spacing:0.08em;font-weight:600;">
+                    @(_loading ? "Loading…" : "No container types found")
+                </div>
+            </NoRecordsContent>
+            <PagerContent>
+                <MudDataGridPager T="ContainerTypeDto" PageSizeOptions="[15, 30, 50]" />
+            </PagerContent>
+        </MudDataGrid>
+
+        <AuditDrawer EntityType="ContainerType" PrimaryKey="@_auditPk" Label="@_auditLabel" @bind-IsOpen="_auditOpen" />
+
+    </div>
+
+@code {
+    private IReadOnlyList<ContainerTypeDto> _items = [];
+    private bool _loading;
+    private bool _formVisible;
+    private bool _saving;
+    private string _formError = string.Empty;
+    private string? _editCode;
+    private bool _isAirportOperator;
+
+    private bool _auditOpen;
+    private string _auditPk = string.Empty;
+    private string _auditLabel = string.Empty;
+
+    private ContainerTypeFormModel _form = new();
+
+    private sealed class ContainerTypeFormModel
+    {
+        public string Code { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public bool IsAllDestination { get; set; }
+        public bool IsTransfer { get; set; }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthState.GetAuthenticationStateAsync();
+        _isAirportOperator = string.Equals(
+            authState.User.FindFirst("company_type")?.Value,
+            Policies.AirportOperator, StringComparison.OrdinalIgnoreCase);
+
+        if (!_isAirportOperator) return;
+
+        _loading = true;
+        _items = await Api.GetContainerTypesAsync();
+        _loading = false;
+    }
+
+    private void OpenAddForm()
+    {
+        _editCode = null;
+        _form = new();
+        _formError = string.Empty;
+        _formVisible = true;
+    }
+
+    private void OpenEditForm(ContainerTypeDto t)
+    {
+        _editCode = t.Code;
+        _form = new()
+        {
+            Code = t.Code,
+            Description = t.Description,
+            IsAllDestination = t.IsAllDestination,
+            IsTransfer =
+t.IsTransfer
+        };
+        _formError = string.Empty;
+        _formVisible = true;
+    }
+
+    private void CloseForm() { _formVisible = false; _formError = string.Empty; }
+
+    
+    private void OpenAudit(ContainerTypeDto item)
+    {
+        _auditPk = JsonSerializer.Serialize(new Dictionary<string, object>
+        {
+            ["Code"] = item.Code,
+        });
+        _auditLabel = item.Code;
+        _auditOpen = true;
+    }
+
+
+    private async Task SaveAsync()
+    {
+        _formError = string.Empty;
+        if (string.IsNullOrWhiteSpace(_form.Code)) { _formError = L["Validation.Required.Code"]; return; }
+        if (string.IsNullOrWhiteSpace(_form.Description)) { _formError = L["Validation.Required.Description"]; return; }
+
+        _saving = true;
+        bool success; string? error;
+
+        if (_editCode is not null)
+        {
+            var req = new Aero.Scanner.Shared.Requests.UpdateContainerTypeRequest(_form.Description, _form.IsAllDestination,
+_form.IsTransfer);
+            (success, _, error) = await Api.UpdateContainerTypeAsync(_editCode, req);
+        }
+        else
+        {
+            var req = new Aero.Scanner.Shared.Requests.CreateContainerTypeRequest(_form.Code, _form.Description, _form.IsAllDestination,
+_form.IsTransfer);
+            (success, _, error) = await Api.CreateContainerTypeAsync(req);
+        }
+
+        _saving = false;
+
+        if (success)
+        {
+            Snackbar.Add(_editCode is not null ? "Type updated." : "Type created.", Severity.Success);
+            CloseForm();
+            _items = await Api.GetContainerTypesAsync();
+        }
+        else
+        {
+            _formError = error ?? "An unexpected error occurred.";
+        }
+    }
+
+    private async Task DeleteAsync(ContainerTypeDto t)
+    {
+        if (await Api.DeleteContainerTypeAsync(t.Code))
+        {
+            Snackbar.Add($"Type '{t.Code}' deleted.", Severity.Info);
+            _items = await Api.GetContainerTypesAsync();
+        }
+        else
+        {
+            Snackbar.Add("Failed to delete type.", Severity.Error);
+        }
+    }
+}

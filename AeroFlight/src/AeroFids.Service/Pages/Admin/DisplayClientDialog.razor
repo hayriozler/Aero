@@ -1,0 +1,146 @@
+@using AeroFids.Infrastructure.Boards
+@using AeroFids.Service.Services
+@inject IDisplayClientService DisplayClientService
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        @if (_error is not null)
+        {
+            <MudAlert Severity="Severity.Error" Variant="Variant.Filled" Dense="true" Class="mb-3">@_error</MudAlert>
+        }
+
+        <MudForm @ref="_form">
+            <MudTextField T="string" @bind-Value="_name" Label="Name" Required="true"
+                          RequiredError="Name is required" MaxLength="100"
+                          Variant="Variant.Outlined" Margin="Margin.Dense" Immediate="true" Class="mb-3" />
+
+            <MudSelect T="string" @bind-Value="_type" Label="Type" Required="true" RequiredError="Type is required"
+                       Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-3">
+                @foreach (var type in DisplayClientTypes.All)
+                {
+                    <MudSelectItem T="string" Value="@type">@type</MudSelectItem>
+                }
+            </MudSelect>
+
+            @if (_isResourceType)
+            {
+                <MudTextField T="string" @bind-Value="_resourceCode" Label="@($"{_type} code")" MaxLength="20"
+                              HelperText="@($"Which {_type.ToLowerInvariant()} this screen shows, e.g. from the {_type} reference data — leave blank for an overview of every {_type.ToLowerInvariant()}")"
+                              Variant="Variant.Outlined" Margin="Margin.Dense" Immediate="true" Class="mb-3" />
+            }
+
+            <MudTextField T="string" @bind-Value="_location" Label="Location" MaxLength="200"
+                          Variant="Variant.Outlined" Margin="Margin.Dense" Immediate="true" Class="mb-3" />
+
+            <MudTextField T="string" @bind-Value="_bankName" Label="Bank" MaxLength="100"
+                          HelperText="A physical cluster of adjacent gates/counters/belts, e.g. 'Check-in Bank A' — leave blank if not part of one"
+                          Variant="Variant.Outlined" Margin="Margin.Dense" Immediate="true" Class="mb-3" />
+
+            @if (!string.IsNullOrWhiteSpace(_bankName))
+            {
+                <MudNumericField T="int?" @bind-Value="_bankPosition" Label="Position in bank" Min="1"
+                                 Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-3" />
+            }
+
+            @if (Existing is not null)
+            {
+                <MudCheckBox T="bool" @bind-Value="_isActive" Label="Active" />
+            }
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" Disabled="_saving">Cancel</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="SubmitAsync" Disabled="_saving">
+            @if (_saving)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+            }
+            @(Existing is null ? "Create" : "Save")
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = null!;
+
+    [Parameter]
+    public DisplayClientResponse? Existing { get; set; }
+
+    private MudForm _form = null!;
+    private string _name = "";
+    private string _type = DisplayClientTypes.DepartureFlightList;
+    private string _resourceCode = "";
+    private string _location = "";
+    private string _bankName = "";
+    private int? _bankPosition;
+    private bool _isActive = true;
+    private bool _saving;
+    private string? _error;
+
+    private bool _isResourceType => DisplayClientTypes.ResourceTypes.Contains(_type, StringComparer.OrdinalIgnoreCase);
+
+    protected override void OnInitialized()
+    {
+        if (Existing is { } e)
+        {
+            _name = e.Name;
+            _type = e.Type;
+            _resourceCode = e.ResourceCode ?? "";
+            _location = e.Location ?? "";
+            _bankName = e.BankName ?? "";
+            _bankPosition = e.BankPosition;
+            _isActive = e.IsActive;
+        }
+    }
+
+    private async Task SubmitAsync()
+    {
+        await _form.ValidateAsync();
+        if (!_form.IsValid)
+            return;
+
+        _saving = true;
+        _error = null;
+        try
+        {
+            var bankName = string.IsNullOrWhiteSpace(_bankName) ? null : _bankName;
+            var request = new DisplayClientRequest(
+                _name,
+                _type,
+                _isResourceType && !string.IsNullOrWhiteSpace(_resourceCode) ? _resourceCode : null,
+                string.IsNullOrWhiteSpace(_location) ? null : _location,
+                bankName,
+                bankName is null ? null : _bankPosition,
+                _isActive);
+
+            if (Existing is null)
+            {
+                var created = await DisplayClientService.CreateAsync(request, CancellationToken.None);
+                Snackbar.Add($"Display client '{created.Name}' created.", Severity.Success);
+            }
+            else
+            {
+                await DisplayClientService.UpdateAsync(Existing.Id, request, CancellationToken.None);
+                Snackbar.Add($"Display client '{request.Name}' updated.", Severity.Success);
+            }
+
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (FidsValidationException ex)
+        {
+            _error = ex.Message;
+        }
+        catch (Exception)
+        {
+            _error = "Something went wrong. Please try again.";
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

@@ -1,0 +1,20 @@
+@using AeroFlight.Web.Services.Metadatas
+
+<MudDialog>
+    <DialogContent>
+        <AuditHistoryGrid Loader="Loader" />
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Close">Close</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = null!;
+
+    [Parameter]
+    public Func<Task<IReadOnlyList<AuditEntryDto>>> Loader { get; set; } = null!;
+
+    private void Close() => MudDialog.Close();
+}

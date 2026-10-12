@@ -1,0 +1,60 @@
+@inherits LayoutComponentBase
+@inject AuthenticationStateProvider AuthStateProvider
+@inject AeroFlight.Application.Tenancy.ITenantStore TenantStore
+@inject AeroFlight.Application.Tenancy.ITenantContext TenantContext
+
+<PageTitle>AeroFids</PageTitle>
+
+<MudLayout>
+    <MudAppBar Elevation="1" Color="Color.Primary">
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@(() => _drawerOpen = !_drawerOpen)" />
+        <MudText Typo="Typo.h6" Class="ml-2">AeroFids</MudText>
+        <MudSpacer />
+        <AuthorizeView>
+            <Authorized>
+                <MudMenu Icon="@Icons.Material.Filled.AccountCircle" Color="Color.Inherit" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+                    <MudMenuItem Disabled="true">@context.User.Identity?.Name</MudMenuItem>
+                    <MudDivider />
+                    <MudMenuItem>
+                        <form method="post" action="/logout" style="margin:0">
+                            <button type="submit" style="all:unset; cursor:pointer; width:100%; display:block">Logout</button>
+                        </form>
+                    </MudMenuItem>
+                </MudMenu>
+            </Authorized>
+        </AuthorizeView>
+    </MudAppBar>
+
+    <MudDrawer @bind-Open="_drawerOpen" Elevation="1" Variant="DrawerVariant.Responsive" ClipMode="DrawerClipMode.Always" Width="260px">
+        <NavMenu />
+    </MudDrawer>
+
+    <MudMainContent>
+        <MudContainer MaxWidth="MaxWidth.False" Class="pa-4">
+            @Body
+        </MudContainer>
+    </MudMainContent>
+</MudLayout>
+
+@code {
+    private bool _drawerOpen = true;
+
+    // The Blazor Server circuit has its own DI scope, separate from the HTTP request that
+    // negotiated the SignalR connection — the tenant-resolution middleware in Program.cs sets
+    // ITenantContext on that request's scope, which components never see. Doing it here instead,
+    // from inside the component tree, reaches the actual scope [Inject]-ed services resolve from.
+    protected override async Task OnInitializedAsync()
+    {
+        if (TenantContext.IsResolved)
+            return;
+
+        var state = await AuthStateProvider.GetAuthenticationStateAsync();
+        var tenantId = state.User.FindFirst(AeroFids.Service.Services.FidsClaimTypes.Tenant)?.Value;
+        if (string.IsNullOrEmpty(tenantId))
+            return;
+
+        var tenant = await TenantStore.FindAsync(tenantId, CancellationToken.None);
+        if (tenant is not null)
+            TenantContext.Set(tenant);
+    }
+}

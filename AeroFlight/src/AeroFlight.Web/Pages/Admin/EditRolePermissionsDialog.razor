@@ -1,0 +1,88 @@
+@using AeroFlight.Web.Services.Identity
+@inject IApiClient Api
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        @if (_permissions is null)
+        {
+            <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+        }
+        else
+        {
+            @foreach (var group in _permissions.GroupBy(p => p.Code.Split('.')[0]))
+            {
+                <MudText Typo="Typo.subtitle2" Class="mt-2 text-capitalize">@group.Key</MudText>
+                @foreach (var perm in group)
+                {
+                    <MudCheckBox T="bool" Value="@_granted.Contains(perm.Code)"
+                                 ValueChanged="@(v => Toggle(perm.Code, v))" Dense="true"
+                                 Label="@($"{perm.Code} — {perm.Description}")" />
+                }
+            }
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" Disabled="_saving">Cancel</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="SaveAsync" Disabled="_saving">
+            @if (_saving)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+            }
+            Save
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = null!;
+
+    [Parameter]
+    public RoleDto Role { get; set; } = null!;
+
+    private IReadOnlyList<PermissionDto>? _permissions;
+    private readonly HashSet<string> _granted = new(StringComparer.OrdinalIgnoreCase);
+    private bool _saving;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _permissions = await Api.GetPermissionsAsync();
+            foreach (var code in await Api.GetRolePermissionsAsync(Role.Id))
+                _granted.Add(code);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to load permissions: {ex.Message}", Severity.Error);
+            _permissions = [];
+        }
+    }
+
+    private void Toggle(string code, bool on)
+    {
+        if (on) _granted.Add(code); else _granted.Remove(code);
+    }
+
+    private async Task SaveAsync()
+    {
+        _saving = true;
+        try
+        {
+            await Api.SetRolePermissionsAsync(Role.Id, _granted.ToList());
+            Snackbar.Add($"Permissions saved for {Role.Name}.", Severity.Success);
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to save: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

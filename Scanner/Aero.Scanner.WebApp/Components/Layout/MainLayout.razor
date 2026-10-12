@@ -1,0 +1,397 @@
+@using Aero.Scanner.Shared.Consts
+@using Aero.Scanner.WebApp.Resources
+@inherits LayoutComponentBase
+@inject NavigationManager Nav
+@inject ThemeService Theme
+@inject IJSRuntime JS
+@inject IStringLocalizer<SharedResources> L
+
+<MudThemeProvider Theme="_mudTheme" IsDarkMode="@Theme.IsDark" />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<div class="flex h-screen overflow-hidden bg-background text-on-surface">
+
+    <!-- Sidebar -->
+    <aside class="@(_sidebarOpen ? "w-64" : "w-16") hidden md:flex flex-col h-screen py-4 bg-surface-container flex-shrink-0 z-50 transition-all duration-300 overflow-hidden">
+
+        <!-- Branding + collapse toggle -->
+        <div class="flex items-center justify-between px-4 mb-8 min-w-0">
+            @if (_sidebarOpen)
+            {
+                <div class="min-w-0">
+                    <span class="font-headline uppercase text-xs font-medium text-primary-container block truncate">Live Ops · UTC</span>
+                    <span class="font-headline uppercase text-lg font-bold text-on-surface block truncate">AeroScan BRS</span>
+                </div>
+            }
+            <button @onclick="ToggleSidebar"
+                    class="ml-auto flex-shrink-0 text-on-surface-variant hover:text-primary-container transition-colors"
+                    title="@(_sidebarOpen ? "Collapse sidebar" : "Expand sidebar")">
+                <span class="material-symbols-outlined text-xl">@(_sidebarOpen ? "menu_open" : "menu")</span>
+            </button>
+        </div>
+
+        <nav class="flex-1 space-y-1 overflow-y-auto overflow-x-hidden">
+            <NavLink href="/"
+                     Match="NavLinkMatch.All"
+                     ActiveClass="text-primary-container border-l-4 border-primary-container bg-surface-container-high"
+                     class="flex items-center px-4 py-3 font-headline uppercase text-xs font-medium transition-all duration-200 text-on-surface/50 hover:text-primary-container hover:bg-surface-container-high/50"
+                     title="@(!_sidebarOpen ? L["Nav.Dashboard"] : null)">
+                <span class="material-symbols-outlined flex-shrink-0 @(_sidebarOpen ? "mr-4" : "mx-auto")">dashboard</span>
+                @if (_sidebarOpen) { <span class="truncate">@L["Nav.Dashboard"]</span> }
+            </NavLink>
+
+            <!-- Flights group -->
+            @if (_sidebarOpen)
+            {
+                <button @onclick="() => _flightsOpen = !_flightsOpen"
+                        class="flex items-center w-full px-4 py-3 font-headline uppercase text-xs font-medium transition-all duration-200 text-on-surface/50 hover:text-primary-container hover:bg-surface-container-high/50">
+                    <span class="material-symbols-outlined flex-shrink-0 mr-4">flight_takeoff</span>
+                    <span class="truncate flex-1 text-left">@L["Nav.Flights"]</span>
+                    <span class="material-symbols-outlined" style="font-size:0.85rem">@(_flightsOpen ? "expand_less" : "expand_more")</span>
+                </button>
+            }
+            else
+            {
+                <button @onclick="() => _flightsOpen = !_flightsOpen"
+                        class="flex items-center w-full px-4 py-3 font-headline uppercase text-xs font-medium transition-all duration-200 text-on-surface/50 hover:text-primary-container hover:bg-surface-container-high/50"
+                        title="@L["Nav.Flights"]">
+                    <span class="material-symbols-outlined mx-auto">flight_takeoff</span>
+                </button>
+            }
+            @if (!_sidebarOpen || _flightsOpen)
+            {
+                <NavLink href="/flights/departures"
+                         ActiveClass="text-primary-container border-l-4 border-primary-container bg-surface-container-high"
+                         class="@FlightSubItemClass"
+                         title="@(!_sidebarOpen ? L["Nav.Flights.Departures"] : null)">
+                    <span class="@(_sidebarOpen ? "material-symbols-outlined flex-shrink-0 mr-3 text-base" : "material-symbols-outlined flex-shrink-0 mx-auto")">flight_takeoff</span>
+                    @if (_sidebarOpen) { <span class="truncate">@L["Nav.Flights.Departures"]</span> }
+                </NavLink>
+                <NavLink href="/flights/arrivals"
+                         ActiveClass="text-primary-container border-l-4 border-primary-container bg-surface-container-high"
+                         class="@FlightSubItemClass"
+                         title="@(!_sidebarOpen ? L["Nav.Flights.Arrivals"] : null)">
+                    <span class="@(_sidebarOpen ? "material-symbols-outlined flex-shrink-0 mr-3 text-base" : "material-symbols-outlined flex-shrink-0 mx-auto")">flight_land</span>
+                    @if (_sidebarOpen) { <span class="truncate">@L["Nav.Flights.Arrivals"]</span> }
+                </NavLink>
+            }
+
+            <NavLink href="/scanning"
+                     ActiveClass="text-primary-container border-l-4 border-primary-container bg-surface-container-high"
+                     class="flex items-center px-4 py-3 font-headline uppercase text-xs font-medium transition-all duration-200 text-on-surface/50 hover:text-primary-container hover:bg-surface-container-high/50"
+                     title="@(!_sidebarOpen ? L["Nav.Scanning"] : null)">
+                <span class="material-symbols-outlined flex-shrink-0 @(_sidebarOpen ? "mr-4" : "mx-auto")">barcode_scanner</span>
+                @if (_sidebarOpen) { <span class="truncate">@L["Nav.Scanning"]</span> }
+            </NavLink>
+
+            <NavLink href="/reports"
+                     ActiveClass="text-primary-container border-l-4 border-primary-container bg-surface-container-high"
+                     class="flex items-center px-4 py-3 font-headline uppercase text-xs font-medium transition-all duration-200 text-on-surface/50 hover:text-primary-container hover:bg-surface-container-high/50"
+                     title="@(!_sidebarOpen ? L["Nav.Reports"] : null)">
+                <span class="material-symbols-outlined flex-shrink-0 @(_sidebarOpen ? "mr-4" : "mx-auto")">assessment</span>
+                @if (_sidebarOpen) { <span class="truncate">@L["Nav.Reports"]</span> }
+            </NavLink>
+
+            <NavLink href="/handling-contracts"
+                     ActiveClass="text-primary-container border-l-4 border-primary-container bg-surface-container-high"
+                     class="flex items-center px-4 py-3 font-headline uppercase text-xs font-medium transition-all duration-200 text-on-surface/50 hover:text-primary-container hover:bg-surface-container-high/50"
+                     title="@(!_sidebarOpen ? L["Nav.HandlingContracts"] : null)">
+                <span class="material-symbols-outlined flex-shrink-0 @(_sidebarOpen ? "mr-4" : "mx-auto")">handshake</span>
+                @if (_sidebarOpen) { <span class="truncate">@L["Nav.HandlingContracts"]</span> }
+            </NavLink>
+
+            <NavLink href="/handling-companies"
+                     ActiveClass="text-primary-container border-l-4 border-primary-container bg-surface-container-high"
+                     class="flex items-center px-4 py-3 font-headline uppercase text-xs font-medium transition-all duration-200 text-on-surface/50 hover:text-primary-container hover:bg-surface-container-high/50"
+                     title="@(!_sidebarOpen ? L["Nav.Companies"] : null)">
+                <span class="material-symbols-outlined flex-shrink-0 @(_sidebarOpen ? "mr-4" : "mx-auto")">corporate_fare</span>
+                @if (_sidebarOpen) { <span class="truncate">@L["Nav.Companies"]</span> }
+            </NavLink>
+
+            <NavLink href="/users"
+                     ActiveClass="text-primary-container border-l-4 border-primary-container bg-surface-container-high"
+                     class="flex items-center px-4 py-3 font-headline uppercase text-xs font-medium transition-all duration-200 text-on-surface/50 hover:text-primary-container hover:bg-surface-container-high/50"
+                     title="@(!_sidebarOpen ? L["Nav.Users"] : null)">
+                <span class="material-symbols-outlined flex-shrink-0 @(_sidebarOpen ? "mr-4" : "mx-auto")">manage_accounts</span>
+                @if (_sidebarOpen) { <span class="truncate">@L["Nav.Users"]</span> }
+            </NavLink>
+
+            
+           
+            <AuthorizeView>
+                <Authorized Context="authCtx">
+                    @if (authCtx.User.FindFirst("company_type")?.Value == Policies.AirportOperator)
+                    {
+                        <NavLink href="/roles"
+                                 ActiveClass="text-primary-container border-l-4 border-primary-container bg-surface-container-high"
+                                 class="flex items-center px-4 py-3 font-headline uppercase text-xs font-medium transition-all duration-200 text-on-surface/50 hover:text-primary-container hover:bg-surface-container-high/50"
+                                 title="@(!_sidebarOpen ? L["Nav.Roles"] : null)">
+                            <span class="material-symbols-outlined flex-shrink-0 @(_sidebarOpen ? "mr-4" : "mx-auto")">admin_panel_settings</span>
+                            @if (_sidebarOpen)
+                            {
+                                <span class="truncate">@L["Nav.Roles"]</span>
+                            }
+                        </NavLink>
+                        <NavLink href="/hht"
+                                 ActiveClass="text-primary-container border-l-4 border-primary-container bg-surface-container-high"
+                                 class="flex items-center px-4 py-3 font-headline uppercase text-xs font-medium transition-all duration-200 text-on-surface/50 hover:text-primary-container hover:bg-surface-container-high/50"
+                                 title="@(!_sidebarOpen ? L["Nav.Hht"] : null)">
+                            <span class="material-symbols-outlined flex-shrink-0 @(_sidebarOpen ? "mr-4" : "mx-auto")">barcode_reader</span>
+                            @if (_sidebarOpen)
+                            {
+                                <span class="truncate">@L["Nav.Hht"]</span>
+                            }
+                        </NavLink>
+                        <NavLink href="/system-configurations"
+                                 ActiveClass="text-primary-container border-l-4 border-primary-container bg-surface-container-high"
+                                 class="flex items-center px-4 py-3 font-headline uppercase text-xs font-medium transition-all duration-200 text-on-surface/50 hover:text-primary-container hover:bg-surface-container-high/50"
+                                 title="@(!_sidebarOpen ? L["Nav.SystemConfigurations"] : null)">
+                            <span class="material-symbols-outlined flex-shrink-0 @(_sidebarOpen ? "mr-4" : "mx-auto")">tune</span>
+                            @if (_sidebarOpen)
+                            {
+                                <span class="truncate">@L["Nav.SystemConfigurations"]</span>
+                            }
+                        </NavLink>
+
+                        <!-- Container Refs group -->
+                        @if (_sidebarOpen)
+                        {
+                            <button @onclick="() => _containerRefsOpen = !_containerRefsOpen"
+                                    class="flex items-center justify-between w-full px-4 pt-3 pb-1 text-on-surface/30 hover:text-on-surface/60 transition-colors">
+                                <span class="text-[0.6rem] font-headline uppercase tracking-widest font-bold">@L["Nav.ContainerRefs"]</span>
+                                <span class="material-symbols-outlined" style="font-size:0.85rem">@(_containerRefsOpen ? "expand_less" : "expand_more")</span>
+                            </button>
+                        }
+                        @if (!_sidebarOpen || _containerRefsOpen)
+                        {                           
+                            <NavLink href="/container-types"
+                                     ActiveClass="text-primary-container border-l-4 border-primary-container bg-surface-container-high"
+                                     class="flex items-center px-4 py-3 font-headline uppercase text-xs font-medium transition-all duration-200 text-on-surface/50 hover:text-primary-container hover:bg-surface-container-high/50"
+                                     title="@(!_sidebarOpen ? L["Nav.ContainerTypes"] : null)">
+                                <span class="material-symbols-outlined flex-shrink-0 @(_sidebarOpen ? "mr-4" : "mx-auto")">category</span>
+                                @if (_sidebarOpen) { <span class="truncate">@L["Nav.ContainerTypes"]</span> }
+                            </NavLink>                            
+                            <NavLink href="/container-classes"
+                                     ActiveClass="text-primary-container border-l-4 border-primary-container bg-surface-container-high"
+                                     class="flex items-center px-4 py-3 font-headline uppercase text-xs font-medium transition-all duration-200 text-on-surface/50 hover:text-primary-container hover:bg-surface-container-high/50"
+                                     title="@(!_sidebarOpen ? L["Nav.ContainerClasses"] : null)">
+                                <span class="material-symbols-outlined flex-shrink-0 @(_sidebarOpen ? "mr-4" : "mx-auto")">class</span>
+                                @if (_sidebarOpen) { <span class="truncate">@L["Nav.ContainerClasses"]</span> }
+                            </NavLink>
+                        }
+
+                        <!-- Mappings group -->
+                        @if (_sidebarOpen)
+                        {
+                            <button @onclick="() => _mappingsOpen = !_mappingsOpen"
+                                    class="flex items-center justify-between w-full px-4 pt-3 pb-1 text-on-surface/30 hover:text-on-surface/60 transition-colors">
+                                <span class="text-[0.6rem] font-headline uppercase tracking-widest font-bold">@L["Nav.Mappings"]</span>
+                                <span class="material-symbols-outlined" style="font-size:0.85rem">@(_mappingsOpen ? "expand_less" : "expand_more")</span>
+                            </button>
+                        }
+                        @if (!_sidebarOpen || _mappingsOpen)
+                        {
+                            <NavLink href="/airline-class-maps"
+                                     ActiveClass="text-primary-container border-l-4 border-primary-container bg-surface-container-high"
+                                     class="flex items-center px-4 py-3 font-headline uppercase text-xs font-medium transition-all duration-200 text-on-surface/50 hover:text-primary-container hover:bg-surface-container-high/50"
+                                     title="@(!_sidebarOpen ? L["Nav.AirlineClassMaps"] : null)">
+                                <span class="material-symbols-outlined flex-shrink-0 @(_sidebarOpen ? "mr-4" : "mx-auto")">compare_arrows</span>
+                                @if (_sidebarOpen) { <span class="truncate">@L["Nav.AirlineClassMaps"]</span> }
+                            </NavLink>
+                            <NavLink href="/resource-status-maps"
+                                     ActiveClass="text-primary-container border-l-4 border-primary-container bg-surface-container-high"
+                                     class="flex items-center px-4 py-3 font-headline uppercase text-xs font-medium transition-all duration-200 text-on-surface/50 hover:text-primary-container hover:bg-surface-container-high/50"
+                                     title="@(!_sidebarOpen ? L["Nav.ResourceStatusMaps"] : null)">
+                                <span class="material-symbols-outlined flex-shrink-0 @(_sidebarOpen ? "mr-4" : "mx-auto")">sync_alt</span>
+                                @if (_sidebarOpen) { <span class="truncate">@L["Nav.ResourceStatusMaps"]</span> }
+                            </NavLink>
+                        }
+                    }
+                </Authorized>
+            </AuthorizeView>
+        </nav>
+
+        <!-- Bottom links — only visible when expanded -->
+        @if (_sidebarOpen)
+        {
+            <div class="space-y-1 px-4">
+                <NavLink href="/settings"
+                         ActiveClass="text-primary-container"
+                         class="flex items-center py-2 text-on-surface/50 hover:text-primary-container font-headline uppercase text-xs font-medium transition-colors">
+                    <span class="material-symbols-outlined flex-shrink-0 text-sm mr-3">settings</span>
+                    <span class="truncate">@L["Nav.Settings"]</span>
+                </NavLink>
+                <NavLink href="/change-password"
+                         ActiveClass="text-primary-container"
+                         class="flex items-center py-2 text-on-surface/50 hover:text-primary-container font-headline uppercase text-xs font-medium transition-colors">
+                    <span class="material-symbols-outlined flex-shrink-0 text-sm mr-3">lock_reset</span>
+                    <span class="truncate">@L["Nav.ChangePassword"]</span>
+                </NavLink>
+                <button @onclick="SignOut"
+                        class="flex items-center py-2 text-on-surface/50 hover:text-primary-container font-headline uppercase text-xs font-medium transition-colors w-full text-left">
+                    <span class="material-symbols-outlined flex-shrink-0 text-sm mr-3">logout</span>
+                    <span class="truncate">@L["Nav.SignOut"]</span>
+                </button>
+            </div>
+        }
+    </aside>
+
+    <!-- Main area -->
+    <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+
+        <!-- Top bar -->
+        <header class="flex justify-between items-center w-full px-6 h-16 bg-surface shadow-[0px_2px_8px_rgba(0,0,0,0.15)] z-40 border-b border-outline-variant/30">
+            <!-- Mobile hamburger -->
+            <button @onclick="ToggleSidebar"
+                    class="md:hidden material-symbols-outlined text-on-surface-variant hover:text-primary-container transition-colors mr-3">
+                menu
+            </button>
+            <span class="text-xl font-bold uppercase text-on-surface font-headline tracking-tight">Baggage Reconcillition</span>
+            <div class="flex items-center space-x-3">
+                <button @onclick="ToggleThemeAsync"
+                        title="@(Theme.IsDark ? "Switch to Light Mode" : "Switch to Dark Mode")"
+                        class="material-symbols-outlined text-on-surface-variant hover:text-primary-container transition-colors">
+                    @(Theme.IsDark ? "light_mode" : "dark_mode")
+                </button>
+
+                <AuthorizeView>
+                    <Authorized>
+                        <span class="text-xs font-headline text-on-surface-variant uppercase tracking-widest hidden sm:block">
+                            @context.User.FindFirst("display_name")?.Value
+                        </span>
+                        <button @onclick="SignOut" class="material-symbols-outlined text-on-surface-variant hover:text-primary-container transition-colors">
+                            logout
+                        </button>
+                    </Authorized>
+                </AuthorizeView>
+            </div>
+        </header>
+
+        <!-- Page content -->
+        <main class="flex-1 overflow-y-auto bg-surface">
+            <ErrorBoundary @ref="_errorBoundary">
+                <ChildContent>
+                    @Body
+                </ChildContent>
+                <ErrorContent Context="ex">
+                    <div class="flex flex-col items-center justify-center h-full p-12 text-center space-y-5">
+                        <span class="material-symbols-outlined text-5xl text-error">error_outline</span>
+                        <h2 class="text-lg font-bold font-headline uppercase tracking-widest text-on-surface">Something went wrong</h2>
+                        <p class="text-sm text-on-surface-variant max-w-md font-body">@ex.Message</p>
+                        <button @onclick="RecoverAsync"
+                                class="px-6 py-2 bg-primary-container text-on-primary font-headline text-xs uppercase tracking-widest hover:opacity-90 transition-opacity">
+                            Reload
+                        </button>
+                    </div>
+                </ErrorContent>
+            </ErrorBoundary>
+        </main>
+    </div>
+
+    <!-- Mobile bottom nav -->
+    <nav class="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-surface-container flex justify-around items-center px-6 z-50 shadow-[0px_-2px_8px_rgba(0,0,0,0.15)] border-t border-outline-variant/30">
+        <NavLink href="/" Match="NavLinkMatch.All" ActiveClass="text-primary-container" class="flex flex-col items-center text-on-surface/60">
+            <span class="material-symbols-outlined">dashboard</span>
+            <span class="text-[10px] uppercase font-bold mt-1 font-headline">@L["Nav.MobileDash"]</span>
+        </NavLink>
+        <NavLink href="/flights/departures" ActiveClass="text-primary-container" class="flex flex-col items-center text-on-surface/60">
+            <span class="material-symbols-outlined">flight_takeoff</span>
+            <span class="text-[10px] uppercase font-bold mt-1 font-headline">@L["Nav.Flights"]</span>
+        </NavLink>
+        <NavLink href="/scanning" ActiveClass="text-primary-container" class="flex flex-col items-center text-on-surface/60">
+            <span class="material-symbols-outlined">barcode_scanner</span>
+            <span class="text-[10px] uppercase font-bold mt-1 font-headline">@L["Nav.MobileScan"]</span>
+        </NavLink>
+        <NavLink href="/settings" ActiveClass="text-primary-container" class="flex flex-col items-center text-on-surface/60">
+            <span class="material-symbols-outlined">settings</span>
+            <span class="text-[10px] uppercase font-bold mt-1 font-headline">@L["Nav.Settings"]</span>
+        </NavLink>
+    </nav>
+</div>
+
+@code {
+    private ErrorBoundary? _errorBoundary;
+    private bool _sidebarOpen = true;
+    private bool _flightsOpen = true;
+    private bool _containerRefsOpen = true;
+    private bool _mappingsOpen = true;
+
+    private string FlightSubItemClass =>
+        _sidebarOpen
+            ? "flex items-center pl-10 pr-4 py-2 font-headline uppercase text-xs font-medium transition-all duration-200 text-on-surface/50 hover:text-primary-container hover:bg-surface-container-high/50"
+            : "flex items-center px-4 py-2 font-headline uppercase text-xs font-medium transition-all duration-200 text-on-surface/50 hover:text-primary-container hover:bg-surface-container-high/50";
+
+    // MudBlazor amber theme — dark/light palettes aligned with existing CSS variables
+    private static readonly MudTheme _mudTheme = new()
+    {
+        PaletteLight = new PaletteLight
+        {
+            Primary              = "#7d5700",
+            PrimaryContrastText  = "#ffffff",
+            Secondary            = "#a53c00",
+            SecondaryContrastText= "#ffffff",
+            Background           = "#fffbf0",
+            Surface              = "#f3ede1",
+            AppbarBackground     = "#f3ede1",
+            AppbarText           = "#1e1b13",
+            DrawerBackground     = "#f3ede1",
+            DrawerText           = "#1e1b13",
+            TextPrimary          = "#1e1b13",
+            TextSecondary        = "#4d4638",
+            TableLines           = "#cec5b6",
+            TableStriped         = "#ece5db",
+            TableHover           = "#e7e0d5",
+            BackgroundGray       = "#ece5db",
+            Error                = "#ba1a1a",
+            Success              = "#386a20",
+            Warning              = "#7d5700",
+        },
+        PaletteDark = new PaletteDark
+        {
+            Primary              = "#ffc965",
+            PrimaryContrastText  = "#5f4200",
+            Secondary            = "#ff7524",
+            SecondaryContrastText= "#3c1300",
+            Background           = "#0c0e10",
+            Surface              = "#171a1c",
+            AppbarBackground     = "#0c0e10",
+            AppbarText           = "#eeeef0",
+            DrawerBackground     = "#111416",
+            DrawerText           = "#eeeef0",
+            TextPrimary          = "#eeeef0",
+            TextSecondary        = "#aaabad",
+            TableLines           = "#46484a",
+            TableStriped         = "#1d2022",
+            TableHover           = "#232629",
+            BackgroundGray       = "#1d2022",
+            Error                = "#ff7351",
+            Success              = "#6fbf73",
+            Warning              = "#ffc965",
+        },
+    };
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        await Theme.InitAsync(JS);
+        StateHasChanged();
+    }
+
+    private void ToggleSidebar() => _sidebarOpen = !_sidebarOpen;
+
+    private async Task ToggleThemeAsync()
+    {
+        await Theme.ToggleAsync(JS);
+        StateHasChanged();
+    }
+
+    private void RecoverAsync()
+    {
+        _errorBoundary?.Recover();
+        Nav.NavigateTo(Nav.Uri, forceLoad: true);
+    }
+
+    private void SignOut() => Nav.NavigateTo("/auth/signout", forceLoad: true);
+}

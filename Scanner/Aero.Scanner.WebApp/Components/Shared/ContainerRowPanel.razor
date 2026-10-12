@@ -1,0 +1,325 @@
+@inject ISnackbar Snackbar
+@inject IJSRuntime JS
+@using System.Linq
+@using Aero.Scanner.Shared.Requests
+@using static Aero.Scanner.WebApp.Components.Pages.DepartureFlights
+
+<div class="px-6 py-4 bg-surface-container-low border-t border-outline-variant/30 space-y-4">
+
+    <!-- Section header -->
+    <div class="flex items-center justify-between flex-wrap gap-3">
+        <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-primary-container text-lg">inventory_2</span>
+            <span class="text-xs font-headline uppercase tracking-widest font-bold text-on-surface-variant">
+                Containers · @Flight.RemoteSystemId
+            </span>
+            @if (_containers.Count > 0)
+            {
+                <span class="text-xs font-mono text-primary-container font-bold">(@_containers.Count)</span>
+            }
+        </div>
+        @if (IsAirportOperator || IsHandlingCompany)
+        {
+            <button @onclick="() => OpenAddForm()"
+                    class="flex items-center gap-1 px-3 py-1.5 bg-primary-container text-on-primary font-headline text-xs uppercase tracking-widest transition-colors hover:opacity-90">
+                <span class="material-symbols-outlined text-sm">add</span>
+                Add Container
+            </button>
+        }
+    </div>
+
+    <!-- Add / Edit inline form -->
+    @if (_formVisible && (IsAirportOperator || IsHandlingCompany))
+    {
+        <div class="bg-surface p-4 border border-outline-variant/40 space-y-3">
+            <h3 class="text-xs font-bold uppercase tracking-widest text-on-surface-variant font-headline">
+                @(_editId.HasValue ? "Edit Container" : "New Container")
+            </h3>
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                <div class="space-y-1">
+                    <label class="text-xs font-headline uppercase tracking-widest text-on-surface-variant">Code *</label>
+                    <MudTextField @bind-Value="_form.ContainerCode" Placeholder="e.g. ULD001" Variant="Variant.Outlined" Margin="Margin.Dense" MaxLength="20" />
+                </div>
+                <div class="space-y-1">
+                    <label class="text-xs font-headline uppercase tracking-widest text-on-surface-variant">Type *</label>
+                    <select @bind="_form.ContainerTypeCode" @bind:after="OnTypeChanged" class="brs-select w-full">
+                        <option value="">— Select —</option>
+                        @foreach (var t in _containerTypes)
+                        {
+                            <option value="@t.Code">@t.Code – @t.Description</option>
+                        }
+                    </select>
+                </div>
+                <div class="space-y-1">
+                    <label class="text-xs font-headline uppercase tracking-widest text-on-surface-variant">Status *</label>
+                    <select @bind="_form.ContainerStatusCode" class="brs-select w-full">
+                        <option value="">— Select —</option>
+                        @foreach (var s in _containerStatuses)
+                        {
+                            <option value="@s.Value">@s.Description</option>
+                        }
+                    </select>
+                </div>
+                <div class="space-y-1">
+                    <label class="text-xs font-headline uppercase tracking-widest text-on-surface-variant">Class *</label>
+                    <select @bind="_form.ContainerClassCode" class="brs-select w-full" disabled="@(!_filteredClasses.Any())">
+                        <option value="">— Select —</option>
+                        @foreach (var c in _filteredClasses)
+                        {
+                            <option value="@c.ClassCode">@c.ClassCode</option>
+                        }
+                    </select>
+                </div>
+                <div class="space-y-1 md:col-span-2">
+                    <label class="text-xs font-headline uppercase tracking-widest text-on-surface-variant">Destination *</label>
+                    <MudTextField @bind-Value="_form.ContainerDestination" Placeholder="e.g. IST" Variant="Variant.Outlined" Margin="Margin.Dense" MaxLength="3" />
+                </div>
+            </div>
+            <div class="flex items-center gap-3 pt-1">
+                <button @onclick="SaveAsync" disabled="@_saving"
+                        class="px-5 py-1.5 bg-primary-container text-on-primary font-headline text-xs uppercase tracking-widest transition-colors hover:opacity-90 disabled:opacity-50">
+                    @(_saving ? "Saving…" : "Save")
+                </button>
+                <button @onclick="() => CloseForm()"
+                        class="px-5 py-1.5 bg-surface-container-high text-on-surface-variant font-headline text-xs uppercase tracking-widest transition-colors hover:text-on-surface">
+                    Cancel
+                </button>
+                @if (!string.IsNullOrEmpty(_formError))
+                {
+                    <span class="text-xs text-error font-body">@_formError</span>
+                }
+            </div>
+        </div>
+    }
+
+    <!-- Container list -->
+    @if (_loadingContainers)
+    {
+        <div class="text-xs font-headline uppercase tracking-widest text-on-surface-variant py-2">Loading containers…</div>
+    }
+    else if (!string.IsNullOrEmpty(_loadError))
+    {
+        <div class="flex items-center gap-2 text-xs font-headline uppercase tracking-widest text-error py-2">
+            <span class="material-symbols-outlined text-base">error_outline</span>
+            Failed to load containers.
+        </div>
+    }
+    else if (_containers.Count == 0)
+    {
+        <div class="text-xs font-headline uppercase tracking-widest text-on-surface-variant/50 py-2">No containers assigned to this flight.</div>
+    }
+    else
+    {
+        <MudDataGrid T="ContainerDto" Items="@_containers" Dense="true" Hover="true"
+                     SortMode="SortMode.Single" Class="brs-grid" Filterable="false">
+            <Columns>
+                <PropertyColumn Property="c => c.ContainerCode" Title="Code">
+                    <CellTemplate>
+                        <span class="font-mono font-bold text-primary-container">@context.Item.ContainerCode</span>
+                    </CellTemplate>
+                </PropertyColumn>
+                <PropertyColumn Property="c => c.ContainerTypeCode" Title="Type" />
+                <PropertyColumn Property="c => c.ContainerStatusCode" Title="Status" />
+                <PropertyColumn Property="c => c.ContainerClassCode" Title="Class" />
+                <PropertyColumn Property="c => c.ContainerDestination" Title="Dest">
+                    <CellTemplate>
+                        <span class="font-mono">@context.Item.ContainerDestination</span>
+                    </CellTemplate>
+                </PropertyColumn>                
+                <TemplateColumn Title="" CellClass="text-right">
+                    <CellTemplate>
+                        <div class="flex justify-end gap-2">
+                            <button @onclick="() => PrintContainerAsync(context.Item)"
+                                    class="text-on-surface-variant hover:text-primary-container transition-colors"
+                                    title="Print">
+                                <span class="material-symbols-outlined text-base">print</span>
+                            </button>
+                            @if (IsAirportOperator)
+                            {
+                                <button @onclick="() => OpenEditForm(context.Item)"
+                                        class="text-on-surface-variant hover:text-primary-container transition-colors"
+                                        title="Edit">
+                                    <span class="material-symbols-outlined text-base">edit</span>
+                                </button>
+                                <button @onclick="() => DeleteAsync(context.Item)"
+                                        class="text-on-surface-variant hover:text-error transition-colors"
+                                        title="Delete">
+                                    <span class="material-symbols-outlined text-base">delete</span>
+                                </button>
+                            }
+                        </div>
+                    </CellTemplate>
+                </TemplateColumn>
+            </Columns>
+        </MudDataGrid>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public DepartureFlightDto Flight { get; set; } = null!;
+    [Parameter] public bool IsAirportOperator { get; set; }
+    [Parameter] public bool IsHandlingCompany { get; set; }
+    [Parameter, EditorRequired] public ContainerApiClient ContainerApi { get; set; } = null!;
+    [Parameter, EditorRequired] public SystemConfigurationApiClient SystemConfigApi { get; set; } = null!;
+    [Parameter] public EventCallback<SnackbarMessage> OnMessage { get; set; }
+    /// <summary>Fired when the inline form opens (true) or closes (false). Parent uses this to pause auto-refresh.</summary>
+    [Parameter] public EventCallback<bool> OnFormStateChanged { get; set; }
+
+    private List<ContainerDto> _containers = [];
+    private List<ContainerTypeDto> _containerTypes = [];
+    private List<ContainerClassDto> _containerClasses = [];
+    private List<SystemConfigurationDto> _containerStatuses = [];
+    private List<ContainerClassDto> _filteredClasses = [];
+    private bool _loadingContainers;
+    private bool _formVisible;
+    private bool _saving;
+    private string _formError = string.Empty;
+    private string _loadError = string.Empty;
+    private int? _editId;
+
+    private ContainerFormModel _form = new();
+
+    private sealed class ContainerFormModel
+    {
+        public string ContainerCode { get; set; } = string.Empty;
+        public string ContainerTypeCode { get; set; } = string.Empty;
+        public string ContainerStatusCode { get; set; } = string.Empty;
+        public string ContainerClassCode { get; set; } = string.Empty;
+        public string ContainerDestination { get; set; } = string.Empty;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        _loadingContainers = true;
+        try
+        {
+            var containersTask = ContainerApi.GetContainersByFlightAsync(Flight.Id);
+            var typesTask      = ContainerApi.GetContainerTypesAsync();
+            var classesTask    = ContainerApi.GetContainerClassesAsync();
+            var statusesTask   = SystemConfigApi.GetByPrefixAsync("CONTAINER_STATUS.");
+
+            await Task.WhenAll(containersTask, typesTask, classesTask, statusesTask);
+
+            _containers        = containersTask.Result.ToList();
+            _containerTypes    = typesTask.Result.ToList();
+            _containerClasses  = classesTask.Result.ToList();
+            _containerStatuses = statusesTask.Result.ToList();
+        }
+        catch (Exception ex)
+        {
+            _loadError = ex.Message;
+        }
+        finally
+        {
+            _loadingContainers = false;
+        }
+    }
+
+    private void OnTypeChanged()
+    {
+        _filteredClasses = string.IsNullOrEmpty(_form.ContainerTypeCode)
+            ? []
+            : _containerClasses.Where(c => c.ContainerTypeCode == _form.ContainerTypeCode).ToList();
+
+        if (!_filteredClasses.Any(c => c.ClassCode == _form.ContainerClassCode))
+            _form.ContainerClassCode = string.Empty;
+    }
+
+    private async Task OpenAddForm()
+    {
+        _editId = null;
+        _form = new();
+        _filteredClasses = [];
+        _formError = string.Empty;
+        _formVisible = true;
+        await OnFormStateChanged.InvokeAsync(true);
+    }
+
+    private async Task OpenEditForm(ContainerDto c)
+    {
+        _editId = c.Id;
+        _form = new()
+        {
+            ContainerCode       = c.ContainerCode,
+            ContainerTypeCode   = c.ContainerTypeCode,
+            ContainerStatusCode = c.ContainerStatusCode,
+            ContainerClassCode  = c.ContainerClassCode,
+            ContainerDestination= c.ContainerDestination,
+        };
+        _filteredClasses = string.IsNullOrEmpty(c.ContainerTypeCode)
+            ? []
+            : _containerClasses.Where(x => x.ContainerTypeCode == c.ContainerTypeCode).ToList();
+        _formError = string.Empty;
+        _formVisible = true;
+        await OnFormStateChanged.InvokeAsync(true);
+    }
+
+    private async Task CloseForm()
+    {
+        _formVisible = false;
+        _formError = string.Empty;
+        await OnFormStateChanged.InvokeAsync(false);
+    }
+
+    private async Task SaveAsync()
+    {
+        _formError = string.Empty;
+        if (string.IsNullOrWhiteSpace(_form.ContainerCode))       { _formError = "Container code is required."; return; }
+        if (string.IsNullOrWhiteSpace(_form.ContainerTypeCode))   { _formError = "Type code is required."; return; }
+        if (string.IsNullOrWhiteSpace(_form.ContainerStatusCode)) { _formError = "Status code is required."; return; }
+        if (string.IsNullOrWhiteSpace(_form.ContainerClassCode))  { _formError = "Class code is required."; return; }
+        if (string.IsNullOrWhiteSpace(_form.ContainerDestination)){ _formError = "Destination is required."; return; }
+
+        _saving = true;
+        bool success; string? error;
+
+        if (_editId.HasValue)
+        {
+            var req = new UpdateContainerRequest(
+                _form.ContainerCode, _form.ContainerTypeCode,
+                _form.ContainerStatusCode, _form.ContainerClassCode, _form.ContainerDestination);
+            (success, _, error) = await ContainerApi.UpdateContainerAsync(_editId.Value, req);
+        }
+        else
+        {
+            var req = new CreateContainerRequest(
+                Flight.Id, _form.ContainerCode, _form.ContainerTypeCode,
+                _form.ContainerStatusCode, _form.ContainerClassCode, _form.ContainerDestination);
+            (success, _, error) = await ContainerApi.CreateContainerAsync(req);
+        }
+
+        _saving = false;
+
+        if (success)
+        {
+            await OnMessage.InvokeAsync(new SnackbarMessage(
+                _editId.HasValue ? "Container updated." : "Container added.", Severity.Success));
+            await CloseForm();
+            _containers = (await ContainerApi.GetContainersByFlightAsync(Flight.Id)).ToList();
+        }
+        else
+        {
+            _formError = error ?? "An unexpected error occurred.";
+        }
+    }
+
+    private async Task PrintContainerAsync(ContainerDto c)
+    {
+        await JS.InvokeVoidAsync("brs.printContainer",
+            new { Flight.RemoteSystemId, Flight.Destination },
+            new { c.Id, c.ContainerCode, c.ContainerClassCode });
+    }
+
+    private async Task DeleteAsync(ContainerDto c)
+    {
+        if (await ContainerApi.DeleteContainerAsync(c.Id))
+        {
+            await OnMessage.InvokeAsync(new SnackbarMessage($"Container {c.ContainerCode} deleted.", Severity.Info));
+            _containers = (await ContainerApi.GetContainersByFlightAsync(Flight.Id)).ToList();
+        }
+        else
+        {
+            await OnMessage.InvokeAsync(new SnackbarMessage("Failed to delete container.", Severity.Error));
+        }
+    }
+}

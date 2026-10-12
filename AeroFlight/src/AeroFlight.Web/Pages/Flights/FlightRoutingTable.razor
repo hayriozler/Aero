@@ -1,0 +1,191 @@
+@using System.Text.Json
+@using AeroFlight.Contracts.Flights
+@using AeroFlight.Web.Services.Flights
+@using AeroFlight.Web.Services.Metadatas
+@inject IFlightsClient Flights
+@inject IMetadataClient Metadata
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+
+<div class="d-flex justify-space-between align-center mb-2">
+    <MudText Typo="Typo.subtitle2">Routing legs</MudText>
+    <MudTooltip Text="Add Leg">
+        <MudIconButton Icon="@Icons.Material.Filled.Add" Size="Size.Small" OnClick="AddAsync" Disabled="@ReadOnly" />
+    </MudTooltip>
+</div>
+
+@{ var extraLegCount = _items.Count(i => i.LegNumber > 0); }
+@if (extraLegCount > _recommendedMaxRoutings)
+{
+    <MudAlert Severity="Severity.Warning" Dense="true" Class="mb-2">
+        This flight has @extraLegCount additional legs — more than the usual @_recommendedMaxRoutings. Double-check this is a genuine multi-sector rotation.
+    </MudAlert>
+}
+
+@if (_loading)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="mb-2" />
+}
+
+<MudTable Items="_items" Dense="true" Hover="true" Bordered="false" Elevation="1">
+    <HeaderContent>
+        <MudTh>Leg</MudTh>
+        <MudTh>Airport</MudTh>
+        <MudTh></MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Leg">@(context.LegNumber == 0 ? AnchorLegLabel : context.LegNumber.ToString())</MudTd>
+        <MudTd DataLabel="Airport">@context.AirportCode</MudTd>
+        <MudTd>
+            @if (context.LegNumber > 0)
+            {
+                <div class="d-flex justify-end" style="gap:4px">
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" OnClick="@(() => EditAsync(context))" Disabled="@ReadOnly" />
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error" OnClick="@(() => DeleteAsync(context))" Disabled="@ReadOnly" />
+                </div>
+            }
+            else
+            {
+                <MudTooltip Text="@($"Edit {AnchorLegLabel} from the flight's main form")">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary" Align="Align.Right">—</MudText>
+                </MudTooltip>
+            }
+        </MudTd>
+    </RowTemplate>
+    <NoRecordsContent>
+        <MudText Color="Color.Secondary">No routing legs.</MudText>
+    </NoRecordsContent>
+</MudTable>
+
+@code {
+    private const int _recommendedMaxRoutings = 3;
+
+    [Parameter, EditorRequired]
+    public string RouteBase { get; set; } = "";
+
+    [Parameter]
+    public bool ReadOnly { get; set; }
+
+    // Adding/editing/deleting a leg changes the flight's CountryType (recomputed server-side) and
+    // Routing summary — the parent needs to reload the flight to pick those up.
+    [Parameter]
+    public EventCallback OnRoutingChanged { get; set; }
+
+    // Leg 0 is Origin for an arrival's routing, Destination for a departure's — same generic list,
+    // told apart only by which endpoint RouteBase points at.
+    private string AnchorLegLabel => RouteBase.Contains("/arrivals/") ? "0 (Origin)" : "0 (Destination)";
+
+    private List<OpsRoutingResponse> _items = [];
+    private bool _loading;
+    private string? _loadedRoute;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (string.IsNullOrWhiteSpace(RouteBase) || RouteBase == _loadedRoute)
+            return;
+
+        _loadedRoute = RouteBase;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        try
+        {
+            _items = (await Flights.GetRoutingsAsync(RouteBase)).ToList();
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add($"Failed to load routing legs: {ex.Message}", Severity.Error);
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Could not reach the API while loading routing legs.", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task AddAsync()
+    {
+        var parameters = new DialogParameters<FlightRoutingEditDialog>
+        {
+            { x => x.SearchAirportsAsync, SearchAirportsAsync },
+            { x => x.AirportLabels, _airportLabels },
+        };
+        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true };
+        var dialog = await DialogService.ShowAsync<FlightRoutingEditDialog>("Add Routing Leg", parameters, options);
+        var result = await dialog.Result;
+        if (result is null || result.Canceled || result.Data is not OpsRoutingRequest request)
+            return;
+
+        try
+        {
+            await Flights.AddRoutingAsync(RouteBase, request);
+            Snackbar.Add("Routing leg added.", Severity.Success);
+            await LoadAsync();
+            await OnRoutingChanged.InvokeAsync();
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add($"Failed to add routing leg: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task EditAsync(OpsRoutingResponse existing)
+    {
+        var parameters = new DialogParameters<FlightRoutingEditDialog>
+        {
+            { x => x.Existing, existing },
+            { x => x.SearchAirportsAsync, SearchAirportsAsync },
+            { x => x.AirportLabels, _airportLabels },
+        };
+        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true };
+        var dialog = await DialogService.ShowAsync<FlightRoutingEditDialog>("Edit Routing Leg", parameters, options);
+        var result = await dialog.Result;
+        if (result is null || result.Canceled || result.Data is not OpsRoutingRequest request)
+            return;
+
+        try
+        {
+            await Flights.UpdateRoutingAsync($"{RouteBase}/{existing.Id}", request);
+            Snackbar.Add("Routing leg updated.", Severity.Success);
+            await LoadAsync();
+            await OnRoutingChanged.InvokeAsync();
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add($"Failed to update routing leg: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task DeleteAsync(OpsRoutingResponse existing)
+    {
+        var confirmed = await DialogService.ShowMessageBoxAsync(
+            "Delete Routing Leg", $"Remove routing leg '{existing.AirportCode}'?", yesText: "Delete", cancelText: "Cancel");
+        if (confirmed != true)
+            return;
+
+        try
+        {
+            await Flights.DeleteRoutingAsync($"{RouteBase}/{existing.Id}");
+            Snackbar.Add("Routing leg removed.", Severity.Success);
+            await LoadAsync();
+            await OnRoutingChanged.InvokeAsync();
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add($"Failed to remove routing leg: {ex.Message}", Severity.Error);
+        }
+    }
+
+    // Airports (~28k+ rows in a busy tenant) — same cached, filter-in-memory pattern as the
+    // Aircraft/Airline/Handling Agent combos on the Aircraft & Handling tab.
+    private readonly Dictionary<string, string> _airportLabels = new();
+
+    private Task<IEnumerable<string>> SearchAirportsAsync(string search, CancellationToken ct) =>
+        MetadataCodeSearch.SearchWithLabelsAsync(Metadata, MetadataCatalog.RouteOf("airports"), search, _airportLabels, ct);
+}

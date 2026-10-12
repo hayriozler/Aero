@@ -1,0 +1,19 @@
+@inject NavigationManager Navigation
+@inject IHttpContextAccessor HttpContextAccessor
+
+@code {
+    protected override void OnInitialized()
+    {
+        var returnUrl = Uri.EscapeDataString("/" + Navigation.ToBaseRelativePath(Navigation.Uri));
+        var target = $"login?returnUrl={returnUrl}";
+
+        // During prerendering there's a real HttpContext to redirect with directly; NavigateTo
+        // would throw NavigationException to signal that, but nothing in this legacy hosted
+        // Blazor Server pipeline catches it. Once the interactive circuit is live, HttpContext is
+        // gone and NavigateTo(forceLoad: true) does a real client-side navigation instead.
+        if (HttpContextAccessor.HttpContext is { } httpContext)
+            httpContext.Response.Redirect(target);
+        else
+            Navigation.NavigateTo(target, forceLoad: true);
+    }
+}

@@ -1,0 +1,240 @@
+@page "/scanning"
+@attribute [Authorize]
+@using Aero.Scanner.Domain.Enums
+@implements IAsyncDisposable
+@inject DepartureFlightApiClient FlightApi
+@inject DepartureBagApiClient BagApi
+
+<PageTitle>AeroScan BRS · Scanning</PageTitle>
+
+<div class="p-6 space-y-6">
+
+    <!-- Flight selector header -->
+    <div class="bg-surface-container p-6 shadow-2xl relative overflow-hidden">
+        <div class="absolute top-0 left-0 w-full h-1 bg-primary-container overflow-hidden">
+            <div class="h-full bg-gradient-to-r from-transparent via-white/40 to-transparent w-1/3 animate-scan-strip"></div>
+        </div>
+
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+            <div>
+                <div class="flex items-center gap-3 mb-1">
+                    <span class="bg-primary-container text-on-primary-fixed px-2 py-0.5 text-[10px] font-bold tracking-tighter font-headline uppercase">
+                        SCANNING
+                    </span>
+                    <span class="text-on-surface-variant font-label text-xs uppercase tracking-widest">Baggage Reconciliation</span>
+                </div>
+                <h1 class="font-headline text-4xl font-bold text-on-surface tracking-tighter">
+                    @_selectedFlightId.HasValue ? _selectedFlightId.Value.ToString() : "SELECT A FLIGHT"
+                </h1>
+                @if (_bags.Count > 0)
+                {
+                    <div class="flex gap-6 mt-2">
+                        <div>
+                            <p class="text-[10px] text-on-surface-variant font-headline uppercase">Loaded</p>
+                            <p class="text-xl font-headline text-primary">@_loadedCount <span class="text-xs text-on-surface-variant">bags</span></p>
+                        </div>
+                        <div class="w-px h-10 bg-outline-variant/30"></div>
+                        <div>
+                            <p class="text-[10px] text-on-surface-variant font-headline uppercase">Total</p>
+                            <p class="text-xl font-headline text-on-surface">@_bags.Count <span class="text-xs text-on-surface-variant">bags</span></p>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <div class="flex gap-3 flex-wrap">
+                <select @bind="_selectedFlightId"
+                        class="bg-surface-container-highest border-none text-on-surface font-headline text-xs uppercase px-4 py-3 focus:ring-0 focus:bg-surface-bright">
+                    <option value="">-- Select Flight --</option>
+                    @foreach (var f in _flights)
+                    {
+                        <option value="@f.RemoteSystemId">@f.RemoteSystemId — @f.Destination</option>
+                    }
+                </select>
+                <button @onclick="LoadBagsAsync"
+                        disabled="@(!_selectedFlightId.HasValue || _loading)"
+                        class="flex items-center gap-2 px-6 py-3 bg-primary-container text-on-primary-fixed font-headline text-xs font-extrabold hover:bg-primary-dim transition-all active:scale-95">
+                    <span class="material-symbols-outlined text-lg">search</span>
+                    LOAD MANIFEST
+                </button>
+            </div>
+        </div>
+    </div>
+
+    @if (_bags.Count > 0 || _loading)
+    {
+        <div class="grid grid-cols-1 xl:grid-cols-12 gap-6">
+
+            <!-- Baggage manifest table -->
+            <div class="xl:col-span-8 bg-surface-container overflow-hidden">
+                <div class="px-6 py-4 border-b border-outline-variant/10 flex justify-between items-center bg-surface-container-high">
+                    <h2 class="font-headline text-sm font-bold tracking-widest text-on-surface uppercase">Baggage Reconciliation Manifest</h2>
+                    <div class="flex gap-2 text-[10px]">
+                        <span class="flex items-center gap-1 px-2 py-1 bg-surface-container-highest text-on-surface-variant">
+                            <span class="w-2 h-2 rounded-full bg-on-surface-variant"></span> SCANNED: @_scannedCount
+                        </span>
+                        @* <span class="flex items-center gap-1 px-2 py-1 bg-surface-container-highest text-secondary">
+                            <span class="w-2 h-2 rounded-full bg-secondary"></span> ISSUES: @_issueCount
+                        </span> *@
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full border-collapse">
+                        <thead>
+                            <tr class="bg-surface-container-low/50">
+                                <th class="px-6 py-3 text-left font-headline text-[10px] text-on-surface-variant uppercase tracking-widest">Tag ID</th>
+                                <th class="px-6 py-3 text-left font-headline text-[10px] text-on-surface-variant uppercase tracking-widest">Class</th>
+                                <th class="px-6 py-3 text-left font-headline text-[10px] text-on-surface-variant uppercase tracking-widest">Weight</th>
+                                <th class="px-6 py-3 text-left font-headline text-[10px] text-on-surface-variant uppercase tracking-widest">Scan Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-outline-variant/5">
+                            @if (_loading)
+                            {
+                                <tr>
+                                    <td colspan="4" class="px-6 py-12 text-center text-on-surface-variant font-headline text-xs uppercase">
+                                        Loading manifest...
+                                    </td>
+                                </tr>
+                            }
+                            else
+                            {
+                                @foreach (var bag in _bags)
+                                {
+                                    var isLoaded = bag.DepartureBaggageStatus is DepartureBaggageStatus.Loaded;
+                                    var isIssue = bag.DepartureBaggageStatus is DepartureBaggageStatus.ToBeOffload;
+
+                                    <tr class="transition-colors group @(isIssue ? "bg-surface-container-high border-l-4 border-secondary" : "hover:bg-surface-bright")">
+                                        <td class="px-6 py-4">
+                                            <div class="flex items-center gap-3">
+                                                <span class="material-symbols-outlined @(isIssue ? "text-secondary" : "text-primary-dim")">luggage</span>
+                                                <span class="font-headline font-bold text-sm tracking-tight @(isIssue ? "text-secondary" : "")">
+                                                    @bag.TagNumber
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <span class="text-[10px] px-2 py-0.5 font-bold font-headline @ClassBadge(bag.Class)">
+                                                @bag.Class.ToString().ToUpperInvariant()
+                                            </span>
+                                        </td>
+                                        <td class="px-6 py-4 text-on-surface-variant font-mono text-sm">@bag.WeightKg kg</td>
+                                        <td class="px-6 py-4">
+                                            <div class="inline-flex items-center gap-2 px-2 py-1 @StatusBadgeClass(bag.DepartureBaggageStatus) text-[10px] font-bold font-headline">
+                                                <span class="material-symbols-outlined text-xs">@StatusIcon(bag.DepartureBaggageStatus)</span>
+                                                @bag.DepartureBaggageStatus.ToString().ToUpperInvariant()
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Reconciliation stats panel -->
+            <div class="xl:col-span-4 flex flex-col gap-6">
+                <div class="bg-surface-container p-6 flex flex-col gap-6">
+                    <h3 class="font-headline text-xs font-bold tracking-widest text-on-surface-variant uppercase">Reconciliation Overview</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-surface-container-highest p-4">
+                            <p class="text-[10px] font-headline text-on-surface-variant uppercase">Loaded</p>
+                            <p class="text-2xl font-headline font-bold text-on-surface">@_loadedCount</p>
+                        </div>
+                        <div class="bg-surface-container-highest p-4">
+                            <p class="text-[10px] font-headline text-on-surface-variant uppercase">Remaining</p>
+                            <p class="text-2xl font-headline font-bold text-primary">@(_bags.Count - _loadedCount)</p>
+                        </div>
+                        <div class="bg-surface-container-highest p-4">
+                            <p class="text-[10px] font-headline text-on-surface-variant uppercase">Offloaded</p>
+                            <p class="text-2xl font-headline font-bold text-secondary">@_offloadedCount</p>
+                        </div>
+                       @*  <div class="bg-surface-container-highest p-4">
+                            <p class="text-[10px] font-headline text-on-surface-variant uppercase">Issues</p>
+                            <p class="text-2xl font-headline font-bold text-error">@_issueCount</p>
+                        </div> *@
+                    </div>
+
+                    @if (_bags.Count > 0)
+                    {
+                        var pct = (int)Math.Round(_loadedCount * 100.0 / _bags.Count);
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-end">
+                                <p class="font-headline text-[10px] font-bold text-on-surface-variant">TOTAL RECONCILIATION</p>
+                                <p class="font-headline text-sm font-bold text-primary">@pct%</p>
+                            </div>
+                            <div class="h-2 w-full bg-surface-container-highest overflow-hidden">
+                                <div class="h-full bg-primary transition-all duration-500" style="width: @pct%"></div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+    else if (!_selectedFlightId.HasValue)
+    {
+        <div class="text-center py-16 text-on-surface-variant font-headline uppercase tracking-widest text-sm">
+            No bags found for @_selectedFlightId
+        </div>
+    }
+</div>
+
+@code {
+    private IReadOnlyList<DepartureFlightDto> _flights = [];
+    private IReadOnlyList<DepartureBagDto> _bags = [];
+    private int? _selectedFlightId;
+    private bool _loading;
+    private CancellationTokenSource _cts = new();
+
+    private int _loadedCount  => _bags.Count(b => b.DepartureBaggageStatus is DepartureBaggageStatus.Loaded);
+    private int _scannedCount => _bags.Count(b => b.DepartureBaggageStatus != DepartureBaggageStatus.Loaded && b.DepartureBaggageStatus != DepartureBaggageStatus.ToBeOffload);
+    private int _offloadedCount => _bags.Count(b => b.DepartureBaggageStatus == DepartureBaggageStatus.ToBeOffload);
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        _flights = await FlightApi.GetFlightsAsync(ct: _cts.Token);
+        StateHasChanged();
+    }
+
+    private async Task LoadBagsAsync()
+    {
+        if (!_selectedFlightId.HasValue) return;
+        _loading = true;
+        _bags = await BagApi.GetBagsForFlightAsync(_selectedFlightId.Value, _cts.Token);
+        _loading = false;
+    }
+
+    private static string ClassBadge(BaggageClass cls) => cls switch
+    {
+        BaggageClass.First    => "bg-primary-container/20 text-primary",
+        BaggageClass.Business => "bg-tertiary-container/20 text-on-tertiary-container",
+        _                     => "bg-surface-container-highest text-on-surface-variant"
+    };
+
+    private static string StatusBadgeClass(DepartureBaggageStatus status) => status switch
+    {
+        DepartureBaggageStatus.Loaded   or
+        DepartureBaggageStatus.ToBeOffload => "bg-secondary/20 text-secondary",
+        DepartureBaggageStatus.Unknown => "bg-error/10 text-error",
+        _                               => "bg-surface-container-highest text-on-surface-variant"
+    };
+
+    private static string StatusIcon(DepartureBaggageStatus status) => status switch
+    {
+        DepartureBaggageStatus.Loaded => "check_circle",
+        DepartureBaggageStatus.ToBeOffload => "error",
+        DepartureBaggageStatus.Unknown => "close",
+        _                                => "schedule"
+    };
+
+    public async ValueTask DisposeAsync()
+    {
+        _cts.Cancel();
+        _cts.Dispose();
+        await Task.CompletedTask;
+    }
+}

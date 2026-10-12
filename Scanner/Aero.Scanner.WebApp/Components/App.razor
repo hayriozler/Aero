@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <base href="/" />
+    <title>AeroScan BRS</title>
+
+    <script>
+        (function () {
+            var theme = localStorage.getItem('brs-theme');
+            if (theme !== 'light') {
+                document.documentElement.classList.add('dark');
+            }
+        })();
+    </script>
+
+    <link rel="stylesheet" href="fonts.css" />
+    <link href="_content/MudBlazor/MudBlazor.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="app.css" />
+    <link rel="stylesheet" href="app.gen.css" />
+
+    <HeadOutlet />
+</head>
+<body class="bg-background text-on-surface">
+    <ErrorBoundary>
+        <Routes @rendermode="InteractiveServer" />
+    </ErrorBoundary>
+    <script src="brs.js"></script>
+    <script src="_framework/blazor.web.js"></script>
+    <script src="_content/MudBlazor/MudBlazor.min.js"></script>
+</body>
+</html>

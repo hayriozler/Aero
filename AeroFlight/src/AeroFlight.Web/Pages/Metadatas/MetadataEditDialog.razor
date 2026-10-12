@@ -1,0 +1,304 @@
+@using System.Text.Json
+@using AeroFlight.Web.Services.Metadatas
+
+<MudDialog>
+    <DialogContent>
+        @if (!_ready)
+        {
+            <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="mb-3" />
+        }
+        else
+        {
+        @if (_error is not null)
+        {
+            <MudAlert Severity="Severity.Error" Variant="Variant.Filled" Dense="true" Class="mb-3">@_error</MudAlert>
+        }
+
+        RenderFragment detailsForm =
+                @<MudForm @ref="_form">
+                    <MudGrid Spacing="3">
+                        @foreach (var field in Entity.Fields)
+                        {
+                            var isKey = string.Equals(field.Name, "code", StringComparison.OrdinalIgnoreCase);
+                            <MudItem xs="12" sm="6">
+                                @switch (field.Type)
+                                {
+                                    case RefFieldType.Bool:
+                                        <MudSwitch T="bool" Value="@GetBool(field.Name)" ValueChanged="@(v => _values[field.Name] = v)"
+                                                   Label="@field.Label" Color="Color.Primary" Class="mt-2" />
+                                        break;
+
+                                    case RefFieldType.Number:
+                                        <MudNumericField T="int?" Value="@GetInt(field.Name)" ValueChanged="@(v => _values[field.Name] = v)"
+                                                         Label="@field.Label" Required="@field.Required" RequiredError="@($"{field.Label} is required")"
+                                                         Variant="Variant.Outlined" Margin="Margin.Dense" Immediate="true" />
+                                        break;
+
+                                    case RefFieldType.Decimal:
+                                        <MudNumericField T="decimal?" Value="@GetDecimal(field.Name)" ValueChanged="@(v => _values[field.Name] = v)"
+                                                         Label="@field.Label" Required="@field.Required" RequiredError="@($"{field.Label} is required")"
+                                                         Variant="Variant.Outlined" Margin="Margin.Dense" Immediate="true" />
+                                        break;
+
+                                    case RefFieldType.Select:
+                                        <MudSelect T="string" Value="@GetString(field.Name)" ValueChanged="@(v => _values[field.Name] = v)"
+                                                   Label="@field.Label" Required="@field.Required" RequiredError="@($"{field.Label} is required")"
+                                                   Clearable="true" Variant="Variant.Outlined" Margin="Margin.Dense">
+                                            @foreach (var option in _options.GetValueOrDefault(field.Name, []))
+                                            {
+                                                <MudSelectItem T="string" Value="@option.Code">@option.Label</MudSelectItem>
+                                            }
+                                        </MudSelect>
+                                        break;
+
+                                    case RefFieldType.Autocomplete:
+                                        <MudAutocomplete T="string" Value="@GetString(field.Name)" ValueChanged="@(v => _values[field.Name] = v)"
+                                                         SearchFunc="@((string search, CancellationToken _) => SearchOptionsAsync(field.Name, search))"
+                                                         ToStringFunc="@(code => OptionLabel(field.Name, code))"
+                                                         Label="@field.Label" Required="@field.Required" RequiredError="@($"{field.Label} is required")"
+                                                         Clearable="true" MinCharacters="0" CoerceText="false"
+                                                         Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                        break;
+
+                                    default:
+                                        <MudTextField T="string" Value="@GetString(field.Name)" ValueChanged="@(v => _values[field.Name] = string.IsNullOrWhiteSpace(v) ? null : v)"
+                                                      Label="@field.Label" Required="@field.Required" RequiredError="@($"{field.Label} is required")"
+                                                      MaxLength="@(field.MaxLength ?? 524288)" Disabled="@(isKey && IsEdit)"
+                                                      Variant="Variant.Outlined" Margin="Margin.Dense" Immediate="true" />
+                                        break;
+                                }
+                            </MudItem>
+                        }
+                    </MudGrid>
+                </MudForm>;
+
+        @if (HasExtraTabs)
+        {
+            <MudTabs Elevation="0" Rounded="true">
+                <MudTabPanel Text="Details">@detailsForm</MudTabPanel>
+                @if (Entity.Key == "airlines")
+                {
+                    <MudTabPanel Text="Contacts">
+                        <AirlineContactsPanel AirlineCode="@(ExistingCode!)" />
+                    </MudTabPanel>
+                    <MudTabPanel Text="Logos">
+                        <AirlineLogosPanel AirlineCode="@(ExistingCode!)" />
+                    </MudTabPanel>
+                }
+                else if (Entity.Key == "airports")
+                {
+                    <MudTabPanel Text="Images">
+                        <AirportImagesPanel AirportCode="@(ExistingCode!)" />
+                    </MudTabPanel>
+                }
+                else if (Entity.Key == "companies")
+                {
+                    <MudTabPanel Text="Contacts">
+                        <CompanyContactsPanel CompanyCode="@(ExistingCode!)" />
+                    </MudTabPanel>
+                }
+            </MudTabs>
+        }
+        else
+        {
+            @detailsForm
+        }
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudTooltip Text="Cancel">
+            <MudIconButton Icon="@Icons.Material.Filled.Close" OnClick="Cancel" Disabled="_saving" />
+        </MudTooltip>
+        @if (_saving)
+        {
+            <MudProgressCircular Size="Size.Small" Indeterminate="true" Color="Color.Primary" Class="mx-2" />
+        }
+        else
+        {
+            <MudTooltip Text="@(IsEdit ? "Save Changes" : "Create")">
+                <MudIconButton Icon="@Icons.Material.Filled.Save" Color="Color.Primary" OnClick="SubmitAsync" Disabled="@(!_ready)" />
+            </MudTooltip>
+        }
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = null!;
+
+    [Inject]
+    private IMetadataClient Client { get; set; } = null!;
+
+    [Inject]
+    private ISnackbar Snackbar { get; set; } = null!;
+
+    [Parameter]
+    public MetadataEntity Entity { get; set; } = null!;
+
+    [Parameter]
+    public IReadOnlyDictionary<string, JsonElement>? Existing { get; set; }
+
+    private bool IsEdit => Existing is not null;
+
+    // Contacts/logos/images are child resources keyed by the parent's code, so they only make
+    // sense once that code exists in the database — hence gated on IsEdit, not shown when creating.
+    private bool HasExtraTabs => IsEdit && Entity.Key is "airlines" or "airports" or "companies";
+    private string? ExistingCode => GetString("code");
+
+    private MudForm _form = null!;
+    private readonly Dictionary<string, object?> _values = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, List<(string Code, string Label)>> _options = new(StringComparer.OrdinalIgnoreCase);
+    private bool _saving;
+    private bool _ready;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        foreach (var field in Entity.Fields)
+            _values[field.Name] = InitialValue(field);
+
+        // Load every Select field's options concurrently and keep the dialog body unrendered
+        // (`_ready`) until they've all landed — MudSelect only resolves its Value against whatever
+        // MudSelectItems exist at the moment it's first rendered, so rendering it before its options
+        // have loaded leaves it permanently blank even after the items arrive on a later render.
+        var selectFields = Entity.Fields.Where(f => f.Type is RefFieldType.Select or RefFieldType.Autocomplete && f.OptionsRoute is not null).ToList();
+        var loaded = await Task.WhenAll(selectFields.Select(f => LoadOptionsAsync(f.OptionsRoute!)));
+        for (var i = 0; i < selectFields.Count; i++)
+            _options[selectFields[i].Name] = loaded[i];
+
+        _ready = true;
+    }
+
+    private async Task<List<(string Code, string Label)>> LoadOptionsAsync(string route)
+    {
+        try
+        {
+            var rows = await Client.GetAllAsync(route);
+            var options = new List<(string Code, string Label)>();
+            foreach (var row in rows)
+            {
+                if (!row.TryGetValue("code", out var codeElement) || codeElement.ValueKind != JsonValueKind.String)
+                    continue;
+
+                var code = codeElement.GetString();
+                if (string.IsNullOrWhiteSpace(code))
+                    continue;
+
+                var label = code;
+                if ((row.TryGetValue("description", out var descriptionElement) && descriptionElement.ValueKind == JsonValueKind.String)
+                    || (row.TryGetValue("name", out descriptionElement) && descriptionElement.ValueKind == JsonValueKind.String))
+                {
+                    var description = descriptionElement.GetString();
+                    if (!string.IsNullOrWhiteSpace(description))
+                        label = $"{code} — {description}";
+                }
+
+                options.Add((code, label));
+            }
+
+            return options;
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Could not load options for a field.", Severity.Warning);
+            return [];
+        }
+    }
+
+    private object? InitialValue(RefField field)
+    {
+        if (Existing is null || !Existing.TryGetValue(field.Name, out var v) || v.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
+            return field.Type == RefFieldType.Bool ? false : null;
+
+        return field.Type switch
+        {
+            RefFieldType.Bool => v.ValueKind == JsonValueKind.True,
+            RefFieldType.Number => v.TryGetInt32(out var i) ? i : null,
+            RefFieldType.Decimal => v.TryGetDecimal(out var d) ? d : null,
+            _ => v.ValueKind == JsonValueKind.String ? v.GetString() : v.ToString(),
+        };
+    }
+
+    // Options are already fully loaded in-memory (see OnInitializedAsync) — filtering here is a
+    // synchronous in-memory scan, not a network round trip, so this stays fast even for a lookup
+    // with thousands of rows (e.g. parent airline) where rendering every option as a MudSelectItem
+    // would not.
+    private Task<IEnumerable<string>> SearchOptionsAsync(string fieldName, string? search)
+    {
+        var options = _options.GetValueOrDefault(fieldName, []);
+        IEnumerable<(string Code, string Label)> matches = options;
+        if (!string.IsNullOrWhiteSpace(search))
+            matches = matches.Where(o => o.Label.Contains(search, StringComparison.OrdinalIgnoreCase));
+        return Task.FromResult(matches.Select(o => o.Code).Take(20));
+    }
+
+    private string OptionLabel(string fieldName, string? code)
+    {
+        if (string.IsNullOrEmpty(code))
+            return "";
+        var options = _options.GetValueOrDefault(fieldName, []);
+        foreach (var option in options)
+            if (option.Code == code)
+                return option.Label;
+        return code;
+    }
+
+    private string? GetString(string name) => _values.TryGetValue(name, out var v) ? v as string : null;
+    private int? GetInt(string name) => _values.TryGetValue(name, out var v) ? v as int? : null;
+    private decimal? GetDecimal(string name) => _values.TryGetValue(name, out var v) ? v as decimal? : null;
+    private bool GetBool(string name) => _values.TryGetValue(name, out var v) && v is true;
+
+    private async Task SubmitAsync()
+    {
+        await _form.ValidateAsync();
+        if (!_form.IsValid)
+            return;
+
+        var body = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+        foreach (var field in Entity.Fields)
+        {
+            var value = _values.GetValueOrDefault(field.Name);
+            switch (field.Type)
+            {
+                case RefFieldType.Bool:
+                    body[field.Name] = value is true;
+                    break;
+                case RefFieldType.Number or RefFieldType.Decimal:
+                    if (value is not null)
+                        body[field.Name] = value;
+                    break;
+                default:
+                    body[field.Name] = value;
+                    break;
+            }
+        }
+
+        var code = GetString("code") ?? "";
+        _saving = true;
+        _error = null;
+        try
+        {
+            if (IsEdit)
+                await Client.UpdateAsync(Entity.Route, code, body);
+            else
+                await Client.CreateAsync(Entity.Route, body);
+
+            Snackbar.Add($"{Entity.Title} '{code}' saved.", Severity.Success);
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+        }
+        catch (Exception)
+        {
+            _error = "Could not reach the API. Please try again.";
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}
