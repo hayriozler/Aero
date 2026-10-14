@@ -4,7 +4,7 @@
 //{
 //    public static IEndpointRouteBuilder MapScanEndpoints(this IEndpointRouteBuilder app)
 //    {
-//        var scans = app.MapGroup("/api/v1/scans").RequireAuthorization();
+//        var scans = app.MapGroup("/api/scans").RequireAuthorization();
 
 //        scans.MapPost("/", SubmitScan)
 //            .WithName("SubmitScan")
@@ -48,12 +48,12 @@
 
 //        db.ScanRecordSet.Add(record);
 //        await db.SaveChangesAsync(ct);
-      
+
 
 //        record.IsPublished = true;
 //        await db.SaveChangesAsync(ct);
 
-//        return TypedResults.Created($"/api/v1/scans/{record.Id}", record);
+//        return TypedResults.Created($"/api/scans/{record.Id}", record);
 //    }
 
 //    private static async Task<Ok> SubmitBatch(
@@ -81,7 +81,7 @@
 //            };
 //            db.ScanRecordSet.Add(record);
 
-            
+
 //            record.IsPublished = true;
 //        }
 

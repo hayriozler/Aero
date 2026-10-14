@@ -1,12 +1,12 @@
 using Aero.Scanner.Api.Persistence;
-using Aero.Scanner.Api.Services;
 using Aero.Scanner.Domain.Aggregates.Users;
 using Aero.Scanner.Shared.Dtos;
 using Aero.Scanner.Shared.Requests;
-using Aero.Shared.Services;
+using Aero.Shared.Infrastructure.Services;
 using Aero.Shared.WebUtilities.Validations;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 
 namespace Aero.Scanner.Api.Endpoints;

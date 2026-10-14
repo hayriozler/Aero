@@ -8,7 +8,7 @@ using Aero.Scanner.Domain.Aggregates.Settings;
 using Aero.Scanner.Domain.Aggregates.Users;
 using Aero.Scanner.Domain.Enums;
 using Aero.Scanner.Shared.Consts;
-using Aero.Shared.Services;
+using Aero.Shared.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace Aero.Scanner.Api.Services;

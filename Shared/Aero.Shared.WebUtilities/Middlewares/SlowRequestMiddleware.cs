@@ -1,6 +1,6 @@
 ﻿using Aero.Shared.Domain;
 using Aero.Shared.Infrastructure.Diagnostics;
-using Aero.Shared.Services;
+using Aero.Shared.Infrastructure.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 using System.Diagnostics;

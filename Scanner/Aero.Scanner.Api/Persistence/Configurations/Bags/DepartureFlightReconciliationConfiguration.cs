@@ -1,3 +1,5 @@
+using Aero.Scanner.Domain.Aggregates.Flights;
+using Aero.Scanner.Domain.Aggregates.Reconciliations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 

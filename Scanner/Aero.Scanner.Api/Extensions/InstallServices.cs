@@ -1,5 +1,9 @@
-﻿using Aero.Scanner.Domain.Enums;
+﻿using Aero.Scanner.Api.Services.BaggageMessageHandlers;
+using Aero.Scanner.Api.Services.BaggageMessageResolvers;
+using Aero.Scanner.Api.Services.BaggageMessagesHandlers;
+using Aero.Scanner.Domain.Enums;
 using Aero.Scanner.Shared.Consts;
+using Aero.Scanner.Shared.Requests.TextMessages;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -57,6 +61,22 @@ public static class InstallServices
                 ctx.User.IsInRole(SystemDefinedRoles.Admin) ||
                 ctx.User.IsInRole(SystemDefinedRoles.RamSupervisor) ||
                 ctx.User.IsInRole(SystemDefinedRoles.BaggageAgent)));
+
+        return services;
+    }
+    public static IServiceCollection InstallMessageHandlers(this IServiceCollection services)
+    {
+        services.AddSingleton<IBaggageMessageHandler<TextMessageDepartureBagRequest>, BaggageBsmMessageServiceHandler>();
+        services.AddSingleton<IBaggageMessageHandler<TextMessageBumRequest>, BaggageChgMessageServiceHandler>();
+        services.AddSingleton<IBaggageMessageHandler<TextMessageDepartureBagDeleteRequest>, BaggageDeleteMessageServiceHandler>();
+        services.AddSingleton<IBaggageMessageHandler<TextMessageBcmRequest>, BaggageBcmMessageServiceHandler>();
+        services.AddSingleton<IBaggageMessageHandler<TextMessageBumRequest>, BaggageBumMessageServiceHandler>();
+
+        services.AddSingleton<IBaggageMessageHandlerResolver<TextMessageDepartureBagRequest>, BaggageMessageHandlerResolver<TextMessageDepartureBagRequest>>();
+        services.AddSingleton<IBaggageMessageHandlerResolver<TextMessageBumRequest>, BaggageMessageHandlerResolver<TextMessageBumRequest>>();
+        services.AddSingleton<IBaggageMessageHandlerResolver<TextMessageDepartureBagDeleteRequest>, BaggageMessageHandlerResolver<TextMessageDepartureBagDeleteRequest>>();
+        services.AddSingleton<IBaggageMessageHandlerResolver<TextMessageBcmRequest>, BaggageMessageHandlerResolver<TextMessageBcmRequest>>();
+        services.AddSingleton<IBaggageMessageHandlerResolver<TextMessageBumRequest>, BaggageMessageHandlerResolver<TextMessageBumRequest>>();
 
         return services;
     }

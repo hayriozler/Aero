@@ -17,7 +17,7 @@
 	
   <ItemGroup>
     <ProjectReference Include="..\Aero.ServiceDefaults\Aero.ServiceDefaults.csproj" />
-    <ProjectReference Include="..\Shared\Aero.Shared.Services\Aero.Shared.Services.csproj" />
+    <ProjectReference Include="..\Shared\Aero.Shared.Infrastructure\Aero.Shared.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

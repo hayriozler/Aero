@@ -1,4 +1,4 @@
-using Aero.Shared.Services;
+using Aero.Shared.Infrastructure.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
@@ -8,28 +8,99 @@ using System.Threading.RateLimiting;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
-var signingKey = builder.Configuration["Jwt:SigningKey"]
-    ?? throw new InvalidOperationException("Jwt:SigningKey is not configured.");
+var scannerJwtKey = builder.Configuration["Jwt:Scanner:Key"];
+var flightJwtKey = builder.Configuration["Jwt:Flight:Key"];
+var fidsJwtKey = builder.Configuration["Jwt:Fids:Key"];
 
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
+if (!string.IsNullOrEmpty(scannerJwtKey))
+{
+    builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+        .AddJwtBearer("ScannerJwt", options =>
+        {
+            options.TokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuer           = true,
+                ValidIssuer              = builder.Configuration["Jwt:Scanner:Issuer"] ?? "scanner-issuer",
+                ValidateAudience         = true,
+                ValidAudience            = builder.Configuration["Jwt:Scanner:Audience"] ?? "scanner-api",
+                ValidateLifetime         = true,
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey         = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(scannerJwtKey)),
+                ClockSkew                = TimeSpan.FromMinutes(1)
+            };
+        });
+}
+if (!string.IsNullOrEmpty(flightJwtKey))
+{
+    builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer("FlightJwt", options =>
     {
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer           = true,
-            ValidIssuer              = builder.Configuration["Jwt:Issuer"] ?? "aeroscan",
+            ValidIssuer              = builder.Configuration["Jwt:Flight:Issuer"] ?? "flight-issuer",
             ValidateAudience         = true,
-            ValidAudience            = builder.Configuration["Jwt:Audience"] ?? "aeroscan-clients",
+            ValidAudience            = builder.Configuration["Jwt:Flight:Audience"] ?? "flight-api",
             ValidateLifetime         = true,
             ValidateIssuerSigningKey = true,
-            IssuerSigningKey         = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(signingKey)),
+            IssuerSigningKey         = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(flightJwtKey)),
             ClockSkew                = TimeSpan.FromMinutes(1)
         };
     });
 
-// "authenticated" policy: requires a valid JWT only — role/scope decisions are made in BaggageService
-builder.Services.AddAuthorizationBuilder()
-    .AddPolicy("authenticated", policy => policy.RequireAuthenticatedUser());
+}
+if (!string.IsNullOrEmpty(fidsJwtKey))
+{
+    builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer("FidsJwt", options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer           = true,
+            ValidIssuer              = builder.Configuration["Jwt:Fids:Issuer"] ?? "fids-issuer",
+            ValidateAudience         = true,
+            ValidAudience            = builder.Configuration["Jwt:Fids:Audience"] ?? "fids-api",
+            ValidateLifetime         = true,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey         = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(fidsJwtKey)),
+            ClockSkew                = TimeSpan.FromMinutes(1)
+        };
+    });
+
+}
+var authBuilder = builder.Services.AddAuthorizationBuilder();
+if (string.IsNullOrEmpty(scannerJwtKey))
+{
+    authBuilder.AddPolicy("ScannerJwt", policy =>
+    {
+        policy.AddAuthenticationSchemes("ScannerJwt");
+        policy.RequireAuthenticatedUser();
+    });
+}
+if (string.IsNullOrEmpty(flightJwtKey))
+{
+    authBuilder.AddPolicy("FlightJwt", policy =>
+    {
+        policy.AddAuthenticationSchemes("FlightJwt");
+        policy.RequireAuthenticatedUser();
+    });
+}
+if (!string.IsNullOrEmpty(fidsJwtKey))
+{
+    authBuilder.AddPolicy("FidsJwt", policy =>
+    {
+        policy.AddAuthenticationSchemes("FidsJwt");
+        policy.RequireAuthenticatedUser();
+    });
+}
+if (!string.IsNullOrEmpty(fidsJwtKey))
+{
+    authBuilder.AddPolicy("FidsJwt", policy =>
+    {
+        policy.AddAuthenticationSchemes("FidsJwt");
+        policy.RequireAuthenticatedUser();
+    });
+}
 
 // ── Rate limiting ──────────────────────────────────────────────────────────
 builder.Services.AddRateLimiter(options =>

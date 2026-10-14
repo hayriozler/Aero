@@ -18,7 +18,6 @@
   <ItemGroup>
     <ProjectReference Include="..\Aero.Shared.Domain\Aero.Shared.Domain.csproj" />
     <ProjectReference Include="..\Aero.Shared.Infrastructure\Aero.Shared.Infrastructure.csproj" />
-    <ProjectReference Include="..\Aero.Shared.Services\Aero.Shared.Services.csproj" />
   </ItemGroup>
 
 </Project>

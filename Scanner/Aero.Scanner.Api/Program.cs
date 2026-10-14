@@ -7,7 +7,7 @@ using Aero.Shared.Domain;
 using Aero.Shared.Infrastructure.Diagnostics;
 using Aero.Shared.Infrastructure.Interceptors;
 using Aero.Shared.Infrastructure.Persistence;
-using Aero.Shared.Services;
+using Aero.Shared.Infrastructure.Services;
 using Aero.Shared.WebUtilities.Middlewares;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
@@ -60,11 +60,7 @@ builder.Services.AddOpenApi();
 builder.Services.AddScoped<DataSeedService>();
 builder.Services.AddScoped<DataSeedFakerService>();
 
-builder.Services.InstallMessages();
-builder.Services.InstallElements();
-builder.Services.InstallMessageDispatchers();
-
-builder.Services.AddHostedService<MessageProcessingService>();
+builder.Services.InstallMessageHandlers();
 
 var app = builder.Build();
 
@@ -85,7 +81,7 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
-app.MapMessagingEndpoints();
+
 app.MapDefaultEndpoints();
 app.MapAuthEndpoints();
 app.MapAuditEndpoints();
@@ -106,3 +102,4 @@ app.MapAirlineClassMapEndpoints();
 app.MapResourceStatusMapEndpoints();
 app.MapSystemConfigurationEndpoints();
 
+await app.RunAsync();

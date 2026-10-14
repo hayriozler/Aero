@@ -1,9 +1,6 @@
 <Solution>
   <Folder Name="/Fids/" />
   <Folder Name="/Flight/" />
-  <Folder Name="/MessageProcessor/">
-    <Project Path="MessageProcessor/Aero.MessageProcessor.TextMessageProcessor/Aero.MessageProcessor.TextMessageProcessor.csproj" Id="cbcf569b-9a64-4fa4-868a-283c70f095a4" />
-  </Folder>
   <Folder Name="/Scanner/">
     <Project Path="Scanner/Aero.Scanner.Api/Aero.Scanner.Api.csproj" />
     <Project Path="Scanner/Aero.Scanner.Domain/Aero.Scanner.Domain.csproj" />
@@ -16,13 +13,15 @@
   <Folder Name="/Shared/">
     <Project Path="Shared/Aero.Shared.Domain/Aero.Shared.Domain.csproj" />
     <Project Path="Shared/Aero.Shared.Infrastructure/Aero.Shared.Infrastructure.csproj" />
-    <Project Path="Shared/Aero.Shared.Services/Aero.Shared.Services.csproj" />
     <Project Path="Shared/Aero.Shared.WebUtilities/Aero.Shared.WebUtilities.csproj" />
   </Folder>
 
   <Folder Name="/Solution Items/">
     <File Path="Directory.Build.props" />
     <File Path="Directory.Packages.props" />
+  </Folder>
+  <Folder Name="/TextMessageParser/">
+    <Project Path="TextMessageParser/Aero.TextMessageParser.Api/Aero.TextMessageParser.Api.csproj" />
   </Folder>
   <Project Path="Aero.ServiceDefaults/Aero.ServiceDefaults.csproj" Id="6eafa26c-fc29-47b9-8b56-a8b804ba6c14" />
   <Project Path="AeroGateway/AeroGateway.csproj" Id="f8353ee3-1f06-48f5-b701-68bef759d53d" />
