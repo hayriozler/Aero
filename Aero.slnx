@@ -1,6 +1,22 @@
 <Solution>
-  <Folder Name="/Fids/" />
-  <Folder Name="/Flight/" />
+  <Folder Name="/Fids/">
+    <Project Path="Fids/Aero.Fids.Infrastructure/Aero.Fids.Infrastructure.csproj" />
+    <Project Path="Fids/Aero.Fids.Web/Aero.Fids.Web.csproj" />
+  </Folder>
+  <Folder Name="/Flight/">
+    <Project Path="Flight/Aero.Flight.Api/Aero.Flights.Api.csproj" />
+    <Project Path="Flight/Aero.Flight.Application/Aero.Flights.Application.csproj" />
+    <Project Path="Flight/Aero.Flight.Contracts/Aero.Flights.Contracts.csproj" />
+    <Project Path="Flight/Aero.Flight.Domain/Aero.Flights.Domain.csproj" />
+    <Project Path="Flight/Aero.Flight.Infrastructure/Aero.Flights.Infrastructure.csproj" />
+    <Project Path="Flight/Aero.Flight.Web/Aero.Flights.Web.csproj" />
+  </Folder>
+  <Folder Name="/Gateway/">
+    <Project Path="Gateway/Aero.Gateway.csproj" />
+  </Folder>
+  <Folder Name="/Migrations/">
+    <Project Path="Migrations/Aero.Migrations.csproj" />
+  </Folder>
   <Folder Name="/Scanner/">
     <Project Path="Scanner/Aero.Scanner.Api/Aero.Scanner.Api.csproj" />
     <Project Path="Scanner/Aero.Scanner.Domain/Aero.Scanner.Domain.csproj" />
@@ -11,6 +27,8 @@
     <Project Path="Scanner/Aero.Scanner.WebApp/Aero.Scanner.WebApp.csproj" />
   </Folder>
   <Folder Name="/Shared/">
+    <Project Path="Aero.Shared.Contracts/Aero.Shared.Contracts.csproj" Id="d052cbeb-d10b-4c92-bec2-a6139a53e091" />
+    <Project Path="Shared/Aero.Shared.Application/Aero.Shared.Application.csproj" />
     <Project Path="Shared/Aero.Shared.Domain/Aero.Shared.Domain.csproj" />
     <Project Path="Shared/Aero.Shared.Infrastructure/Aero.Shared.Infrastructure.csproj" />
     <Project Path="Shared/Aero.Shared.WebUtilities/Aero.Shared.WebUtilities.csproj" />
@@ -23,7 +41,6 @@
   <Folder Name="/TextMessageParser/">
     <Project Path="TextMessageParser/Aero.TextMessageParser.Api/Aero.TextMessageParser.Api.csproj" />
   </Folder>
-  <Project Path="Aero.ServiceDefaults/Aero.ServiceDefaults.csproj" Id="6eafa26c-fc29-47b9-8b56-a8b804ba6c14" />
-  <Project Path="AeroGateway/AeroGateway.csproj" Id="f8353ee3-1f06-48f5-b701-68bef759d53d" />
-  <Project Path="AeroHost/AeroHost.csproj" Id="4a3fa958-abbf-49b3-bc6d-a0a479f34f28" />
+  <Project Path="Host/Aero.Host.csproj" />
+  <Project Path="ServiceDefaults/Aero.ServiceDefaults.csproj" />
 </Solution>

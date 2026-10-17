@@ -1,12 +1,23 @@
 ﻿using Aero.Shared.Domain;
+using Aero.Shared.Domain.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 
 namespace Aero.Shared.Infrastructure.Persistence;
 
-public abstract class DataStoreContext(DbContextOptions options)
-    : DbContext(options), IDataContext
+public abstract class DataStoreContext(DbContextOptions<DataStoreContext> options)
+    : DbContext(options), IDataStoreContext
 {
+    public DbSet<User> UserSet => Set<User>();
+
+    public DbSet<Role> RoleSet => Set<Role>();
+
+    public DbSet<UserRole> UserRoleSet => Set<UserRole>();
+
+    public DbSet<Permission> PermissionSet => Set<Permission>();
+
+    public DbSet<RolePermission> RolePermissionSet => Set<RolePermission>();
+    public DbSet<RefreshToken> RefreshTokenSet => Set<RefreshToken>();
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -38,4 +49,12 @@ public abstract class DataStoreContext(DbContextOptions options)
         var result = await base.SaveChangesAsync(cancellationToken);
         return result;
     }
+
+    public IQueryable<TEntity> Query<TEntity>() where TEntity : class => Set<TEntity>();
+    public async ValueTask<TEntity?> FindAsync<TEntity>(string id, CancellationToken ct) where TEntity : class
+        => await Set<TEntity>().FindAsync([id], ct);
+    public void AddEntity<TEntity>(TEntity entity)
+        where TEntity : class => Set<TEntity>().Add(entity);
+    public void RemoveEntity<TEntity>(TEntity entity)
+        where TEntity : class => Set<TEntity>().Remove(entity);
 }

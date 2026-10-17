@@ -1,0 +1,143 @@
+@using Aero.Flights.Contracts.Flights
+@using Aero.Flights.Web.Services.Flights
+@inject IFlightsClient Flights
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+
+<div class="d-flex justify-space-between align-center mb-2">
+    <MudText Typo="Typo.subtitle2">Codeshare designators</MudText>
+    <MudTooltip Text="Add Codeshare">
+        <MudIconButton Icon="@Icons.Material.Filled.Add" Size="Size.Small" OnClick="AddAsync" Disabled="@ReadOnly" />
+    </MudTooltip>
+</div>
+
+@if (_loading)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="mb-2" />
+}
+
+<MudTable Items="_items" Dense="true" Hover="true" Bordered="false" Elevation="1">
+    <HeaderContent>
+        <MudTh>Airline</MudTh>
+        <MudTh>Flight Number</MudTh>
+        <MudTh></MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Airline">@context.AirlineCode</MudTd>
+        <MudTd DataLabel="Flight Number">@context.FlightNumber</MudTd>
+        <MudTd>
+            <div class="d-flex justify-end" style="gap:4px">
+                <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" OnClick="@(() => EditAsync(context))" Disabled="@ReadOnly" />
+                <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error" OnClick="@(() => DeleteAsync(context))" Disabled="@ReadOnly" />
+            </div>
+        </MudTd>
+    </RowTemplate>
+    <NoRecordsContent>
+        <MudText Color="Color.Secondary">No codeshare designators yet.</MudText>
+    </NoRecordsContent>
+</MudTable>
+
+@code {
+    [Parameter, EditorRequired]
+    public string RouteBase { get; set; } = "";
+
+    [Parameter]
+    public bool ReadOnly { get; set; }
+
+    private List<CodeShareResponse> _items = [];
+    private bool _loading;
+    private string? _loadedRoute;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (string.IsNullOrWhiteSpace(RouteBase) || RouteBase == _loadedRoute)
+            return;
+
+        _loadedRoute = RouteBase;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        try
+        {
+            _items = (await Flights.GetCodeSharesAsync(RouteBase)).ToList();
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add($"Failed to load codeshare designators: {ex.Message}", Severity.Error);
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Could not reach the API while loading codeshare designators.", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task AddAsync()
+    {
+        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true };
+        var dialog = await DialogService.ShowAsync<FlightCodeShareEditDialog>("Add Codeshare", options);
+        var result = await dialog.Result;
+        if (result is null || result.Canceled || result.Data is not CodeShareRequest request)
+            return;
+
+        try
+        {
+            await Flights.AddCodeShareAsync(RouteBase, request);
+            Snackbar.Add("Codeshare added.", Severity.Success);
+            await LoadAsync();
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add($"Failed to add codeshare: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task EditAsync(CodeShareResponse existing)
+    {
+        var parameters = new DialogParameters<FlightCodeShareEditDialog>
+        {
+            { x => x.Existing, existing },
+        };
+        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true };
+        var dialog = await DialogService.ShowAsync<FlightCodeShareEditDialog>("Edit Codeshare", parameters, options);
+        var result = await dialog.Result;
+        if (result is null || result.Canceled || result.Data is not CodeShareRequest request)
+            return;
+
+        try
+        {
+            await Flights.UpdateCodeShareAsync($"{RouteBase}/{existing.Id}", request);
+            Snackbar.Add("Codeshare updated.", Severity.Success);
+            await LoadAsync();
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add($"Failed to update codeshare: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task DeleteAsync(CodeShareResponse existing)
+    {
+        var confirmed = await DialogService.ShowMessageBoxAsync(
+            "Delete Codeshare", $"Remove codeshare '{existing.AirlineCode}{existing.FlightNumber}'?", yesText: "Delete", cancelText: "Cancel");
+        if (confirmed != true)
+            return;
+
+        try
+        {
+            await Flights.DeleteCodeShareAsync($"{RouteBase}/{existing.Id}");
+            Snackbar.Add("Codeshare removed.", Severity.Success);
+            await LoadAsync();
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add($"Failed to remove codeshare: {ex.Message}", Severity.Error);
+        }
+    }
+}

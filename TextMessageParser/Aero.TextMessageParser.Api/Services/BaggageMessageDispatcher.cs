@@ -15,7 +15,7 @@ public sealed class BaggageMessageDispatcher<TDto>(
         var dto = parser.ProcessMessage(message, textMessageParserDbContext);
         if (dto is not null)
         {
-            var client = httpClientFactory.CreateClient("scannerapi");
+            using var client = httpClientFactory.CreateClient("scannerapi");
             var res = await client.PostAsJsonAsync($"api/baggagemessages", dto, cancellationToken);
             return res.IsSuccessStatusCode;
         }

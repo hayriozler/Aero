@@ -1,4 +1,5 @@
 
+using Aero.ServiceDefaults;
 using Aero.Shared.Domain;
 using Aero.Shared.Infrastructure.Diagnostics;
 using Aero.Shared.Infrastructure.Persistence;

@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Aero.TextMessageParser.Api.Persistence;
 
 public class TextMessageParserDbContext(DbContextOptions<TextMessageParserDbContext> options)
-    : DataStoreContext(options)
+    : DataStoreContext(options), IDataStoreContext
 {
     public DbSet<TextMessage> TextMessagesSet => Set<TextMessage>();
     public DbSet<TextMessageError> TextMessageErrorSet => Set<TextMessageError>();

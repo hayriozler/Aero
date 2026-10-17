@@ -1,0 +1,115 @@
+@page "/admin/signage"
+@attribute [Authorize]
+@using Aero.Fids.Web.Services
+@inject ISignageService SignageService
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<PageTitle>Signage — Aero.Fids</PageTitle>
+
+<div class="d-flex justify-space-between align-center mb-3" style="gap:16px; flex-wrap:wrap">
+    <div>
+        <MudText Typo="Typo.h5">Signage</MudText>
+        <MudText Typo="Typo.body2" Color="Color.Secondary">Full-screen images shown on display boards for scheduled dates.</MudText>
+    </div>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="OpenCreateAsync">New Signage</MudButton>
+</div>
+
+<MudDataGrid T="SignageImageResponse" Items="_images" Dense="true" Hover="true" Bordered="false" Elevation="1">
+    <Columns>
+        <PropertyColumn Property="x => x.Name" Title="Name" />
+        <TemplateColumn Title="Active Dates" Sortable="false">
+            <CellTemplate>@FormatRange(context.Item)</CellTemplate>
+        </TemplateColumn>
+        <PropertyColumn Property="x => x.DisplayOrder" Title="Order" />
+        <TemplateColumn Title="Active" Sortable="false">
+            <CellTemplate>
+                <MudSwitch T="bool" Value="context.Item.IsActive" ValueChanged="@(v => ToggleActiveAsync(context.Item, v))" Color="Color.Success" />
+            </CellTemplate>
+        </TemplateColumn>
+        <TemplateColumn Title="" Sortable="false" CellStyle="text-align:right; white-space:nowrap">
+            <CellTemplate>
+                <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" OnClick="@(() => OpenEditAsync(context.Item))" />
+                <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error" OnClick="@(() => DeleteAsync(context.Item))" />
+            </CellTemplate>
+        </TemplateColumn>
+    </Columns>
+    <NoRecordsContent>
+        <MudText Class="pa-4">No signage images yet.</MudText>
+    </NoRecordsContent>
+</MudDataGrid>
+
+@code {
+    private static readonly DialogOptions _dialogOptions = new() { MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true };
+    private List<SignageImageResponse> _images = [];
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        try
+        {
+            _images = (await SignageService.ListAsync(CancellationToken.None)).ToList();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to load signage: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private static string FormatRange(SignageImageResponse s) => (s.StartDate, s.EndDate) switch
+    {
+        (null, null) => "Always",
+        ({ } start, null) => $"From {start:dd/MM/yyyy}",
+        (null, { } end) => $"Until {end:dd/MM/yyyy}",
+        ({ } start, { } end) => $"{start:dd/MM/yyyy} – {end:dd/MM/yyyy}",
+    };
+
+    private async Task OpenCreateAsync()
+    {
+        var dialog = await DialogService.ShowAsync<SignageDialog>("New Signage", _dialogOptions);
+        var result = await dialog.Result;
+        if (result is { Canceled: false })
+            await LoadAsync();
+    }
+
+    private async Task OpenEditAsync(SignageImageResponse existing)
+    {
+        var parameters = new DialogParameters<SignageDialog> { { x => x.Existing, existing } };
+        var dialog = await DialogService.ShowAsync<SignageDialog>($"Edit {existing.Name}", parameters, _dialogOptions);
+        var result = await dialog.Result;
+        if (result is { Canceled: false })
+            await LoadAsync();
+    }
+
+    private async Task ToggleActiveAsync(SignageImageResponse existing, bool isActive)
+    {
+        try
+        {
+            await SignageService.UpdateAsync(existing.Id, existing.Name, existing.StartDate, existing.EndDate, existing.DisplayOrder, isActive, CancellationToken.None);
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to update '{existing.Name}': {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task DeleteAsync(SignageImageResponse existing)
+    {
+        var confirmed = await DialogService.ShowMessageBoxAsync("Delete Signage", $"Remove '{existing.Name}'?", yesText: "Delete", cancelText: "Cancel");
+        if (confirmed != true)
+            return;
+
+        try
+        {
+            await SignageService.DeleteAsync(existing.Id, CancellationToken.None);
+            Snackbar.Add($"'{existing.Name}' deleted.", Severity.Success);
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to delete '{existing.Name}': {ex.Message}", Severity.Error);
+        }
+    }
+}

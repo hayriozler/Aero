@@ -3,6 +3,7 @@ using Aero.Scanner.Api.Extensions;
 using Aero.Scanner.Api.Persistence;
 using Aero.Scanner.Api.Services;
 using Aero.Scanner.Api.Validators;
+using Aero.ServiceDefaults;
 using Aero.Shared.Domain;
 using Aero.Shared.Infrastructure.Diagnostics;
 using Aero.Shared.Infrastructure.Interceptors;

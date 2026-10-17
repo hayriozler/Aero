@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <base href="/" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700&display=swap" />
+    <link rel="stylesheet" href="_content/MudBlazor/MudBlazor.min.css" />
+    <link rel="stylesheet" href="css/site.css" />
+    <link rel="stylesheet" href="css/mud-datagrid.css?v=@AssetVersion("css/mud-datagrid.css")" />
+    <link rel="stylesheet" href="css/aerodesk.css" />
+    <link rel="stylesheet" href="lib/vis-timeline/vis-timeline-graph2d.min.css" />
+    <link rel="stylesheet" href="@Assets["Aero.Flights.Web.styles.css"]" />
+    <link rel="icon" type="image/png" href="favicon.png" />
+    <HeadOutlet @rendermode="RenderMode.InteractiveServer" />
+</head>
+<body>
+    <Routes @rendermode="RenderMode.InteractiveServer" />
+
+    <div id="blazor-error-ui">
+        An unhandled error has occurred.
+        <a href="" class="reload">Reload</a>
+        <a class="dismiss">🗙</a>
+    </div>
+
+    <script src="_framework/blazor.web.js"></script>
+    <script src="_content/MudBlazor/MudBlazor.min.js"></script>
+    <script src="lib/vis-timeline/vis-timeline-graph2d.min.js"></script>
+    <script src="js/ganttTimeline.js?v=@AssetVersion("js/ganttTimeline.js")"></script>
+    <script src="js/resizableDrawer.js"></script>
+    <script src="js/resizableGrid.js"></script>
+    <script src="js/movementsGroupHeader.js?v=@AssetVersion("js/movementsGroupHeader.js")"></script>
+</body>
+</html>
+
+@code {
+    [Inject]
+    private IWebHostEnvironment Env { get; set; } = default!;
+
+    // Tied to the file's own last-write time, not app start time — an app restart isn't required
+    // for a browser to pick up an edit to this file, only a normal page load; a plain source-file
+    // edit while the app is still running (this file is served straight from wwwroot, no rebuild
+    // needed) changes this value on the very next request. MapStaticAssets() (which would
+    // fingerprint this automatically) isn't registered in Program.cs, so @Assets[...] can't be
+    // relied on for plain wwwroot files here.
+    private string AssetVersion(string webRootRelativePath)
+    {
+        var path = Path.Combine(Env.WebRootPath, webRootRelativePath.Replace('/', Path.DirectorySeparatorChar));
+        return File.Exists(path) ? File.GetLastWriteTimeUtc(path).Ticks.ToString() : "0";
+    }
+}

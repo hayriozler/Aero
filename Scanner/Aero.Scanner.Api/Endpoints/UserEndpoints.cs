@@ -120,7 +120,7 @@ public static class UserEndpoints
             return TypedResults.Conflict($"Username '{request.Username}' is already taken.");
 
         var passwordHash = PasswordHasherService.Hash(request.Password);
-        var user = User.Create(request.Username, request.DisplayName, passwordHash, targetCompanyCode);
+        var user = ScannerUser.Create(request.Username, request.DisplayName, passwordHash, targetCompanyCode);
         db.UserSet.Add(user);
         await db.SaveChangesAsync(ct);
 
@@ -208,7 +208,7 @@ public static class UserEndpoints
     }
 
 
-    private static UserDto ToDto(User u) => new(
+    private static UserDto ToDto(ScannerUser u) => new(
         u.Id,
         u.Username,
         u.DisplayName,

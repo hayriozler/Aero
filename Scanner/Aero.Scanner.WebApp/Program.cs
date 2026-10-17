@@ -1,5 +1,6 @@
 using Aero.Scanner.WebApp.EndPoints;
 using Aero.Scanner.WebApp.Services;
+using Aero.ServiceDefaults;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Mvc;

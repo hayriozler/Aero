@@ -2,6 +2,7 @@ using Aero.Scanner.Api.Persistence;
 using Aero.Scanner.Domain.Aggregates.Flights;
 using Aero.Scanner.Domain.Aggregates.Reconciliations;
 using Aero.Scanner.Domain.Enums;
+using Bogus;
 
 namespace Aero.Scanner.Api.Services;
 
@@ -34,7 +35,7 @@ public class DataSeedFakerService(AeroScanDataContext dataContext)
         ArrivalFlightStatus.Cancelled
     ];
 
-    private List<DepartureFlight> BuildDepartureFlights(Faker f, int count)
+    private static List<DepartureFlight> BuildDepartureFlights(Faker f, int count)
     {
         var result = new List<DepartureFlight>(count);
         for (var i = 0; i < count; i++)
@@ -91,7 +92,7 @@ public class DataSeedFakerService(AeroScanDataContext dataContext)
         return result;
     }
 
-    private List<ArrivalFlight> BuildArrivalFlights(Faker f, int count)
+    private static List<ArrivalFlight> BuildArrivalFlights(Faker f, int count)
     {
         var result = new List<ArrivalFlight>(count);
         for (var i = 0; i < count; i++)

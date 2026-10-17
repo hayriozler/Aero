@@ -1,0 +1,715 @@
+@implements IAsyncDisposable
+@using System.Text.Json
+@using Aero.Flights.Web.Services.Flights
+@using Aero.Flights.Web.Services.Metadatas
+@inject IFlightsClient Flights
+@inject IMetadataClient Metadata
+@inject ISnackbar Snackbar
+@inject NavigationManager Navigation
+@inject IJSRuntime JsRuntime
+
+<div class="d-flex justify-end align-center mb-3" style="gap:8px">
+    <MudTooltip Text="Refresh">
+        <MudIconButton Icon="@Icons.Material.Filled.Refresh" OnClick="@(() => LoadAsync())" />
+    </MudTooltip>
+    <MudTooltip Text="Create Flight">
+        <MudIconButton Icon="@Icons.Material.Filled.Add" Color="Color.Primary" Href="/flights/new" />
+    </MudTooltip>
+</div>
+
+<div class="d-flex align-center mb-3" style="gap:16px; flex-wrap:wrap">
+    <MudTextField T="string" @bind-Value="_search" Label="Search flight #" Placeholder="e.g. TK 1234"
+                  MaxLength="FlightNumberFormat.MaxLength" OnBlur="@(() => _search = FlightNumberFormat.Normalize(_search))"
+                  Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true" Style="min-width:200px" />
+    <MudTextField T="string" @bind-Value="_airlineCode" Label="Airline" Placeholder="e.g. TK"
+                  Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true" Style="min-width:160px" />
+    <MudSelect T="string" SelectedValues="_selectedDirections" SelectedValuesChanged="@(values => _selectedDirections = NormalizeMultiSelection(_selectedDirections, values, _allOption))"
+               MultiSelection="true" Label="Direction" Variant="Variant.Outlined" Margin="Margin.Dense" Style="min-width:180px">
+        @foreach (var direction in _directionOptions)
+        {
+            <MudSelectItem T="string" Value="@direction.Code">@direction.Label</MudSelectItem>
+        }
+    </MudSelect>
+    <MudSelect T="string" SelectedValues="_selectedTerminals" SelectedValuesChanged="@(values => _selectedTerminals = NormalizeMultiSelection(_selectedTerminals, values, _allOption))"
+               MultiSelection="true" Label="Terminal" Variant="Variant.Outlined" Margin="Margin.Dense" Style="min-width:180px">
+        @foreach (var terminal in _terminalOptions)
+        {
+            <MudSelectItem T="string" Value="@terminal.Code">@terminal.Label</MudSelectItem>
+        }
+    </MudSelect>
+    <MudSelect T="string" SelectedValues="_selectedCountryTypes" SelectedValuesChanged="@(values => _selectedCountryTypes = NormalizeMultiSelection(_selectedCountryTypes, values, _allOption))"
+               MultiSelection="true" Label="International/Domestic" Variant="Variant.Outlined" Margin="Margin.Dense" Style="min-width:220px">
+        @foreach (var countryType in _countryTypeOptions)
+        {
+            <MudSelectItem T="string" Value="@countryType.Code">@countryType.Label</MudSelectItem>
+        }
+    </MudSelect>
+    <MudSelect T="string" SelectedValues="_selectedStatuses" SelectedValuesChanged="@(values => _selectedStatuses = NormalizeMultiSelection(_selectedStatuses, values, _allOption))"
+               MultiSelection="true" Label="Status" Variant="Variant.Outlined" Margin="Margin.Dense" Style="min-width:220px">
+        @foreach (var status in _statusOptions)
+        {
+            <MudSelectItem T="string" Value="@status.Code">@status.Label</MudSelectItem>
+        }
+    </MudSelect>
+</div>
+
+<div class="d-flex align-center mb-3" style="gap:16px; flex-wrap:wrap">
+    <MudDatePicker @bind-Date="_fromDate" Label="From Date" Clearable="true" DateFormat="@_dateFormat"
+                   Variant="Variant.Outlined" Margin="Margin.Dense" Style="min-width:180px" />
+    <MudDatePicker @bind-Date="_toDate" Label="To Date" Clearable="true" DateFormat="@_dateFormat"
+                   Variant="Variant.Outlined" Margin="Margin.Dense" Style="min-width:180px" />
+    <MudTooltip Text="Search">
+        <MudIconButton Icon="@Icons.Material.Filled.Search" Color="Color.Primary"
+                       OnClick="@(() => LoadAsync(resetPage: true))" />
+    </MudTooltip>
+</div>
+
+<BlueprintCard Class="pa-3">
+<div id="movements-group-header-root" class="movements-group-header-root">
+    <div class="movements-group-banner">
+        <div class="movements-group-banner-bar movements-group-banner-arrival">Arrival</div>
+        <div class="movements-group-banner-bar movements-group-banner-departure">Departure</div>
+    </div>
+<MudDataGrid T="MergedFlightRow" Items="_result.Items" Loading="_loading" SortMode="SortMode.Multiple"
+             Filterable="false" ColumnResizeMode="ResizeMode.Column"
+             Dense="true" Hover="true" Striped="false" Bordered="false" Elevation="0"
+             RowClick="@((DataGridRowClickEventArgs<MergedFlightRow> args) => SelectRow(args.Item))"
+             RowStyleFunc="@RowStyleFunc">
+    <Columns>
+        <PropertyColumn Property="x => x.FlightCode" Title="Flight" />
+        <TemplateColumn Title="Registration" Sortable="false" Filterable="false">
+            <CellTemplate>
+                <div @onclick:stopPropagation="true">
+                    <MudTextField T="string" Value="@(context.Item.Registration ?? "")"
+                                  ValueChanged="@(v => UpdateRegistrationAsync(context.Item, v))"
+                                  Immediate="false" Margin="Margin.Dense" Variant="Variant.Text" Style="min-width:100px" />
+                </div>
+            </CellTemplate>
+        </TemplateColumn>
+
+        <TemplateColumn Title="STA (Local)" HeaderClass="movements-group-arrival" Sortable="false" Filterable="false">
+            <CellTemplate>@FormatLocalShort(context.Item.Sta)</CellTemplate>
+        </TemplateColumn>
+        <TemplateColumn Title="ETA" HeaderClass="movements-group-arrival" Sortable="false" Filterable="false">
+            <CellTemplate>@FormatLocal(context.Item.Eta)</CellTemplate>
+        </TemplateColumn>
+        <TemplateColumn Title="Status" HeaderClass="movements-group-arrival" Sortable="false" Filterable="false">
+            <CellTemplate>
+                @if (context.Item.ArrivalId is not null)
+                {
+                    <div @onclick:stopPropagation="true">
+                        <MudSelect T="string" Value="@(context.Item.ArrivalStatus ?? "")"
+                                   ValueChanged="@(v => UpdateStatusAsync(context.Item, isArrival: true, v))"
+                                   ToStringFunc="@(code => code)"
+                                   InputClass="@StatusColorClass(context.Item.ArrivalStatus)"
+                                   Margin="Margin.Dense" Variant="Variant.Text" Style="min-width:110px">
+                            @foreach (var status in EditableStatusOptions)
+                            {
+                                <MudSelectItem T="string" Value="@status.Code">
+                                    <MudChip T="string" Size="Size.Small" Color="@StatusColor(status.Code)">@status.Label</MudChip>
+                                </MudSelectItem>
+                            }
+                        </MudSelect>
+                    </div>
+                }
+                else
+                {
+                    <span>—</span>
+                }
+            </CellTemplate>
+        </TemplateColumn>
+        <PropertyColumn Property="x => x.ArrivalGates" Title="Gates" HeaderClass="movements-group-arrival" />
+        <PropertyColumn Property="x => x.ArrivalBaggageBelts" Title="Belts" HeaderClass="movements-group-arrival" />
+        <TemplateColumn Title="Terminal" HeaderClass="movements-group-arrival" Sortable="false" Filterable="false">
+            <CellTemplate>
+                @if (context.Item.ArrivalId is not null)
+                {
+                    <div @onclick:stopPropagation="true">
+                        <MudSelect T="string" Value="@(context.Item.ArrivalTerminalCode ?? "")"
+                                   ValueChanged="@(v => UpdateTerminalAsync(context.Item, isArrival: true, v))"
+                                   ToStringFunc="@(code => code)"
+                                   Clearable="true" Margin="Margin.Dense" Variant="Variant.Text" Style="min-width:90px">
+                            @foreach (var terminal in _terminals)
+                            {
+                                <MudSelectItem T="string" Value="@terminal.Code">@terminal.Label</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </div>
+                }
+                else
+                {
+                    <span>—</span>
+                }
+            </CellTemplate>
+        </TemplateColumn>
+        <PropertyColumn Property="x => x.OriginAirportCode" Title="Origin" HeaderClass="movements-group-arrival" />
+
+        <TemplateColumn Title="STD (Local)" HeaderClass="movements-group-departure" Sortable="false" Filterable="false">
+            <CellTemplate>@FormatLocalShort(context.Item.Std)</CellTemplate>
+        </TemplateColumn>
+        <TemplateColumn Title="ETD" HeaderClass="movements-group-departure" Sortable="false" Filterable="false">
+            <CellTemplate>@FormatLocal(context.Item.Etd)</CellTemplate>
+        </TemplateColumn>
+        <TemplateColumn Title="Status" HeaderClass="movements-group-departure" Sortable="false" Filterable="false">
+            <CellTemplate>
+                @if (context.Item.DepartureId is not null)
+                {
+                    <div @onclick:stopPropagation="true">
+                        <MudSelect T="string" Value="@(context.Item.DepartureStatus ?? "")"
+                                   ValueChanged="@(v => UpdateStatusAsync(context.Item, isArrival: false, v))"
+                                   ToStringFunc="@(code => code)"
+                                   InputClass="@StatusColorClass(context.Item.DepartureStatus)"
+                                   Margin="Margin.Dense" Variant="Variant.Text" Style="min-width:110px">
+                            @foreach (var status in EditableStatusOptions)
+                            {
+                                <MudSelectItem T="string" Value="@status.Code">
+                                    <MudChip T="string" Size="Size.Small" Color="@StatusColor(status.Code)">@status.Label</MudChip>
+                                </MudSelectItem>
+                            }
+                        </MudSelect>
+                    </div>
+                }
+                else
+                {
+                    <span>—</span>
+                }
+            </CellTemplate>
+        </TemplateColumn>
+        <PropertyColumn Property="x => x.DepartureGates" Title="Gates" HeaderClass="movements-group-departure" />
+        <PropertyColumn Property="x => x.DepartureCounters" Title="Counters" HeaderClass="movements-group-departure" />
+        <TemplateColumn Title="Terminal" HeaderClass="movements-group-departure" Sortable="false" Filterable="false">
+            <CellTemplate>
+                @if (context.Item.DepartureId is not null)
+                {
+                    <div @onclick:stopPropagation="true">
+                        <MudSelect T="string" Value="@(context.Item.DepartureTerminalCode ?? "")"
+                                   ValueChanged="@(v => UpdateTerminalAsync(context.Item, isArrival: false, v))"
+                                   ToStringFunc="@(code => code)"
+                                   Clearable="true" Margin="Margin.Dense" Variant="Variant.Text" Style="min-width:90px">
+                            @foreach (var terminal in _terminals)
+                            {
+                                <MudSelectItem T="string" Value="@terminal.Code">@terminal.Label</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </div>
+                }
+                else
+                {
+                    <span>—</span>
+                }
+            </CellTemplate>
+        </TemplateColumn>
+        <PropertyColumn Property="x => x.DestinationAirportCode" Title="Destination" HeaderClass="movements-group-departure" />
+
+        <TemplateColumn Title="" Sortable="false" Filterable="false" CellStyle="text-align:right; white-space:nowrap">
+            <CellTemplate>
+                <div @onclick:stopPropagation="true" class="d-flex justify-end" style="gap:4px">
+                    @if (context.Item.ArrivalId is { } arrivalId)
+                    {
+                        <MudTooltip Text="Edit arrival">
+                            <MudIconButton Icon="@Icons.Material.Filled.FlightLand" Size="Size.Small"
+                                           OnClick="@(() => SelectFlight("arrival", arrivalId))" />
+                        </MudTooltip>
+                    }
+                    @if (context.Item.DepartureId is { } departureId)
+                    {
+                        <MudTooltip Text="Edit departure">
+                            <MudIconButton Icon="@Icons.Material.Filled.FlightTakeoff" Size="Size.Small"
+                                           OnClick="@(() => SelectFlight("departure", departureId))" />
+                        </MudTooltip>
+                    }
+                </div>
+            </CellTemplate>
+        </TemplateColumn>
+    </Columns>
+    <NoRecordsContent>
+        <MudText Class="pa-4">No flights found.</MudText>
+    </NoRecordsContent>
+</MudDataGrid>
+</div>
+
+<div class="d-flex justify-space-between align-center mt-2">
+    <MudText Typo="Typo.body2" Color="Color.Secondary">@_result.TotalCount total flight(s)</MudText>
+    <div class="d-flex align-center" style="gap:8px">
+        <MudIconButton Icon="@Icons.Material.Filled.ChevronLeft" Disabled="@(_result.Page <= 1)" OnClick="@(() => ChangePageAsync(_result.Page - 1))" />
+        <MudText Typo="Typo.body2">Page @_result.Page of @Math.Max(_result.TotalPages, 1)</MudText>
+        <MudIconButton Icon="@Icons.Material.Filled.ChevronRight" Disabled="@(_result.Page >= _result.TotalPages)" OnClick="@(() => ChangePageAsync(_result.Page + 1))" />
+    </div>
+</div>
+</BlueprintCard>
+
+<MudDrawer Open="@(_selectedId is not null)" OpenChanged="OnDrawerOpenChanged" Anchor="@_detailAnchor"
+           Variant="DrawerVariant.Temporary" Elevation="4"
+           Width="@(_detailAnchor == Anchor.Bottom ? "100%" : _detailWidth)"
+           Height="@(_detailAnchor == Anchor.Bottom ? _detailHeight : "100%")"
+           Style="@(_detailAnchor == Anchor.Bottom ? "max-height:95vh" : "max-width:95vw")">
+    <div class="@(_detailAnchor == Anchor.Bottom ? "d-flex flex-column" : "d-flex")" style="height:100%; width:100%">
+        <div id="flight-detail-resize-handle"
+             style="@(_detailAnchor == Anchor.Bottom
+                        ? "flex-shrink:0; width:100%; height:6px; cursor:ns-resize; background:var(--mud-palette-lines-default);"
+                        : "flex-shrink:0; width:6px; height:100%; cursor:ew-resize; background:var(--mud-palette-lines-default);")">
+        </div>
+        <div class="flex-grow-1 pa-4" style="overflow:auto; min-width:0; min-height:0">
+            <div class="d-flex justify-end mb-2">
+                <MudTooltip Text="@(_detailAnchor == Anchor.Bottom ? "Dock to the right" : "Dock to the bottom")">
+                    <MudIconButton Icon="@(_detailAnchor == Anchor.Bottom ? Icons.Material.Filled.VerticalSplit : Icons.Material.Filled.HorizontalSplit)"
+                                   Size="Size.Small" OnClick="ToggleDetailAnchorAsync" />
+                </MudTooltip>
+            </div>
+            <FlightEditPanel Direction="@_selectedDirection" Id="@_selectedId" OnClose="@(() => OnDrawerOpenChanged(false))" OnDeleted="@(() => LoadAsync())"
+                             OnLinkChanged="@(() => LoadAsync())" OnNavigateToLinked="@(l => SelectFlight(l.Direction, l.Id))"
+                             HasPrevious="@HasPreviousFlight" HasNext="@HasNextFlight"
+                             OnPrevious="SelectPreviousFlight" OnNext="SelectNextFlight" />
+        </div>
+    </div>
+</MudDrawer>
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthState { get; set; }
+
+    private const int PageSize = 25;
+
+    private FlightsPageResult _result = new([], 1, PageSize, 0, 1);
+    private bool _loading;
+    private IReadOnlyCollection<string> _selectedDirections = [_allOption];
+    private IReadOnlyCollection<string> _selectedTerminals = [_allOption];
+    private IReadOnlyCollection<string> _selectedCountryTypes = [_allOption];
+    private string _search = "";
+    private string _airlineCode = "";
+    private DateTime? _fromDate = DateTime.Today;
+    private DateTime? _toDate = DateTime.Today.AddDays(1);
+    private IReadOnlyCollection<string> _selectedStatuses = [_allOption];
+    private TimeZoneInfo _tenantTimeZone = TimeZoneInfo.Utc;
+    private string _dateFormat = TenantDateTimeFormat.DefaultDateFormat;
+    private string _timeFormat = TenantDateTimeFormat.DefaultTimeFormat;
+    private string _gridDateFormat = "dd.MM";
+    private List<MetadataOption> _terminals = [];
+    private List<MetadataOption> _countryTypes = [];
+    private static readonly List<MetadataOption> _directionOptions = [new(_allOption, _allOption), new("Arrival", "Arrival"), new("Departure", "Departure")];
+    private List<MetadataOption> _terminalOptions = [new(_allOption, _allOption)];
+    private List<MetadataOption> _countryTypeOptions = [new(_allOption, _allOption)];
+    private IReadOnlyDictionary<string, string> _statusColors = new Dictionary<string, string>();
+    private string? _selectedDirection;
+    private long? _selectedId;
+    private Anchor _detailAnchor = Anchor.End;
+    private string _detailWidth = "720px";
+    private string _detailHeight = "400px";
+    private Anchor? _resizeHandleAxisFor;
+    private DotNetObjectReference<MovementsTable>? _dotNetRef;
+
+    private const int _minDetailWidthPx = 360;
+    private const int _minDetailHeightPx = 240;
+    private const string _allOption = "All";
+    private const string _detailAnchorStorageKey = "aeroflight.flightDetailPanel.anchor";
+    private const string _detailWidthStorageKey = "aeroflight.flightDetailPanel.width";
+    private const string _detailHeightStorageKey = "aeroflight.flightDetailPanel.height";
+
+    private List<MetadataOption> _statusOptions = [new(_allOption, _allOption)];
+
+    private IEnumerable<MetadataOption> EditableStatusOptions => _statusOptions.Where(s => s.Code != _allOption);
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (AuthState is not null)
+        {
+            var state = await AuthState;
+            _tenantTimeZone = TenantTimeZone.Resolve(state.User);
+            _dateFormat = TenantDateTimeFormat.ResolveDateFormat(state.User);
+            _timeFormat = TenantDateTimeFormat.ResolveTimeFormat(state.User);
+        }
+
+        await LoadGridDateFormatAsync();
+        await LoadFilterOptionsAsync();
+        await LoadAsync();
+    }
+
+    private async Task LoadGridDateFormatAsync()
+    {
+        try
+        {
+            _gridDateFormat = await Flights.GetResourceGridDateFormatAsync();
+        }
+        catch (Exception)
+        {
+            _gridDateFormat = "dd.MM";
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _dotNetRef = DotNetObjectReference.Create(this);
+
+            try
+            {
+                await JsRuntime.InvokeVoidAsync("movementsGroupHeader.init", "movements-group-header-root");
+            }
+            catch (Exception ex) when (ex is JSDisconnectedException or InvalidOperationException)
+            {
+            }
+
+            try
+            {
+                var storedAnchor = await JsRuntime.InvokeAsync<string?>("localStorage.getItem", _detailAnchorStorageKey);
+                if (string.Equals(storedAnchor, "bottom", StringComparison.OrdinalIgnoreCase))
+                    _detailAnchor = Anchor.Bottom;
+
+                var storedWidth = await JsRuntime.InvokeAsync<string?>("localStorage.getItem", _detailWidthStorageKey);
+                if (int.TryParse(storedWidth, out var width) && width >= _minDetailWidthPx)
+                    _detailWidth = $"{width}px";
+
+                var storedHeight = await JsRuntime.InvokeAsync<string?>("localStorage.getItem", _detailHeightStorageKey);
+                if (int.TryParse(storedHeight, out var height) && height >= _minDetailHeightPx)
+                    _detailHeight = $"{height}px";
+
+                StateHasChanged();
+            }
+            catch (Exception ex) when (ex is JSDisconnectedException or InvalidOperationException)
+            {
+                // Static prerender pass (no live circuit yet) or the circuit dropped — the real
+                // interactive OnAfterRenderAsync(firstRender: true) call still follows.
+                return;
+            }
+        }
+
+        if (_resizeHandleAxisFor == _detailAnchor)
+            return;
+
+        try
+        {
+            await JsRuntime.InvokeVoidAsync("resizableDrawer.attach",
+                "flight-detail-resize-handle",
+                _detailAnchor == Anchor.Bottom ? "height" : "width",
+                _detailAnchor == Anchor.Bottom ? _minDetailHeightPx : _minDetailWidthPx,
+                null, _dotNetRef);
+            _resizeHandleAxisFor = _detailAnchor;
+        }
+        catch (Exception ex) when (ex is JSDisconnectedException or InvalidOperationException)
+        {
+        }
+    }
+
+    [JSInvokable]
+    public async Task OnDrawerResized(string axis, double sizePx)
+    {
+        var size = $"{(int)sizePx}px";
+        if (axis == "height")
+        {
+            _detailHeight = size;
+            await SafeSetLocalStorageAsync(_detailHeightStorageKey, ((int)sizePx).ToString());
+        }
+        else
+        {
+            _detailWidth = size;
+            await SafeSetLocalStorageAsync(_detailWidthStorageKey, ((int)sizePx).ToString());
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task ToggleDetailAnchorAsync()
+    {
+        _detailAnchor = _detailAnchor == Anchor.Bottom ? Anchor.End : Anchor.Bottom;
+        await SafeSetLocalStorageAsync(_detailAnchorStorageKey, _detailAnchor == Anchor.Bottom ? "bottom" : "end");
+    }
+
+    private async Task SafeSetLocalStorageAsync(string key, string value)
+    {
+        try
+        {
+            await JsRuntime.InvokeVoidAsync("localStorage.setItem", key, value);
+        }
+        catch (Exception ex) when (ex is JSDisconnectedException or InvalidOperationException)
+        {
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            await JsRuntime.InvokeVoidAsync("resizableDrawer.detach", "flight-detail-resize-handle");
+        }
+        catch (Exception ex) when (ex is JSDisconnectedException or InvalidOperationException)
+        {
+        }
+
+        try
+        {
+            await JsRuntime.InvokeVoidAsync("movementsGroupHeader.dispose", "movements-group-header-root");
+        }
+        catch (Exception ex) when (ex is JSDisconnectedException or InvalidOperationException)
+        {
+        }
+
+        _dotNetRef?.Dispose();
+    }
+
+    private async Task LoadFilterOptionsAsync()
+    {
+        try
+        {
+            _terminals = await LoadMetadataOptionsAsync(MetadataCatalog.RouteOf("terminals"));
+            _countryTypes = await LoadMetadataOptionsAsync(MetadataCatalog.RouteOf("country-types"));
+            _terminalOptions = [new(_allOption, _allOption), .. _terminals];
+            _countryTypeOptions = [new(_allOption, _allOption), .. _countryTypes];
+
+            var statuses = await LoadMetadataOptionsAsync(MetadataCatalog.RouteOf("flightstatuses"));
+            _statusOptions = [new(_allOption, _allOption), .. statuses];
+            _statusColors = await Flights.GetFlightStatusColorsAsync();
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Could not load Terminal/International-Domestic/Status filter options.", Severity.Warning);
+        }
+    }
+
+    private async Task<List<MetadataOption>> LoadMetadataOptionsAsync(string route)
+    {
+        var rows = await Metadata.GetAllAsync(route);
+        var options = new List<MetadataOption>();
+        foreach (var row in rows)
+        {
+            if (!row.TryGetValue("code", out var codeElement) || codeElement.ValueKind != JsonValueKind.String)
+                continue;
+
+            var code = codeElement.GetString();
+            if (string.IsNullOrWhiteSpace(code))
+                continue;
+
+            var label = code;
+            if (row.TryGetValue("description", out var descriptionElement) && descriptionElement.ValueKind == JsonValueKind.String)
+            {
+                var description = descriptionElement.GetString();
+                if (!string.IsNullOrWhiteSpace(description))
+                    label = $"{code} — {description}";
+            }
+
+            options.Add(new MetadataOption(code, label));
+        }
+
+        return options;
+    }
+
+    private static List<string> NormalizeMultiSelection(IReadOnlyCollection<string> current, IEnumerable<string> values, string allOption)
+    {
+        var newSelection = values.ToList();
+        var wasAllSelected = current.Contains(allOption);
+        var isAllSelected = newSelection.Contains(allOption);
+
+        if (newSelection.Count == 0)
+        {
+            newSelection = [allOption];
+        }
+        else if (isAllSelected && newSelection.Count > 1)
+        {
+            newSelection = wasAllSelected
+                ? newSelection.Where(s => s != allOption).ToList()
+                : [allOption];
+        }
+
+        return newSelection;
+    }
+
+    private void SelectFlight(string direction, long id)
+    {
+        _selectedDirection = direction;
+        _selectedId = id;
+    }
+
+    private void OnDrawerOpenChanged(bool open)
+    {
+        if (open)
+            return;
+
+        _selectedDirection = null;
+        _selectedId = null;
+    }
+
+    private void SelectRow(MergedFlightRow row)
+    {
+        if (row.ArrivalId is { } arrivalId)
+            SelectFlight("arrival", arrivalId);
+        else if (row.DepartureId is { } departureId)
+            SelectFlight("departure", departureId);
+    }
+
+    // Previous/Next walk the currently loaded page's grid order (not a separate query) — same
+    // arrival-preferred selection SelectRow already uses for a row that has both legs.
+    private int? SelectedRowIndex()
+    {
+        if (_selectedId is null) return null;
+        for (var i = 0; i < _result.Items.Count; i++)
+        {
+            var row = _result.Items[i];
+            if (_selectedDirection == "arrival" && row.ArrivalId == _selectedId) return i;
+            if (_selectedDirection == "departure" && row.DepartureId == _selectedId) return i;
+        }
+        return null;
+    }
+
+    private bool HasPreviousFlight => SelectedRowIndex() is { } i && i > 0;
+    private bool HasNextFlight => SelectedRowIndex() is { } i && i < _result.Items.Count - 1;
+
+    private void SelectPreviousFlight()
+    {
+        if (SelectedRowIndex() is { } i && i > 0)
+            SelectRow(_result.Items[i - 1]);
+    }
+
+    private void SelectNextFlight()
+    {
+        if (SelectedRowIndex() is { } i && i < _result.Items.Count - 1)
+            SelectRow(_result.Items[i + 1]);
+    }
+
+    private string RowStyleFunc(MergedFlightRow row, int index)
+    {
+        var isSelected = _selectedDirection switch
+        {
+            "arrival" => row.ArrivalId == _selectedId,
+            "departure" => row.DepartureId == _selectedId,
+            _ => false,
+        };
+        return isSelected
+            ? "cursor:pointer; background-color: var(--mud-palette-primary-hover);"
+            : "cursor:pointer;";
+    }
+
+    private async Task ChangePageAsync(int page)
+    {
+        if (page < 1 || page > _result.TotalPages || page == _result.Page)
+            return;
+
+        await LoadAsync(page);
+    }
+
+    private async Task LoadAsync(int? page = null, bool resetPage = false)
+    {
+        var targetPage = page ?? (resetPage ? 1 : _result.Page);
+        _loading = true;
+        try
+        {
+            var fromDateOnly = _fromDate is { } from ? DateOnly.FromDateTime(from) : (DateOnly?)null;
+            var toDateOnly = _toDate is { } to ? DateOnly.FromDateTime(to) : (DateOnly?)null;
+            var directions = _selectedDirections.Contains(_allOption) ? null : _selectedDirections.ToList();
+            var terminalCodes = _selectedTerminals.Contains(_allOption) ? null : _selectedTerminals.ToList();
+            var countryTypes = _selectedCountryTypes.Contains(_allOption) ? null : _selectedCountryTypes.ToList();
+            var search = string.IsNullOrWhiteSpace(_search) ? null : _search;
+            var airlineCode = string.IsNullOrWhiteSpace(_airlineCode) ? null : _airlineCode;
+            var statuses = _selectedStatuses.Contains(_allOption) ? null : _selectedStatuses.ToList();
+            _result = await Flights.GetFlightsAsync(
+                directions, fromDateOnly, toDateOnly,
+                search: search, terminalCodes: terminalCodes, countryTypes: countryTypes, airlineCode: airlineCode,
+                statuses: statuses,
+                page: targetPage, pageSize: PageSize);
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add($"Failed to load flights: {ex.Message}", Severity.Error);
+            _result = new([], 1, PageSize, 0, 1);
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Could not reach the API while loading flights.", Severity.Error);
+            _result = new([], 1, PageSize, 0, 1);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private string FormatLocal(DateTimeOffset? scheduled) =>
+        scheduled is { } value ? TenantTimeZone.ToLocal(value, _tenantTimeZone).ToString($"{_dateFormat} {_timeFormat}") : "—";
+
+    // STA/STD specifically drop the year — the configured Resources.Grid.DateFormat (day.month,
+    // same setting the resource grids use), not the full Display.DateFormat.
+    private string FormatLocalShort(DateTimeOffset? scheduled) =>
+        scheduled is { } value ? TenantTimeZone.ToLocal(value, _tenantTimeZone).ToString($"{_gridDateFormat} {_timeFormat}") : "—";
+
+    private Color StatusColor(string status) => FlightStatusColors.Resolve(_statusColors, status.ToUpperInvariant());
+
+    private string StatusColorClass(string? status) =>
+        $"status-select-pill status-select-pill-{StatusColor(status ?? "").ToString().ToLowerInvariant()}";
+
+    // Grid-inline field updates — small, targeted PUTs (see FlightFieldEndpoints) so the operator
+    // never has to open the detail drawer just to flip a status/terminal or fix a registration.
+    private async Task UpdateStatusAsync(MergedFlightRow row, bool isArrival, string newStatus)
+    {
+        var id = isArrival ? row.ArrivalId : row.DepartureId;
+        if (id is null || string.IsNullOrWhiteSpace(newStatus))
+            return;
+
+        try
+        {
+            await Flights.UpdateFlightStatusAsync(isArrival ? "arrivals" : "departures", id.Value, newStatus);
+            Snackbar.Add("Status updated.", Severity.Success);
+            await LoadAsync();
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add($"Failed to update status: {ex.Message}", Severity.Error);
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Could not reach the API while updating status.", Severity.Error);
+        }
+    }
+
+    private async Task UpdateTerminalAsync(MergedFlightRow row, bool isArrival, string? newTerminal)
+    {
+        var id = isArrival ? row.ArrivalId : row.DepartureId;
+        if (id is null)
+            return;
+
+        try
+        {
+            await Flights.UpdateFlightTerminalAsync(isArrival ? "arrivals" : "departures", id.Value, Blank(newTerminal));
+            Snackbar.Add("Terminal updated.", Severity.Success);
+            await LoadAsync();
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add($"Failed to update terminal: {ex.Message}", Severity.Error);
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Could not reach the API while updating terminal.", Severity.Error);
+        }
+    }
+
+    // Registration is one merged value across a linked pair (they share the same aircraft), so
+    // both legs are updated together to keep them from drifting apart.
+    private async Task UpdateRegistrationAsync(MergedFlightRow row, string? newRegistration)
+    {
+        if (row.ArrivalId is null && row.DepartureId is null)
+            return;
+
+        try
+        {
+            var code = Blank(newRegistration);
+            if (row.ArrivalId is { } arrivalId)
+                await Flights.UpdateFlightRegistrationAsync("arrivals", arrivalId, code);
+            if (row.DepartureId is { } departureId)
+                await Flights.UpdateFlightRegistrationAsync("departures", departureId, code);
+
+            Snackbar.Add("Registration updated.", Severity.Success);
+            await LoadAsync();
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add($"Failed to update registration: {ex.Message}", Severity.Error);
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Could not reach the API while updating registration.", Severity.Error);
+        }
+    }
+
+    private static string? Blank(string? value) => string.IsNullOrWhiteSpace(value) ? null : value;
+
+    private sealed record MetadataOption(string Code, string Label);
+}

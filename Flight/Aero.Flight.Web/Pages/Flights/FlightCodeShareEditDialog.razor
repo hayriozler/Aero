@@ -1,0 +1,78 @@
+@using Aero.Flights.Contracts.Flights
+@using Aero.Flights.Web.Services.Flights
+@using Aero.Flights.Web.Services.Metadatas
+@inject IMetadataClient MetadataData
+
+<MudDialog>
+    <DialogContent>
+        <MudForm @ref="_form" Model="_model">
+            <MudGrid Spacing="3">
+                <MudItem xs="12" md="6">
+                    <MudAutocomplete T="string" @bind-Value="_model.AirlineCode" Label="Airline" Required="true"
+                                     RequiredError="Airline is required" SearchFunc="SearchAirlinesAsync"
+                                     MinCharacters="0" CoerceText="false" ToStringFunc="@(code => code)">
+                        <ItemTemplate Context="code">@_airlineLabels.GetValueOrDefault(code, code)</ItemTemplate>
+                    </MudAutocomplete>
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudTextField @bind-Value="_model.FlightNumber" Label="Flight Number" Required="true"
+                                  RequiredError="Flight number is required" MaxLength="FlightNumberFormat.MaxLength"
+                                  Validation="@(new Func<string, string?>(FlightNumberFormat.Validate))"
+                                  OnBlur="@(() => _model.FlightNumber = FlightNumberFormat.Normalize(_model.FlightNumber))"
+                                  Placeholder="e.g., TK 2563" />
+                </MudItem>
+            </MudGrid>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudTooltip Text="Cancel">
+            <MudIconButton Icon="@Icons.Material.Filled.Close" OnClick="Cancel" />
+        </MudTooltip>
+        <MudTooltip Text="Save">
+            <MudIconButton Icon="@Icons.Material.Filled.Save" Color="Color.Primary" OnClick="SubmitAsync" />
+        </MudTooltip>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = null!;
+
+    [Parameter]
+    public CodeShareResponse? Existing { get; set; }
+
+    private MudForm _form = null!;
+    private readonly EditModel _model = new();
+
+    protected override void OnInitialized()
+    {
+        if (Existing is { } e)
+        {
+            _model.AirlineCode = e.AirlineCode;
+            _model.FlightNumber = e.FlightNumber;
+        }
+    }
+
+    private readonly Dictionary<string, string> _airlineLabels = new();
+
+    private Task<IEnumerable<string>> SearchAirlinesAsync(string search, CancellationToken ct) =>
+        MetadataCodeSearch.SearchWithLabelsAsync(MetadataData, MetadataCatalog.RouteOf("airlines"), search, _airlineLabels, ct);
+
+    private async Task SubmitAsync()
+    {
+        await _form.ValidateAsync();
+        if (!_form.IsValid)
+            return;
+
+        var request = new CodeShareRequest(_model.AirlineCode, _model.FlightNumber);
+        MudDialog.Close(DialogResult.Ok(request));
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private sealed class EditModel
+    {
+        public string AirlineCode { get; set; } = "";
+        public string FlightNumber { get; set; } = "";
+    }
+}

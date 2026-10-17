@@ -1,5 +1,5 @@
+using Aero.Scanner.Api.Extensions;
 using Aero.Scanner.Api.Persistence;
-using Aero.Scanner.Domain.Aggregates.Roles;
 using Aero.Scanner.Shared.Consts;
 using Aero.Scanner.Shared.Dtos;
 using Aero.Scanner.Shared.Requests;

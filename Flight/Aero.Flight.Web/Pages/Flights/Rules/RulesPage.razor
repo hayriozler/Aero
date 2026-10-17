@@ -1,0 +1,161 @@
+@page "/rules"
+@attribute [Authorize]
+@using Aero.Flights.Web.Services.Rules
+@inject IRulesClient Client
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<PageTitle>Business Rules — AeroFlight</PageTitle>
+
+<div class="d-flex justify-space-between align-center mb-3" style="gap:16px; flex-wrap:wrap">
+    <div>
+        <MudText Typo="Typo.h5">Business Rules</MudText>
+        <MudText Typo="Typo.body2" Color="Color.Secondary">Automate field updates when flight events occur.</MudText>
+    </div>
+    <div class="d-flex align-center" style="gap:8px">
+        <MudTooltip Text="Refresh">
+            <MudIconButton Icon="@Icons.Material.Filled.Refresh" OnClick="LoadRulesAsync" />
+        </MudTooltip>
+        <MudTooltip Text="Add New">
+            <MudIconButton Icon="@Icons.Material.Filled.Add" Color="Color.Primary" OnClick="OpenCreateAsync" />
+        </MudTooltip>
+    </div>
+</div>
+
+<MudDataGrid T="RuleResponse" Items="_rules" Loading="_loading" SortMode="SortMode.Multiple" Filterable="false"
+             Dense="true" Hover="true" Striped="true" Bordered="false" Elevation="1">
+    <Columns>
+        <PropertyColumn Property="x => x.Name" Title="Name" />
+        <TemplateColumn Title="Triggers" Sortable="false">
+            <CellTemplate>@string.Join(", ", context.Item.Triggers)</CellTemplate>
+        </TemplateColumn>
+        <TemplateColumn Title="Conditions" Sortable="false">
+            <CellTemplate>@context.Item.ConditionGroups.Sum(g => g.Conditions.Count)</CellTemplate>
+        </TemplateColumn>
+        <TemplateColumn Title="Actions" Sortable="false">
+            <CellTemplate>@context.Item.Actions.Count</CellTemplate>
+        </TemplateColumn>
+        <TemplateColumn Title="Enabled" Sortable="false">
+            <CellTemplate>
+                <MudSwitch T="bool" Value="@context.Item.IsEnabled" Color="Color.Primary"
+                           ValueChanged="@(v => ToggleEnabledAsync(context.Item, v))" />
+            </CellTemplate>
+        </TemplateColumn>
+        <TemplateColumn Title="" Sortable="false" CellStyle="text-align:right; white-space:nowrap">
+            <CellTemplate>
+                <MudTooltip Text="Copy">
+                    <MudIconButton Icon="@Icons.Material.Filled.ContentCopy" Size="Size.Small" OnClick="@(() => OpenCopyAsync(context.Item))" />
+                </MudTooltip>
+                <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" OnClick="@(() => OpenEditAsync(context.Item))" />
+                <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error" OnClick="@(() => DeleteAsync(context.Item))" />
+            </CellTemplate>
+        </TemplateColumn>
+    </Columns>
+    <NoRecordsContent>
+        <MudText Class="pa-4">No rules found.</MudText>
+    </NoRecordsContent>
+    <PagerContent>
+        <MudDataGridPager T="RuleResponse" PageSizeOptions="new[] { 10, 25, 50, 100 }" />
+    </PagerContent>
+</MudDataGrid>
+
+@code {
+    private static readonly DialogOptions DialogOptions = new() { MaxWidth = MaxWidth.Large, FullWidth = true, CloseButton = true };
+
+    private List<RuleResponse> _rules = [];
+    private bool _loading;
+
+    protected override async Task OnInitializedAsync() => await LoadRulesAsync();
+
+    private async Task LoadRulesAsync()
+    {
+        _loading = true;
+        try
+        {
+            _rules = (await Client.GetAllAsync()).ToList();
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add($"Failed to load rules: {ex.Message}", Severity.Error);
+            _rules = [];
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Could not reach the API while loading rules.", Severity.Error);
+            _rules = [];
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task ToggleEnabledAsync(RuleResponse rule, bool value)
+    {
+        try
+        {
+            await Client.SetEnabledAsync(rule.Id, value);
+            var index = _rules.FindIndex(r => r.Id == rule.Id);
+            if (index >= 0)
+                _rules[index] = rule with { IsEnabled = value };
+            Snackbar.Add($"'{rule.Name}' {(value ? "enabled" : "disabled")}.", Severity.Success);
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add($"Failed to update '{rule.Name}': {ex.Message}", Severity.Error);
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Could not reach the API. Please try again.", Severity.Error);
+        }
+    }
+
+    private async Task OpenCreateAsync()
+    {
+        var dialog = await DialogService.ShowAsync<RuleEditDialog>("New Rule", DialogOptions);
+        var result = await dialog.Result;
+        if (result is { Canceled: false })
+            await LoadRulesAsync();
+    }
+
+    private async Task OpenEditAsync(RuleResponse rule)
+    {
+        var parameters = new DialogParameters<RuleEditDialog> { { x => x.Existing, rule } };
+        var dialog = await DialogService.ShowAsync<RuleEditDialog>($"Edit Rule '{rule.Name}'", parameters, DialogOptions);
+        var result = await dialog.Result;
+        if (result is { Canceled: false })
+            await LoadRulesAsync();
+    }
+
+    private async Task OpenCopyAsync(RuleResponse rule)
+    {
+        var parameters = new DialogParameters<RuleEditDialog> { { x => x.CopyFrom, rule } };
+        var dialog = await DialogService.ShowAsync<RuleEditDialog>($"Copy Rule '{rule.Name}'", parameters, DialogOptions);
+        var result = await dialog.Result;
+        if (result is { Canceled: false })
+            await LoadRulesAsync();
+    }
+
+    private async Task DeleteAsync(RuleResponse rule)
+    {
+        var confirmed = await DialogService.ShowMessageBoxAsync(
+            "Delete Rule", $"Remove '{rule.Name}'? This cannot be undone.", yesText: "Delete", cancelText: "Cancel");
+        if (confirmed != true)
+            return;
+
+        try
+        {
+            var deleted = await Client.DeleteAsync(rule.Id);
+            Snackbar.Add(deleted ? $"'{rule.Name}' deleted." : "Rule not found.", deleted ? Severity.Success : Severity.Warning);
+            await LoadRulesAsync();
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add($"Failed to delete '{rule.Name}': {ex.Message}", Severity.Error);
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Could not reach the API while deleting the rule.", Severity.Error);
+        }
+    }
+}

@@ -82,7 +82,7 @@ public class DataSeedService(AeroScanDataContext dataContext)
 
             var ramSupervisorRole = await dataContext.RoleSet.FirstAsync(r => r.Name == SystemDefinedRoles.RamSupervisor);
 
-            var adminUser = User.Create(
+            var adminUser = ScannerUser.Create(
                 username: "admin",
                 displayName: "System Administrator",
                 passwordHash: PasswordHasherService.Hash("Admin@12345"),
@@ -92,7 +92,7 @@ public class DataSeedService(AeroScanDataContext dataContext)
             adminUser.AssignRole(adminRole.Name);
 
             var celebiCompany = await dataContext.CompanySet.FirstAsync(w => w.Type == CompanyType.HandlingAgent && w.Code == "CELEBI");
-            var ramCelebiSuperVisor = User.Create(
+            var ramCelebiSuperVisor = ScannerUser.Create(
                 username: "ramCelebiSuperVisor",
                 displayName: "Çelebi Ram Supervisor",
                 passwordHash: PasswordHasherService.Hash("Admin@12345"),
@@ -101,7 +101,7 @@ public class DataSeedService(AeroScanDataContext dataContext)
             ramCelebiSuperVisor.AssignRole(ramSupervisorRole.Name);
 
             var tgsCompany = await dataContext.CompanySet.FirstAsync(w => w.Type == CompanyType.HandlingAgent && w.Code == "TGS");
-            var ramTgsSuperVisor = User.Create(
+            var ramTgsSuperVisor = ScannerUser.Create(
             username: "ramTgsSuperVisor",
             displayName: "Tgs Ram supervisor",
             passwordHash: PasswordHasherService.Hash("Admin@12345"),

@@ -1,0 +1,187 @@
+@using Aero.Flights.Web.Services.Flights
+@using Aero.Flights.Web.Services.Metadatas
+@inject IFlightsClient Flights
+@inject IMetadataClient Metadata
+@inject ISnackbar Snackbar
+
+<div class="d-flex align-center mb-3" style="gap:16px; flex-wrap:wrap">
+    <MudDatePicker Date="_date" DateChanged="OnDateChangedAsync" Label="Date" DateFormat="@_dateFormat"
+                   Variant="Variant.Outlined" Margin="Margin.Dense" Style="min-width:180px" />
+    <MudTooltip Text="Refresh">
+        <MudIconButton Icon="@Icons.Material.Filled.Refresh" OnClick="@(() => LoadAsync())" />
+    </MudTooltip>
+</div>
+
+@if (_loading)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="mb-3" />
+}
+
+<div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:16px">
+    <BlueprintCard Class="pa-3">
+        <span class="kicker">Movements</span>
+        <div style="font-family:'Barlow Condensed',sans-serif; font-size:40px; line-height:1; font-variant-numeric:tabular-nums">@(_overview.ArrivalsCount + _overview.DeparturesCount)</div>
+        <MudText Typo="Typo.caption" Color="Color.Secondary">Arrivals + departures</MudText>
+    </BlueprintCard>
+    <BlueprintCard Class="pa-3">
+        <span class="kicker">Arrivals</span>
+        <div style="font-family:'Barlow Condensed',sans-serif; font-size:40px; line-height:1; font-variant-numeric:tabular-nums">@_overview.ArrivalsCount</div>
+        <MudText Typo="Typo.caption" Color="Color.Secondary">Scheduled today</MudText>
+    </BlueprintCard>
+    <BlueprintCard Class="pa-3">
+        <span class="kicker">Departures</span>
+        <div style="font-family:'Barlow Condensed',sans-serif; font-size:40px; line-height:1; font-variant-numeric:tabular-nums">@_overview.DeparturesCount</div>
+        <MudText Typo="Typo.caption" Color="Color.Secondary">Scheduled today</MudText>
+    </BlueprintCard>
+    <BlueprintCard Class="pa-3">
+        <span class="kicker">Unallocated</span>
+        <div style="font-family:'Barlow Condensed',sans-serif; font-size:40px; line-height:1; font-variant-numeric:tabular-nums; color:@(_overview.UnallocatedGatesCount > 0 ? "var(--color-alert)" : "inherit")">@_overview.UnallocatedGatesCount</div>
+        <MudText Typo="Typo.caption" Color="Color.Secondary">Flights without a gate</MudText>
+    </BlueprintCard>
+</div>
+
+<BlueprintCard Class="pa-3" Style="margin-top:16px">
+    <div class="d-flex align-center mb-2" style="gap:12px">
+        <MudText Typo="Typo.subtitle2">Hourly load</MudText>
+        <MudText Typo="Typo.caption" Color="Color.Secondary">Arrivals and departures per hour, local time</MudText>
+    </div>
+    <div style="display:flex; align-items:flex-end; gap:4px; height:140px">
+        @for (var h = 0; h < 24; h++)
+        {
+            var hour = h;
+            var count = _hourlyLoad[hour];
+            var heightPct = _maxHourlyLoad == 0 ? 0 : (double)count / _maxHourlyLoad * 100;
+            <div style="flex:1; display:flex; flex-direction:column; align-items:stretch; gap:3px; height:100%; justify-content:flex-end">
+                <div style="height:@(heightPct)%; min-height:@(count > 0 ? "2px" : "0"); background:var(--color-accent); border-radius:0"
+                     title="@($"{hour:00}:00 — {count} movement(s)")"></div>
+                <div style="font-size:10px; text-align:center; color:color-mix(in srgb, var(--color-text) 55%, transparent); font-variant-numeric:tabular-nums">@(hour % 3 == 0 ? $"{hour:00}" : "")</div>
+            </div>
+        }
+    </div>
+</BlueprintCard>
+
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:16px">
+    <BlueprintCard Class="pa-3">
+        <MudText Typo="Typo.subtitle2" Class="mb-2">Resource utilisation</MudText>
+        @foreach (var u in _utilization)
+        {
+            <div class="d-flex align-center mb-1" style="gap:12px">
+                <span style="width:120px; font-size:13px">@u.Label</span>
+                <div style="flex:1; height:8px; border:1px solid var(--color-divider)">
+                    <div style="height:100%; width:@(u.Pct)%; background:var(--color-accent-2)"></div>
+                </div>
+                <span style="width:56px; text-align:right; font-size:12px; font-variant-numeric:tabular-nums">@u.Occupied/@u.Total</span>
+            </div>
+        }
+    </BlueprintCard>
+
+    <BlueprintCard Class="pa-3">
+        <MudText Typo="Typo.subtitle2" Class="mb-2">Next off-blocks</MudText>
+        <table class="table" style="width:100%; font-size:13px">
+            <tbody>
+                @foreach (var n in _overview.NextOffBlocks)
+                {
+                    <tr style="border-bottom:1px solid var(--color-divider)">
+                        <td style="font-family:'Barlow Condensed',sans-serif; font-size:16px; padding:4px 0">@n.FlightCode</td>
+                        <td style="color:color-mix(in srgb, var(--color-text) 55%, transparent)">@n.DestinationAirportCode</td>
+                        <td style="font-variant-numeric:tabular-nums">@FormatLocal(n.Etd ?? n.Std)</td>
+                        <td>@(n.Gate ?? "—")</td>
+                    </tr>
+                }
+                @if (_overview.NextOffBlocks.Count == 0)
+                {
+                    <tr><td class="text-muted">No upcoming departures.</td></tr>
+                }
+            </tbody>
+        </table>
+    </BlueprintCard>
+</div>
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthState { get; set; }
+
+    private static readonly ResourceTypeInfo[] _resourceTypes =
+    [
+        new("Gate", "Gates", MetadataCatalog.RouteOf("gates")),
+        new("Counter", "Counters", MetadataCatalog.RouteOf("counters")),
+        new("ParkPosition", "Stands", MetadataCatalog.RouteOf("parkpositions")),
+        new("ArrivalBelt", "Arrival Belts", MetadataCatalog.RouteOf("arrivalbelts")),
+        new("DepartureBelt", "Departure Belts", MetadataCatalog.RouteOf("departurebelts")),
+    ];
+
+    private DateTime? _date = DateTime.Today;
+    private TimeZoneInfo _tenantTimeZone = TimeZoneInfo.Utc;
+    private string _dateFormat = TenantDateTimeFormat.DefaultDateFormat;
+    private string _timeFormat = TenantDateTimeFormat.DefaultTimeFormat;
+    private bool _loading;
+    private OpsOverview _overview = new(0, 0, 0, [], [], []);
+    private int[] _hourlyLoad = new int[24];
+    private int _maxHourlyLoad;
+    private List<UtilizationRow> _utilization = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (AuthState is not null)
+        {
+            var state = await AuthState;
+            _tenantTimeZone = TenantTimeZone.Resolve(state.User);
+            _dateFormat = TenantDateTimeFormat.ResolveDateFormat(state.User);
+            _timeFormat = TenantDateTimeFormat.ResolveTimeFormat(state.User);
+        }
+
+        await LoadAsync();
+    }
+
+    private async Task OnDateChangedAsync(DateTime? value)
+    {
+        _date = value;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        var day = _date is { } d ? DateOnly.FromDateTime(d) : DateOnly.FromDateTime(DateTime.Today);
+
+        _loading = true;
+        try
+        {
+            _overview = await Flights.GetOpsOverviewAsync(day);
+
+            _hourlyLoad = new int[24];
+            foreach (var m in _overview.MovementTimes)
+            {
+                var localHour = TenantTimeZone.ToLocal(m.ScheduledTime, _tenantTimeZone).Hour;
+                _hourlyLoad[localHour]++;
+            }
+            _maxHourlyLoad = _hourlyLoad.Length == 0 ? 0 : _hourlyLoad.Max();
+
+            var utilization = new List<UtilizationRow>();
+            foreach (var type in _resourceTypes)
+            {
+                var occupied = _overview.ResourceOccupancy.FirstOrDefault(r => r.ResourceType == type.Key)?.OccupiedCount ?? 0;
+                var total = (await Metadata.GetAllAsync(type.Route)).Count;
+                utilization.Add(new UtilizationRow(type.Label, occupied, total, total == 0 ? 0 : Math.Min(100, (int)(occupied * 100.0 / total))));
+            }
+            _utilization = utilization;
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add($"Failed to load overview: {ex.Message}", Severity.Error);
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Could not reach the API while loading the overview.", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private string FormatLocal(DateTimeOffset value) =>
+        TenantTimeZone.ToLocal(value, _tenantTimeZone).ToString(_timeFormat);
+
+    private sealed record ResourceTypeInfo(string Key, string Label, string Route);
+    private sealed record UtilizationRow(string Label, int Occupied, int Total, int Pct);
+}

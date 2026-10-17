@@ -1,0 +1,81 @@
+@using Aero.Flights.Web.Services.Identity
+@inject IApiClient Api
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        @if (_error is not null)
+        {
+            <MudAlert Severity="Severity.Error" Variant="Variant.Filled" Dense="true" Class="mb-3">@_error</MudAlert>
+        }
+
+        <MudForm @ref="_form">
+            <MudTextField T="string" @bind-Value="_username" Label="Username" Required="true"
+                          RequiredError="Username is required" MaxLength="100"
+                          Variant="Variant.Outlined" Margin="Margin.Dense" Immediate="true" Class="mb-3" />
+
+            <MudTextField T="string" @bind-Value="_password" Label="Password" Required="true"
+                          RequiredError="Password is required" InputType="InputType.Password"
+                          Validation="@(new Func<string, string?>(ValidatePassword))"
+                          Variant="Variant.Outlined" Margin="Margin.Dense" Immediate="true" Class="mb-3" />
+
+            <MudTextField T="string" @bind-Value="_realName" Label="Real Name"
+                          Variant="Variant.Outlined" Margin="Margin.Dense" Immediate="true" />
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" Disabled="_saving">Cancel</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="SubmitAsync" Disabled="_saving">
+            @if (_saving)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+            }
+            Create
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = null!;
+
+    private MudForm _form = null!;
+    private string _username = "";
+    private string _password = "";
+    private string? _realName;
+    private bool _saving;
+    private string? _error;
+
+    private static string? ValidatePassword(string value) =>
+        string.IsNullOrEmpty(value) || value.Length >= 6 ? null : "Password must be at least 6 characters";
+
+    private async Task SubmitAsync()
+    {
+        await _form.ValidateAsync();
+        if (!_form.IsValid)
+            return;
+
+        _saving = true;
+        _error = null;
+        try
+        {
+            var user = await Api.CreateUserAsync(_username, _password, string.IsNullOrWhiteSpace(_realName) ? null : _realName);
+            Snackbar.Add($"User '{user.Username}' created.", Severity.Success);
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+        }
+        catch (Exception)
+        {
+            _error = "Could not reach the API. Please try again.";
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

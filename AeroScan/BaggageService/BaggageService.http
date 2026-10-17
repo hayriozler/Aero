@@ -1,6 +1,0 @@
-@BRS.BaggageService_HostAddress = http://localhost:5070
-
-GET {{BRS.BaggageService_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###

@@ -1,8 +1,8 @@
 using Aero.Scanner.Domain.Aggregates.Permissions;
 using Aero.Scanner.Domain.Audits;
+using Aero.Shared.Infrastructure.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-
 namespace Aero.Scanner.Api.Extensions.References;
 
 internal sealed class PermissionConfiguration : IEntityTypeConfiguration<Permission>

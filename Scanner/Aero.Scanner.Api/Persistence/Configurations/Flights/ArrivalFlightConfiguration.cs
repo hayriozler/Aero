@@ -1,5 +1,6 @@
 using Aero.Scanner.Domain.Aggregates.Flights;
 using Aero.Scanner.Domain.Audits;
+using Aero.Shared.Infrastructure.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 namespace Aero.Scanner.Api.Persistence.Configurations.Flights;

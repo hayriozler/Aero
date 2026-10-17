@@ -1,11 +1,11 @@
-using Aero.Scanner.Domain.Audits;
+using Aero.Shared.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Aero.Scanner.Api.Persistence.Configurations.Audit;
 
 internal class BaseAuditConfiguration<T> : IEntityTypeConfiguration<T>
-    where T: AuditLogBase
+    where T : AuditLogBase
 {
     public void Configure(EntityTypeBuilder<T> builder)
     {
@@ -15,7 +15,7 @@ internal class BaseAuditConfiguration<T> : IEntityTypeConfiguration<T>
         builder.Property(a => a.Id).UseIdentityByDefaultColumn().ValueGeneratedOnAdd();
 
         builder.Property(a => a.PrimaryKey)
-            .HasColumnType("jsonb")      
+            .HasColumnType("jsonb")
             .IsRequired();
 
         builder.Property(a => a.Action)

@@ -1,0 +1,111 @@
+@using Aero.Fids.Infrastructure.Flights
+@using Aero.Fids.Web.Services
+@inject IFieldMappingService FieldMappingService
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        @if (_error is not null)
+        {
+            <MudAlert Severity="Severity.Error" Variant="Variant.Filled" Dense="true" Class="mb-3">@_error</MudAlert>
+        }
+
+        <MudForm @ref="_form">
+            <MudSelect T="string" @bind-Value="_targetField" Label="Target Field" Disabled="Existing is not null"
+                       Required="true" RequiredError="Target field is required" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-3">
+                @foreach (var field in FieldsForDataset)
+                {
+                    <MudSelectItem T="string" Value="@field">@field</MudSelectItem>
+                }
+            </MudSelect>
+
+            <MudSelect T="string" @bind-Value="_flightType" Label="Flight Type" Disabled="Existing is not null"
+                       Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-3">
+                <MudSelectItem T="string" Value="@("")">Both</MudSelectItem>
+                <MudSelectItem T="string" Value="@("Arrival")">Arrival</MudSelectItem>
+                <MudSelectItem T="string" Value="@("Departure")">Departure</MudSelectItem>
+            </MudSelect>
+
+            <MudTextField T="string" @bind-Value="_sourcePath" Label="Source Path" Required="true"
+                          RequiredError="Source path is required" MaxLength="200"
+                          HelperText="Dotted path into the source system's message, e.g. 'flight.gate.code'"
+                          Variant="Variant.Outlined" Margin="Margin.Dense" Immediate="true" Class="mb-3" />
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" Disabled="_saving">Cancel</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="SubmitAsync" Disabled="_saving">
+            @if (_saving)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+            }
+            @(Existing is null ? "Create" : "Save")
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = null!;
+
+    [Parameter]
+    public FieldMappingResponse? Existing { get; set; }
+
+    // Which dataset's fields to offer when creating — Flight (shared by every client type),
+    // or one of Gate/Belt/Counter (only that resource kind's own two fields).
+    [Parameter]
+    public IReadOnlyList<string> FieldsForDataset { get; set; } = FidsFlightFields.All;
+
+    private MudForm _form = null!;
+    private string _targetField = "";
+    private string _flightType = "";
+    private string _sourcePath = "";
+    private bool _saving;
+    private string? _error;
+
+    protected override void OnInitialized()
+    {
+        if (Existing is { } e)
+        {
+            _targetField = e.TargetField;
+            _flightType = e.FlightType ?? "";
+            _sourcePath = e.SourcePath;
+        }
+        else if (FieldsForDataset.Count > 0)
+        {
+            _targetField = FieldsForDataset[0];
+        }
+    }
+
+    private async Task SubmitAsync()
+    {
+        await _form.ValidateAsync();
+        if (!_form.IsValid)
+            return;
+
+        _saving = true;
+        _error = null;
+        try
+        {
+            var flightType = string.IsNullOrEmpty(_flightType) ? null : _flightType;
+            var saved = await FieldMappingService.SetAsync(_targetField, flightType, _sourcePath, CancellationToken.None);
+            Snackbar.Add($"Mapping for '{saved.TargetField}' saved.", Severity.Success);
+
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (FidsValidationException ex)
+        {
+            _error = ex.Message;
+        }
+        catch (Exception)
+        {
+            _error = "Something went wrong. Please try again.";
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

@@ -1,4 +1,6 @@
 using Aero.Scanner.Domain.Aggregates.Mappings;
+using Aero.Scanner.Domain.Audits;
+using Aero.Shared.Infrastructure.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 namespace Aero.Scanner.Api.Extensions.References;

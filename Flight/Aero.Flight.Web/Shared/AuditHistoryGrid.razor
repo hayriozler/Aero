@@ -1,0 +1,153 @@
+@using System.Globalization
+@using System.Text.Json
+@using System.Text.Json.Nodes
+@using Aero.Flights.Web.Services.Metadatas
+@inject ISnackbar Snackbar
+
+@if (_loading)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+}
+else if (_entries.Count == 0)
+{
+    <MudText Color="Color.Secondary" Class="pa-4">No changes recorded yet.</MudText>
+}
+else
+{
+    <MudDataGrid T="AuditEntryDto" Items="_entries" Dense="true" Hover="true" SortMode="SortMode.Single" Elevation="0" Bordered="false">
+        <Columns>
+            <HierarchyColumn T="AuditEntryDto" />
+            <TemplateColumn Title="Action" Sortable="false">
+                <CellTemplate>
+                    <MudChip T="string" Size="Size.Small" Color="@ActionColor(context.Item.Action)">@context.Item.Action</MudChip>
+                </CellTemplate>
+            </TemplateColumn>
+            <PropertyColumn Property="x => x.ChangedBy" Title="Changed By" Sortable="false" />
+            <TemplateColumn Title="When" SortBy="@(x => x.Timestamp)">
+                <CellTemplate>@TenantTimeZone.ToLocal(context.Item.Timestamp, _tenantTimeZone).ToString($"{_dateFormat} {_timeFormat}")</CellTemplate>
+            </TemplateColumn>
+        </Columns>
+        <ChildRowContent>
+            <pre class="audit-snapshot">@FormatSnapshot(context.Item.Snapshot)</pre>
+        </ChildRowContent>
+    </MudDataGrid>
+}
+
+<style>
+    .audit-snapshot {
+        white-space: pre-wrap;
+        word-break: break-word;
+        font-family: ui-monospace, monospace;
+        font-size: 0.8rem;
+        margin: 0;
+        padding: 8px 16px;
+    }
+</style>
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthState { get; set; }
+
+    [Parameter]
+    public Func<Task<IReadOnlyList<AuditEntryDto>>> Loader { get; set; } = null!;
+
+    private static readonly JsonSerializerOptions _prettyOptions = new() { WriteIndented = true };
+
+    private IReadOnlyList<AuditEntryDto> _entries = [];
+    private bool _loading = true;
+    private TimeZoneInfo _tenantTimeZone = TimeZoneInfo.Utc;
+    private string _dateFormat = TenantDateTimeFormat.DefaultDateFormat;
+    private string _timeFormat = TenantDateTimeFormat.DefaultTimeFormat;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (AuthState is not null)
+        {
+            var state = await AuthState;
+            _tenantTimeZone = TenantTimeZone.Resolve(state.User);
+            _dateFormat = TenantDateTimeFormat.ResolveDateFormat(state.User);
+            _timeFormat = TenantDateTimeFormat.ResolveTimeFormat(state.User);
+        }
+
+        try
+        {
+            _entries = await Loader();
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add($"Failed to load audit history: {ex.Message}", Severity.Error);
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Could not reach the API while loading audit history.", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    public static Color ActionColor(string action) => action switch
+    {
+        "Added" => Color.Success,
+        "Deleted" => Color.Error,
+        "Modified" => Color.Info,
+        _ => Color.Default,
+    };
+
+    public string FormatSnapshot(string snapshot)
+    {
+        try
+        {
+            var node = JsonNode.Parse(snapshot);
+            if (node is not null)
+                NormalizeForDisplay(node);
+            return node?.ToJsonString(_prettyOptions) ?? snapshot;
+        }
+        catch (JsonException)
+        {
+            return snapshot;
+        }
+    }
+
+    // A JSON null leaf reads as literal "old: null" to operators who don't know what JSON is —
+    // show "" instead. Also converts ISO timestamps to the tenant's local time for display.
+    private void NormalizeForDisplay(JsonNode node)
+    {
+        switch (node)
+        {
+            case JsonObject obj:
+                foreach (var key in obj.Select(kv => kv.Key).ToList())
+                {
+                    var child = obj[key];
+                    if (child is JsonValue value && value.TryGetValue<string>(out var text) && TryParseTimestamp(text, out var dto))
+                        obj[key] = TenantTimeZone.ToLocal(dto, _tenantTimeZone).ToString("yyyy-MM-dd HH:mm:ss");
+                    else if (child is null)
+                        obj[key] = JsonValue.Create("");
+                    else
+                        NormalizeForDisplay(child);
+                }
+                break;
+            case JsonArray arr:
+                for (var i = 0; i < arr.Count; i++)
+                {
+                    var item = arr[i];
+                    if (item is null)
+                        arr[i] = JsonValue.Create("");
+                    else
+                        NormalizeForDisplay(item);
+                }
+                break;
+        }
+    }
+
+    private static bool TryParseTimestamp(string text, out DateTimeOffset value)
+    {
+        if (text.Length >= 19 && text.Contains('T') &&
+            DateTimeOffset.TryParse(text, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out value))
+            return true;
+
+        value = default;
+        return false;
+    }
+}

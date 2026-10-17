@@ -1,8 +1,9 @@
+using Aero.Scanner.Api.Extensions;
 using Aero.Scanner.Api.Persistence;
-using Aero.Scanner.Domain.Aggregates.Permissions;
 using Aero.Scanner.Shared.Consts;
 using Aero.Scanner.Shared.Dtos;
 using Aero.Scanner.Shared.Requests;
+using Aero.Shared.Domain.Identity;
 using Aero.Shared.WebUtilities.Validations;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
@@ -121,8 +122,6 @@ public static class PermissionEndpoints
 
         return TypedResults.NoContent();
     }
-
-
     private static PermissionDto ToDto(Permission p) =>
         new(p.Id, p.Name, p.DisplayName, p.Description, p.Group);
 }

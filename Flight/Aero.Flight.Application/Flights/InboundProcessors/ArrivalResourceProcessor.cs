@@ -1,0 +1,31 @@
+using Aero.Flights.Application.Flights.Resources;
+using Aero.Flights.Application.Interfaces;
+using Aero.Flights.Contracts.Inbound;
+using Aero.Flights.Contracts.Topology;
+using Aero.Flights.Domain.Ops.Resources;
+
+namespace Aero.Flights.Application.Flights.InboundProcessors;
+
+public sealed class ArrivalResourceProcessor(
+    IAeroFlightDbContext db, IFlightResourceService<OpsArrivalGate> gateService, IFlightResourceService<OpsArrivalBelt> beltService)
+    : FlightInboundProcessor<FlightResourceMessage>(db)
+{
+    public override string MessageType => RoutingKeys.Inbound.ArrivalResourceChanged;
+
+    protected override async Task ApplyAsync(FlightResourceMessage m, CancellationToken ct)
+    {
+        var flight = await FindArrivalAsync(m.Id, m.FlightNumber, m.Scheduled, ct);
+
+        switch (m.ResourceKind)
+        {
+            case "Gate":
+                await ApplyResourceMessageAsync(gateService, flight.Id, m.ResourceKind, m.Resources, ct);
+                break;
+            case "Belt":
+                await ApplyResourceMessageAsync(beltService, flight.Id, m.ResourceKind, m.Resources, ct);
+                break;
+            default:
+                throw new InvalidOperationException($"Unsupported arrival resource kind '{m.ResourceKind}'.");
+        }
+    }
+}

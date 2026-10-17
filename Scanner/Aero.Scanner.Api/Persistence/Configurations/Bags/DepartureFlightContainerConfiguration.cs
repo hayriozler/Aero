@@ -1,8 +1,10 @@
 using Aero.Scanner.Domain.Aggregates.Flights;
 using Aero.Scanner.Domain.Audits;
+using Aero.Shared.Infrastructure.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 namespace Aero.Scanner.Api.Persistence.Configurations.Bags;
+
 
 internal sealed class DepartureFlightContainerConfiguration : IEntityTypeConfiguration<Container>
 {
@@ -20,10 +22,8 @@ internal sealed class DepartureFlightContainerConfiguration : IEntityTypeConfigu
 
         builder.HasIndex(p => p.FlightId);
 
-        // Container'ın kendi audit tablosu
         builder.HasAuditType<Container, ContainerLog>();
 
-        // Container değiştiğinde DepartureFlightLog'a da "ContainerAdded/Modified/Removed" yaz
         builder.HasCrossAudit<Container, DepartureFlightLog>(c => c.FlightId, "Container");
 
         builder.HasAuditDisplayName(c => c.ContainerCode, "Container Code");

@@ -1,0 +1,119 @@
+@page "/admin/display-clients"
+@attribute [Authorize]
+@using Aero.Fids.Web.Services
+@inject IDisplayClientService DisplayClientService
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<PageTitle>Display Clients — Aero.Fids</PageTitle>
+
+<div class="d-flex justify-space-between align-center mb-3" style="gap:16px; flex-wrap:wrap">
+    <div>
+        <MudText Typo="Typo.h5">Display Clients</MudText>
+        <MudText Typo="Typo.body2" Color="Color.Secondary">The physical screens an airport runs — each one declares its own dataset when it connects.</MudText>
+    </div>
+    <div class="d-flex align-center" style="gap:8px">
+        <MudTooltip Text="Refresh">
+            <MudIconButton Icon="@Icons.Material.Filled.Refresh" OnClick="LoadAsync" />
+        </MudTooltip>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="OpenCreateAsync">
+            New Display Client
+        </MudButton>
+    </div>
+</div>
+
+<MudDataGrid T="DisplayClientResponse" Items="_clients" Loading="_loading" SortMode="SortMode.Multiple" Filterable="false"
+             Dense="true" Hover="true" Striped="true" Bordered="false" Elevation="1">
+    <Columns>
+        <PropertyColumn Property="x => x.Name" Title="Name" />
+        <TemplateColumn Title="Type" Sortable="false">
+            <CellTemplate>@(context.Item.ResourceCode is null ? context.Item.Type : $"{context.Item.Type} ({context.Item.ResourceCode})")</CellTemplate>
+        </TemplateColumn>
+        <PropertyColumn Property="x => x.Location" Title="Location" />
+        <TemplateColumn Title="Bank" Sortable="false">
+            <CellTemplate>@(context.Item.BankName is null ? "—" : $"{context.Item.BankName} #{context.Item.BankPosition}")</CellTemplate>
+        </TemplateColumn>
+        <TemplateColumn Title="Status" Sortable="false">
+            <CellTemplate>
+                <MudChip T="string" Size="Size.Small" Color="@(context.Item.IsActive ? Color.Success : Color.Default)">
+                    @(context.Item.IsActive ? "Active" : "Inactive")
+                </MudChip>
+            </CellTemplate>
+        </TemplateColumn>
+        <TemplateColumn Title="" Sortable="false" CellStyle="text-align:right; white-space:nowrap">
+            <CellTemplate>
+                <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" OnClick="@(() => OpenEditAsync(context.Item))" />
+                <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error" OnClick="@(() => DeleteAsync(context.Item))" />
+            </CellTemplate>
+        </TemplateColumn>
+    </Columns>
+    <NoRecordsContent>
+        <MudText Class="pa-4">No display clients registered yet.</MudText>
+    </NoRecordsContent>
+    <PagerContent>
+        <MudDataGridPager T="DisplayClientResponse" PageSizeOptions="new[] { 10, 25, 50, 100 }" />
+    </PagerContent>
+</MudDataGrid>
+
+@code {
+    private static readonly DialogOptions _dialogOptions = new() { MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true };
+
+    private List<DisplayClientResponse> _clients = [];
+    private bool _loading;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        try
+        {
+            _clients = (await DisplayClientService.ListAsync(CancellationToken.None)).ToList();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to load display clients: {ex.Message}", Severity.Error);
+            _clients = [];
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task OpenCreateAsync()
+    {
+        var dialog = await DialogService.ShowAsync<DisplayClientDialog>("New Display Client", _dialogOptions);
+        var result = await dialog.Result;
+        if (result is { Canceled: false })
+            await LoadAsync();
+    }
+
+    private async Task OpenEditAsync(DisplayClientResponse existing)
+    {
+        var parameters = new DialogParameters<DisplayClientDialog> { { x => x.Existing, existing } };
+        var dialog = await DialogService.ShowAsync<DisplayClientDialog>($"Edit {existing.Name}", parameters, _dialogOptions);
+        var result = await dialog.Result;
+        if (result is { Canceled: false })
+            await LoadAsync();
+    }
+
+    private async Task DeleteAsync(DisplayClientResponse client)
+    {
+        var confirmed = await DialogService.ShowMessageBoxAsync(
+            "Delete Display Client", $"Remove '{client.Name}'? This cannot be undone.", yesText: "Delete", cancelText: "Cancel");
+        if (confirmed != true)
+            return;
+
+        try
+        {
+            await DisplayClientService.DeleteAsync(client.Id, CancellationToken.None);
+            Snackbar.Add($"'{client.Name}' deleted.", Severity.Success);
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to delete '{client.Name}': {ex.Message}", Severity.Error);
+        }
+    }
+}

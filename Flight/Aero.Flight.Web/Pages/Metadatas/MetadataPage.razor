@@ -1,0 +1,243 @@
+@page "/Metadata/{Key}"
+@attribute [Authorize]
+@using System.Text.Json
+@using Aero.Flights.Web.Services.Metadatas
+@inject IMetadataClient Client
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<PageTitle>@(_entity?.Title ?? "Metadata Data") — AeroFlight</PageTitle>
+
+@if (_entity is null)
+{
+    <MudAlert Severity="Severity.Warning">Unknown Metadata data set '@Key'.</MudAlert>
+}
+else
+{
+    <div class="d-flex justify-space-between align-center mb-3" style="gap:16px; flex-wrap:wrap">
+        <div>
+            <MudText Typo="Typo.h5">@_entity.Title</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                @(_entity.ReadOnly ? "Read-only Metadata lookup." : "Manage Metadata data records.")
+            </MudText>
+        </div>
+        <div class="d-flex align-center" style="gap:8px">
+            <MudTextField T="string" @bind-Value="_search" Immediate="true" Placeholder="Search"
+                          Variant="Variant.Outlined" Margin="Margin.Dense" Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Search" Clearable="true" Style="min-width:220px" />
+            <MudTooltip Text="Refresh">
+                <MudIconButton Icon="@Icons.Material.Filled.Refresh" OnClick="LoadRowsAsync" />
+            </MudTooltip>
+            @if (!_entity.ReadOnly)
+            {
+                <MudTooltip Text="Add New">
+                    <MudIconButton Icon="@Icons.Material.Filled.Add" Color="Color.Primary" OnClick="OpenCreateAsync" />
+                </MudTooltip>
+            }
+        </div>
+    </div>
+
+    <MudDataGrid @key="_entity.Key" T="IReadOnlyDictionary<string, JsonElement>" Items="_rows" Loading="_loading"
+                 QuickFilter="QuickFilter" SortMode="SortMode.Multiple" Filterable="false"
+                 Dense="true" Hover="true" Striped="true" Bordered="false" Elevation="1">
+        <Columns>
+            @foreach (var col in _entity.Columns)
+            {
+                var name = col.Name;
+                <TemplateColumn T="IReadOnlyDictionary<string, JsonElement>" Title="@col.Label" SortBy="@(x => SortValue(x, name))">
+                    <CellTemplate>
+                        @if (string.Equals(name, "code", StringComparison.OrdinalIgnoreCase))
+                        {
+                            <b>@FormatCell(context.Item, name)</b>
+                        }
+                        else
+                        {
+                            @FormatCell(context.Item, name)
+                        }
+                    </CellTemplate>
+                </TemplateColumn>
+            }
+            @if (!_entity.ReadOnly)
+            {
+                <TemplateColumn T="IReadOnlyDictionary<string, JsonElement>" Title="" Sortable="false" CellStyle="text-align:right; white-space:nowrap">
+                    <CellTemplate>
+                        <MudIconButton Icon="@Icons.Material.Filled.History" Size="Size.Small" OnClick="@(() => OpenAuditAsync(context.Item))" />
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" OnClick="@(() => OpenEditAsync(context.Item))" />
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error" OnClick="@(() => DeleteAsync(context.Item))" />
+                    </CellTemplate>
+                </TemplateColumn>
+            }
+        </Columns>
+        <NoRecordsContent>
+            <MudText Class="pa-4">No records found.</MudText>
+        </NoRecordsContent>
+        <PagerContent>
+            <MudDataGridPager T="IReadOnlyDictionary<string, JsonElement>" PageSizeOptions="new[] { 10, 25, 50, 100 }" />
+        </PagerContent>
+    </MudDataGrid>
+}
+
+@code {
+    [Parameter]
+    public string Key { get; set; } = "";
+
+    private static readonly DialogOptions _dialogOptions = new() { MaxWidth = MaxWidth.Medium, FullWidth = true, CloseButton = true };
+
+    private MetadataEntity? _entity;
+    private IReadOnlyList<IReadOnlyDictionary<string, JsonElement>> _rows = [];
+    private bool _loading;
+    private string _search = "";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var resolved = MetadataCatalog.ByKey(Key);
+        if (Equals(resolved, _entity))
+            return;
+
+        _entity = resolved;
+        _search = "";
+        await LoadRowsAsync();
+    }
+
+    private async Task LoadRowsAsync()
+    {
+        if (_entity is null)
+            return;
+
+        _loading = true;
+        try
+        {
+            _rows = await Client.GetAllAsync(_entity.Route);
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add($"Failed to load {_entity.Title}: {ex.Message}", Severity.Error);
+            _rows = [];
+        }
+        catch (Exception)
+        {
+            Snackbar.Add($"Could not reach the API while loading {_entity.Title}.", Severity.Error);
+            _rows = [];
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private Func<IReadOnlyDictionary<string, JsonElement>, bool> QuickFilter => row =>
+    {
+        if (string.IsNullOrWhiteSpace(_search))
+            return true;
+
+        foreach (var v in row.Values)
+            if (v.ValueKind == JsonValueKind.String
+                && (v.GetString()?.Contains(_search, StringComparison.OrdinalIgnoreCase) ?? false))
+                return true;
+
+        return false;
+    };
+
+    private async Task OpenCreateAsync()
+    {
+        if (_entity is null)
+            return;
+
+        var parameters = new DialogParameters<MetadataEditDialog> { { x => x.Entity, _entity } };
+        var dialog = await DialogService.ShowAsync<MetadataEditDialog>($"New {_entity.Title}", parameters, _dialogOptions);
+        var result = await dialog.Result;
+        if (result is { Canceled: false })
+            await LoadRowsAsync();
+    }
+
+    private async Task OpenEditAsync(IReadOnlyDictionary<string, JsonElement> row)
+    {
+        if (_entity is null)
+            return;
+
+        var parameters = new DialogParameters<MetadataEditDialog>
+        {
+            { x => x.Entity, _entity },
+            { x => x.Existing, row },
+        };
+        var dialog = await DialogService.ShowAsync<MetadataEditDialog>($"Edit {_entity.Title} {Code(row)}", parameters, _dialogOptions);
+        var result = await dialog.Result;
+        if (result is { Canceled: false })
+            await LoadRowsAsync();
+    }
+
+    private async Task OpenAuditAsync(IReadOnlyDictionary<string, JsonElement> row)
+    {
+        if (_entity is null)
+            return;
+
+        var code = Code(row);
+        var route = _entity.Route;
+        var parameters = new DialogParameters<AuditHistoryDialog>
+        {
+            { x => x.Loader, () => Client.GetAuditAsync(route, code) },
+        };
+        await DialogService.ShowAsync<AuditHistoryDialog>($"History — {_entity.Title} {code}", parameters, _dialogOptions);
+    }
+
+    private async Task DeleteAsync(IReadOnlyDictionary<string, JsonElement> row)
+    {
+        if (_entity is null)
+            return;
+
+        var code = Code(row);
+        var confirmed = await DialogService.ShowMessageBoxAsync(
+            $"Delete {_entity.Title}", $"Remove '{code}'? This cannot be undone.", yesText: "Delete", cancelText: "Cancel");
+        if (confirmed != true)
+            return;
+
+        try
+        {
+            var deleted = await Client.DeleteAsync(_entity.Route, code);
+            Snackbar.Add(deleted ? $"'{code}' deleted." : "Record not found.", deleted ? Severity.Success : Severity.Warning);
+            await LoadRowsAsync();
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add($"Failed to delete '{code}': {ex.Message}", Severity.Error);
+        }
+        catch (Exception)
+        {
+            Snackbar.Add($"Could not reach the API while deleting '{code}'.", Severity.Error);
+        }
+    }
+
+    private static string Code(IReadOnlyDictionary<string, JsonElement> row) =>
+        row.TryGetValue("code", out var v) && v.ValueKind == JsonValueKind.String ? v.GetString() ?? "" : "";
+
+    private static object? SortValue(IReadOnlyDictionary<string, JsonElement> row, string name)
+    {
+        if (!row.TryGetValue(name, out var v))
+            return null;
+
+        return v.ValueKind switch
+        {
+            JsonValueKind.Number => v.TryGetDouble(out var d) ? d : v.ToString(),
+            JsonValueKind.True => true,
+            JsonValueKind.False => false,
+            JsonValueKind.String => v.GetString(),
+            _ => null,
+        };
+    }
+
+    private static string FormatCell(IReadOnlyDictionary<string, JsonElement> row, string name)
+    {
+        if (!row.TryGetValue(name, out var v))
+            return "—";
+
+        return v.ValueKind switch
+        {
+            JsonValueKind.Null or JsonValueKind.Undefined => "—",
+            JsonValueKind.True => "Yes",
+            JsonValueKind.False => "No",
+            JsonValueKind.String => string.IsNullOrEmpty(v.GetString()) ? "—" : v.GetString()!,
+            JsonValueKind.Number => v.ToString(),
+            _ => v.ToString(),
+        };
+    }
+}

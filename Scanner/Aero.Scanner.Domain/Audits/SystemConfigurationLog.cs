@@ -1,3 +1,5 @@
-﻿namespace Aero.Scanner.Domain.Audits;
+﻿using Aero.Shared.Domain;
 
-public sealed class SystemConfigurationLog:AuditLogBase { }
+namespace Aero.Scanner.Domain.Audits;
+
+public sealed class SystemConfigurationLog : AuditLogBase { }

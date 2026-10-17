@@ -1,5 +1,4 @@
-﻿using Aero.Scanner.Domain.Aggregates.Users;
-using Microsoft.Extensions.Configuration;
+﻿using Aero.Shared.Domain;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -8,36 +7,32 @@ using System.Text;
 
 namespace Aero.Shared.Infrastructure.Services;
 
-public sealed class JwtTokenService(IConfiguration configuration)
+public sealed class JwtTokenService : IJwtTokenService
 {
     private const int _expiryMinutes = 15;
-
-    public (string Token, DateTime ExpiresAt) GenerateToken(User user)
+    public (string Token, DateTime ExpiresAt) GenerateToken(JwtOptions jwtOptions)
     {
-        var signingKey = configuration["Jwt:SigningKey"]
-            ?? throw new InvalidOperationException("Jwt:SigningKey is not configured.");
-
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(signingKey));
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOptions.Key));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
         var expiresAt = DateTime.UtcNow.AddMinutes(_expiryMinutes);
 
         var claims = new List<Claim>
         {
-            new(JwtRegisteredClaimNames.Sub,        user.Id.ToString()),
-            new(JwtRegisteredClaimNames.UniqueName, user.Username),
-            new("display_name",                     user.DisplayName),
-            new("company_code",                     user.CompanyCode),
-            new("company_name",                     user.Company?.Name ?? string.Empty),
-            new("company_type",                     user.Company?.Type.ToString() ?? string.Empty),
-            new(JwtRegisteredClaimNames.Jti,        Guid.NewGuid().ToString()),
+            new(JwtRegisteredClaimNames.Sub,        jwtOptions.User.Id.ToString()),
+            new(JwtRegisteredClaimNames.UniqueName, jwtOptions.User.Username),
+            new(JwtRegisteredClaimNames.Jti,        Guid.NewGuid().ToString())
         };
 
-        foreach (var role in user.GetRoleNames())
-            claims.Add(new Claim("role", role));
+        foreach (var customClaim in jwtOptions.Claims)
+        {
+            claims.Add(customClaim);
+        }
+        foreach (var role in jwtOptions.User.UserRoles)
+            claims.Add(new Claim("roleName", role.RoleName));
 
         var token = new JwtSecurityToken(
-            issuer: configuration["Jwt:Issuer"]   ?? "aeroscan",
-            audience: configuration["Jwt:Audience"] ?? "aeroscan-clients",
+            issuer: jwtOptions.Issuer,
+            audience: jwtOptions.Audience,
             claims: claims,
             notBefore: DateTime.UtcNow,
             expires: expiresAt,
@@ -46,13 +41,13 @@ public sealed class JwtTokenService(IConfiguration configuration)
         return (new JwtSecurityTokenHandler().WriteToken(token), expiresAt);
     }
 
-    public static string GenerateRefreshToken()
+    public string GenerateRefreshToken()
     {
         var bytes = new byte[64];
         RandomNumberGenerator.Fill(bytes);
         return Convert.ToBase64String(bytes);
     }
 
-    public static string HashRefreshToken(string token) =>
+    public string HashRefreshToken(string token) =>
         Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(token)));
 }

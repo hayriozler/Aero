@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" />
+	<PackageReference Include="Microsoft.EntityFrameworkCore" />
+	<PackageReference Include="FluentValidation" />
+  </ItemGroup>
+
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Shared\Aero.Shared.Application\Aero.Shared.Application.csproj" />
+    <ProjectReference Include="..\Aero.Flight.Contracts\Aero.Flights.Contracts.csproj" />
+    <ProjectReference Include="..\Aero.Flight.Domain\Aero.Flights.Domain.csproj" />
+  </ItemGroup>
+
+</Project>

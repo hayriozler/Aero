@@ -5,9 +5,7 @@ using Aero.Scanner.Domain.Aggregates.Flights;
 using Aero.Scanner.Domain.Aggregates.HandlingContracts;
 using Aero.Scanner.Domain.Aggregates.HHTs;
 using Aero.Scanner.Domain.Aggregates.Mappings;
-using Aero.Scanner.Domain.Aggregates.Permissions;
 using Aero.Scanner.Domain.Aggregates.Reconciliations;
-using Aero.Scanner.Domain.Aggregates.Roles;
 using Aero.Scanner.Domain.Aggregates.Settings;
 using Aero.Scanner.Domain.Aggregates.Users;
 using Aero.Scanner.Domain.Audits;
@@ -43,13 +41,13 @@ public class AeroScanDataContext(DbContextOptions<AeroScanDataContext> options)
 
 
     // Reference data
-    public DbSet<RefreshToken> RefreshTokenSet => Set<RefreshToken>();
+
     public DbSet<AirlineHandlingContract> HandlingContractSet => Set<AirlineHandlingContract>();
     public DbSet<AirlineHandlingContractFlightNumber> HandlingContractFlightSet => Set<AirlineHandlingContractFlightNumber>();
     public DbSet<Company> CompanySet => Set<Company>();
     public DbSet<Role> RoleSet => Set<Role>();
     public DbSet<Permission> PermissionSet => Set<Permission>();
-    public DbSet<User> UserSet => Set<User>();
+    public DbSet<ScannerUser> UserSet => Set<ScannerUser>();
     public DbSet<HandheldTerminal> HandheldTerminalSet => Set<HandheldTerminal>();
     public DbSet<ContainerType> ContainerTypeSet => Set<ContainerType>();
     public DbSet<ContainerTypeClass> ContainerTypeClassSet => Set<ContainerTypeClass>();

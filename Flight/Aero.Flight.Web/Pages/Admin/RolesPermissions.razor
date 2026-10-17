@@ -1,0 +1,131 @@
+@page "/admin/roles"
+@attribute [Authorize]
+@using Aero.Flights.Web.Services.Identity
+@inject IApiClient Api
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<PageTitle>Roles — AeroFlight</PageTitle>
+
+<div class="d-flex justify-space-between align-center mb-3" style="gap:16px; flex-wrap:wrap">
+    <div>
+        <MudText Typo="Typo.h5">Roles</MudText>
+        <MudText Typo="Typo.body2" Color="Color.Secondary">Manage roles and grant permissions.</MudText>
+    </div>
+    <div class="d-flex align-center" style="gap:8px">
+        <MudTooltip Text="Refresh">
+            <MudIconButton Icon="@Icons.Material.Filled.Refresh" OnClick="LoadRolesAsync" />
+        </MudTooltip>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="OpenCreateAsync">
+            New Role
+        </MudButton>
+    </div>
+</div>
+
+<MudDataGrid T="RoleDto" Items="_roles" Loading="_loading" SortMode="SortMode.Multiple" Filterable="false"
+             Dense="true" Hover="true" Striped="true" Bordered="false" Elevation="1">
+    <Columns>
+        <PropertyColumn Property="x => x.Name" Title="Name" />
+        <PropertyColumn Property="x => x.Description" Title="Description" />
+        <TemplateColumn Title="" Sortable="false" CellStyle="text-align:right; white-space:nowrap">
+            <CellTemplate>
+                @if (IsProtected(context.Item))
+                {
+                    <MudTooltip Text="Admin role is protected and cannot be changed">
+                        <MudIcon Icon="@Icons.Material.Filled.Lock" Size="Size.Small" Color="Color.Default" />
+                    </MudTooltip>
+                }
+                else
+                {
+                    <MudIconButton Icon="@Icons.Material.Filled.History" Size="Size.Small" OnClick="@(() => OpenAuditAsync(context.Item))" />
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" OnClick="@(() => OpenEditPermissionsAsync(context.Item))" />
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error" OnClick="@(() => DeleteAsync(context.Item))" />
+                }
+            </CellTemplate>
+        </TemplateColumn>
+    </Columns>
+    <NoRecordsContent>
+        <MudText Class="pa-4">No roles found.</MudText>
+    </NoRecordsContent>
+    <PagerContent>
+        <MudDataGridPager T="RoleDto" PageSizeOptions="new[] { 10, 25, 50, 100 }" />
+    </PagerContent>
+</MudDataGrid>
+
+@code {
+    private static readonly DialogOptions _dialogOptions = new() { MaxWidth = MaxWidth.Medium, FullWidth = true, CloseButton = true };
+
+    private List<RoleDto> _roles = [];
+    private bool _loading;
+
+    protected override async Task OnInitializedAsync() => await LoadRolesAsync();
+
+    private async Task LoadRolesAsync()
+    {
+        _loading = true;
+        try
+        {
+            _roles = (await Api.GetRolesAsync()).ToList();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to load roles: {ex.Message}", Severity.Error);
+            _roles = [];
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task OpenCreateAsync()
+    {
+        var dialog = await DialogService.ShowAsync<CreateRoleDialog>("New Role", _dialogOptions);
+        var result = await dialog.Result;
+        if (result is { Canceled: false })
+            await LoadRolesAsync();
+    }
+
+    private async Task OpenEditPermissionsAsync(RoleDto role)
+    {
+        var parameters = new DialogParameters<EditRolePermissionsDialog> { { x => x.Role, role } };
+        var dialog = await DialogService.ShowAsync<EditRolePermissionsDialog>($"Permissions for {role.Name}", parameters, _dialogOptions);
+        var result = await dialog.Result;
+        if (result is { Canceled: false })
+            await LoadRolesAsync();
+    }
+
+    private static bool IsProtected(RoleDto role) => string.Equals(role.Name, "Admin", StringComparison.OrdinalIgnoreCase);
+
+    private async Task OpenAuditAsync(RoleDto role)
+    {
+        var parameters = new DialogParameters<AuditHistoryDialog>
+        {
+            { x => x.Loader, () => Api.GetRoleAuditAsync(role.Id) },
+        };
+        await DialogService.ShowAsync<AuditHistoryDialog>($"History — {role.Name}", parameters, _dialogOptions);
+    }
+
+    private async Task DeleteAsync(RoleDto role)
+    {
+        var confirmed = await DialogService.ShowMessageBoxAsync(
+            "Delete Role", $"Remove '{role.Name}'? This cannot be undone.", yesText: "Delete", cancelText: "Cancel");
+        if (confirmed != true)
+            return;
+
+        try
+        {
+            var deleted = await Api.DeleteRoleAsync(role.Id);
+            Snackbar.Add(deleted ? $"'{role.Name}' deleted." : "Role not found.", deleted ? Severity.Success : Severity.Warning);
+            await LoadRolesAsync();
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add($"Failed to delete '{role.Name}': {ex.Message}", Severity.Error);
+        }
+        catch (Exception)
+        {
+            Snackbar.Add($"Could not reach the API while deleting '{role.Name}'.", Severity.Error);
+        }
+    }
+}

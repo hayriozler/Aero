@@ -1,7 +1,7 @@
 using Aero.Scanner.Api.Persistence;
-using Aero.Scanner.Domain.Audits;
 using Aero.Scanner.Shared.Consts;
 using Aero.Scanner.Shared.Dtos;
+using Aero.Shared.Domain;
 using Aero.Shared.Infrastructure.Extensions;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;

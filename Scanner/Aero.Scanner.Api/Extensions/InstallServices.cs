@@ -1,5 +1,4 @@
-﻿using Aero.Scanner.Api.Services.BaggageMessageHandlers;
-using Aero.Scanner.Api.Services.BaggageMessageResolvers;
+﻿using Aero.Scanner.Api.Services.BaggageMessageResolvers;
 using Aero.Scanner.Api.Services.BaggageMessagesHandlers;
 using Aero.Scanner.Domain.Enums;
 using Aero.Scanner.Shared.Consts;
