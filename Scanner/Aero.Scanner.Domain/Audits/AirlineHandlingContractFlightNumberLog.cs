@@ -2,5 +2,5 @@
 
 namespace Aero.Scanner.Domain.Audits;
 
-public sealed class AirlineHandlingContractFlightNumberLog : AuditLogBase { }
+public sealed record AirlineHandlingContractFlightNumberLog : AuditLogBase { }
 

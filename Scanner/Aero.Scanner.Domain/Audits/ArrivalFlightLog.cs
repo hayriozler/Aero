@@ -2,4 +2,4 @@
 
 namespace Aero.Scanner.Domain.Audits;
 
-public sealed class ArrivalFlightLog : AuditLogBase { }
+public sealed record ArrivalFlightLog : AuditLogBase { }

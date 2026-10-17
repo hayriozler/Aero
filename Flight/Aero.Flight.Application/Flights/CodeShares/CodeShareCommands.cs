@@ -1,7 +1,6 @@
-using Aero.Flights.Application.Common;
-using Aero.Flights.Application.Interfaces;
 using Aero.Flights.Contracts.Flights;
 using Aero.Flights.Domain.Ops.Resources;
+using Aero.Shared.Application;
 using Microsoft.EntityFrameworkCore;
 
 namespace Aero.Flights.Application.Flights.CodeShares;
@@ -59,7 +58,7 @@ public sealed class UpdateCodeShareCommandHandler<TCodeShare>(IAeroFlightDbConte
     }
 }
 
-public sealed class DeleteCodeShareCommandHandler<TCodeShare>(IAeroFlightDbContext db)
+public sealed class DeleteCodeShareCommandHandler<TCodeShare>(AeroFlightDbContext db)
     : ICommandHandler<DeleteCodeShareCommand<TCodeShare>, bool>
     where TCodeShare : OpsCodeShare
 {

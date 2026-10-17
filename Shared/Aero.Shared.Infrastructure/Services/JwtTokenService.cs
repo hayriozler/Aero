@@ -23,13 +23,10 @@ public sealed class JwtTokenService : IJwtTokenService
             new(JwtRegisteredClaimNames.Jti,        Guid.NewGuid().ToString())
         };
 
-        foreach (var customClaim in jwtOptions.Claims)
+        foreach (var role in jwtOptions.User.Roles)
         {
-            claims.Add(customClaim);
+            claims.Add(new Claim("role", role.RoleName));
         }
-        foreach (var role in jwtOptions.User.UserRoles)
-            claims.Add(new Claim("roleName", role.RoleName));
-
         var token = new JwtSecurityToken(
             issuer: jwtOptions.Issuer,
             audience: jwtOptions.Audience,

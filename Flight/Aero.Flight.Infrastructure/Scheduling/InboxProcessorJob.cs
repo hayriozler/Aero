@@ -1,6 +1,5 @@
-using Aero.Flights.Application.Interfaces;
-using Aero.Flights.Application.Tenancy;
 using Aero.Flights.Infrastructure.Persistence;
+using Aero.Shared.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;

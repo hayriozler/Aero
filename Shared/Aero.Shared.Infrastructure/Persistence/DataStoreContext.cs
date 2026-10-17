@@ -1,14 +1,16 @@
-﻿using Aero.Shared.Domain;
+﻿using Aero.Flights.Domain.Common;
+using Aero.Shared.Domain;
 using Aero.Shared.Domain.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 
 namespace Aero.Shared.Infrastructure.Persistence;
 
-public abstract class DataStoreContext(DbContextOptions<DataStoreContext> options)
+public abstract class DataStoreContext(DbContextOptions options)
     : DbContext(options), IDataStoreContext
 {
     public DbSet<User> UserSet => Set<User>();
+    public DbSet<AeroConfiguration> AeroConfigurationSet => Set<AeroConfiguration>();
 
     public DbSet<Role> RoleSet => Set<Role>();
 

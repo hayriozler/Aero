@@ -2,5 +2,5 @@
 
 namespace Aero.Scanner.Domain.Audits;
 
-public sealed class HandheldTerminalLog : AuditLogBase { }
+public sealed record HandheldTerminalLog : AuditLogBase { }
 

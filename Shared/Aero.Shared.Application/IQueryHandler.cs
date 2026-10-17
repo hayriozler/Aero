@@ -1,4 +1,4 @@
-namespace Aero.Flights.Application.Common;
+namespace Aero.Shared.Application;
 
 public interface IQueryHandler<TQuery, TResult>
 {

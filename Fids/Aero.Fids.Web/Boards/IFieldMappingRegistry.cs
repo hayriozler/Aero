@@ -1,5 +1,5 @@
 using Aero.Fids.Infrastructure.Persistence;
-using Aero.Shared.Application.Tenancy;
+using Aero.Shared.Application.Managers;
 using Aero.Shared.Domain;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Concurrent;
@@ -12,7 +12,7 @@ public interface IFieldMappingRegistry
     void Invalidate(string tenantId);
 }
 
-internal sealed class FieldMappingRegistry(IFidsDbContextFactory dbFactory, IInterfaceSettingsService interfaceSettings) : IFieldMappingRegistry
+internal sealed class FieldMappingRegistry(IFidsDbContextFactory dbFactory, IInterfaceSettingsManager interfaceSettings) : IFieldMappingRegistry
 {
     private readonly ConcurrentDictionary<string, Task<FlightFieldMapper>> _byTenant = new(StringComparer.OrdinalIgnoreCase);
 

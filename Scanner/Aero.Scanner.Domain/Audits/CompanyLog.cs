@@ -2,5 +2,5 @@
 
 namespace Aero.Scanner.Domain.Audits;
 
-public sealed class CompanyLog : AuditLogBase { }
+public sealed record CompanyLog : AuditLogBase { }
 

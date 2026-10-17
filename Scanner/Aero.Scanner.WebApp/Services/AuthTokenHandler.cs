@@ -1,5 +1,5 @@
-using Aero.Scanner.Shared.Dtos;
-using Aero.Scanner.Shared.Requests;
+using Aero.Shared.Contracts.Dtos;
+using Aero.Shared.Contracts.Requests;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using System.IdentityModel.Tokens.Jwt;

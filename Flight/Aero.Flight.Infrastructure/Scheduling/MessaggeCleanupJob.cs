@@ -1,5 +1,6 @@
-using Aero.Flights.Application.Tenancy;
 using Aero.Flights.Infrastructure.Persistence;
+using Aero.Shared.Application.Tenancy;
+using Aero.Shared.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -7,7 +8,6 @@ using Quartz;
 
 namespace Aero.Flights.Infrastructure.Scheduling;
 
-// Prunes published outbox / processed inbox rows older than the retention window, per tenant.
 [DisallowConcurrentExecution]
 internal sealed class MessaggeCleanupJob(
     IServiceScopeFactory scopeFactory, ITenantStore tenantStore, TimeProvider clock,

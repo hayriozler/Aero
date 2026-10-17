@@ -17,7 +17,7 @@ public static class FidsFlightFields
     public const string TerminalCode = "TerminalCode";
     public const string RouteAirportCode = "RouteAirportCode";
 
-    public const string TenantTimeZone = "TenantTimeZone";
+    public const string TimeZoneManager = "TimeZoneManager";
 
     public const string Gates = "Gates";
     public const string GateStatuses = "GateStatuses";
@@ -32,7 +32,7 @@ public static class FidsFlightFields
     public static readonly IReadOnlyList<string> All =
     [
         FlightId, FlightType, DesignatorAirlineCodes, DesignatorFlightNumbers, FlightDate, Status,
-        ScheduledTime, EstimatedTime, TerminalCode, RouteAirportCode, TenantTimeZone,
+        ScheduledTime, EstimatedTime, TerminalCode, RouteAirportCode, TimeZoneManager,
         Gates, GateStatuses, Belts, BeltStatuses, Counters, CounterStatuses, CounterDisplayCodes, Spots, SpotStatuses,
     ];
 

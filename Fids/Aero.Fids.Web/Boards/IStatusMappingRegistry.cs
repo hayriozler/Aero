@@ -1,5 +1,5 @@
 using Aero.Fids.Infrastructure.Persistence;
-using Aero.Shared.Application.Tenancy;
+using Aero.Shared.Application.Managers;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Concurrent;
 
@@ -11,7 +11,7 @@ public interface IStatusMappingRegistry
     void Invalidate(string tenantId);
 }
 
-internal sealed class StatusMappingRegistry(IFidsDbContextFactory dbFactory, IInterfaceSettingsService interfaceSettings) : IStatusMappingRegistry
+internal sealed class StatusMappingRegistry(IFidsDbContextFactory dbFactory, IInterfaceSettingsManager interfaceSettings) : IStatusMappingRegistry
 {
     private readonly ConcurrentDictionary<string, Task<StatusMapper>> _byTenant = new(StringComparer.OrdinalIgnoreCase);
 

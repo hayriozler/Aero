@@ -10,15 +10,14 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectMetadata Include="..\AeroFlight.Application\AeroFlight.Application.csproj" />
     <ProjectMetadata Include="..\AeroFlight.Contracts\AeroFlight.Contracts.csproj" />
     <ProjectMetadata Include="..\AeroFlight.Domain\AeroFlight.Domain.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\Shared\Aero.Shared.Application\Aero.Shared.Application.csproj" />
+    <ProjectReference Include="..\..\Shared\Aero.Shared.Domain\Aero.Shared.Domain.csproj" />
     <ProjectReference Include="..\..\Shared\Aero.Shared.Infrastructure\Aero.Shared.Infrastructure.csproj" />
-    <ProjectReference Include="..\Aero.Flight.Application\Aero.Flights.Application.csproj" />
   </ItemGroup>
 
 </Project>

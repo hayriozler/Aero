@@ -1,7 +1,5 @@
 @page "/users"
 @using System.Text.Json
-@using Aero.Scanner.Shared.Consts
-@using Aero.Scanner.Shared.Requests
 @using Aero.Scanner.WebApp.Resources
 @attribute [Authorize(Roles = SystemDefinedRoles.RamSupervisor+","+SystemDefinedRoles.Admin)]
 @inject UserApiClient Api

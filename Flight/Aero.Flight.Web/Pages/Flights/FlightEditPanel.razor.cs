@@ -67,9 +67,9 @@ public partial class FlightEditPanel : IAsyncDisposable
 
     private MudForm _form = null!;
     private readonly DetailEditModel _model = new();
-    private TimeZoneInfo _tenantTimeZone = TimeZoneInfo.Utc;
-    private string _dateFormat = TenantDateTimeFormat.DefaultDateFormat;
-    private string _timeFormat = TenantDateTimeFormat.DefaultTimeFormat;
+    private TimeZoneInfo _timeZoneManager = TimeZoneInfo.Utc;
+    private string _dateFormat = DateTimeFormatter.DefaultDateFormat;
+    private string _timeFormat = DateTimeFormatter.DefaultTimeFormat;
 
     private bool _isArrival;
     private bool _loading = true;
@@ -129,9 +129,9 @@ public partial class FlightEditPanel : IAsyncDisposable
         if (AuthState is not null)
         {
             var state = await AuthState;
-            _tenantTimeZone = TenantTimeZone.Resolve(state.User);
-            _dateFormat = TenantDateTimeFormat.ResolveDateFormat(state.User);
-            _timeFormat = TenantDateTimeFormat.ResolveTimeFormat(state.User);
+            _timeZoneManager = TimeZoneManager.Resolve(state.User);
+            _dateFormat = DateTimeFormatter.ResolveDateFormat(state.User);
+            _timeFormat = DateTimeFormatter.ResolveTimeFormat(state.User);
         }
 
         _isArrival = string.Equals(Direction, "arrival", StringComparison.OrdinalIgnoreCase);

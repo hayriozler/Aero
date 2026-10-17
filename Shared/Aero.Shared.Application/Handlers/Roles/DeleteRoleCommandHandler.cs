@@ -1,4 +1,3 @@
-using Aero.Flights.Application.Common;
 using Aero.Shared.Application.Commands.Roles;
 using Aero.Shared.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -11,10 +10,10 @@ public sealed class DeleteRoleCommandHandler(IDataStoreContext db) : ICommandHan
 {
     public async Task<DeleteRoleResult> HandleAsync(DeleteRoleCommand command, CancellationToken ct)
     {
-        var role = await db.RoleSet.FirstOrDefaultAsync(r => r.Id == command.Id, ct);
+        var role = await db.RoleSet.FirstOrDefaultAsync(r => r.Id == command.Name, ct);
         if (role is null) return DeleteRoleResult.NotFound;
 
-        if (string.Equals(role.Name, "Admin", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(role.Id, "Admin", StringComparison.OrdinalIgnoreCase))
             return DeleteRoleResult.Protected;
 
         db.RoleSet.Remove(role);

@@ -1,6 +1,6 @@
 ﻿namespace Aero.Shared.Domain;
 
-public abstract class AuditLogBase
+public abstract record AuditLogBase
 {
     public long Id { get; set; }
     public string PrimaryKey { get; set; } = string.Empty;

@@ -12,7 +12,7 @@ public abstract record FlightChanged(
     string FlightType,
     DateTimeOffset OccurredAt,
     string ChangedBy,
-    string TenantTimeZone,
+    string TimeZoneManager,
     JsonElement Flight,
     IReadOnlyDictionary<string, ChangedField> Changes,
     IReadOnlyList<ResourceChanged>? GatesResources = null,
@@ -26,7 +26,7 @@ public sealed record ArrivalFlightChanged(
     string EventType,
     DateTimeOffset OccurredAt,
     string ChangedBy,
-    string TenantTimeZone,
+    string TimeZoneManager,
     JsonElement Flight,
     IReadOnlyDictionary<string, ChangedField> Changes,
     IReadOnlyList<ResourceChanged>? GatesResources = null,
@@ -34,14 +34,14 @@ public sealed record ArrivalFlightChanged(
     IReadOnlyList<ResourceChanged>? ParkPositionsResources = null,
     IReadOnlyList<ResourceChanged>? RoutingsResources = null,
     IReadOnlyList<ResourceChanged>? PassengersResources = null)
-    : FlightChanged(EventId, EventType, "Arrival", OccurredAt, ChangedBy, TenantTimeZone, Flight, Changes, GatesResources, BeltsResources, ParkPositionsResources, RoutingsResources, PassengersResources);
+    : FlightChanged(EventId, EventType, "Arrival", OccurredAt, ChangedBy, TimeZoneManager, Flight, Changes, GatesResources, BeltsResources, ParkPositionsResources, RoutingsResources, PassengersResources);
 
 public sealed record DepartureFlightChanged(
     Guid EventId,
     string EventType,
     DateTimeOffset OccurredAt,
     string ChangedBy,
-    string TenantTimeZone,
+    string TimeZoneManager,
     JsonElement Flight,
     IReadOnlyDictionary<string, ChangedField> Changes,
     IReadOnlyList<ResourceChanged>? GatesResources = null,
@@ -50,4 +50,4 @@ public sealed record DepartureFlightChanged(
     IReadOnlyList<ResourceChanged>? RoutingsResources = null,
     IReadOnlyList<ResourceChanged>? CountersResources = null,
     IReadOnlyList<ResourceChanged>? PassengersResources = null)
-    : FlightChanged(EventId, EventType, "Departure", OccurredAt, ChangedBy, TenantTimeZone, Flight, Changes, GatesResources, BeltsResources, ParkPositionsResources, RoutingsResources, PassengersResources);
+    : FlightChanged(EventId, EventType, "Departure", OccurredAt, ChangedBy, TimeZoneManager, Flight, Changes, GatesResources, BeltsResources, ParkPositionsResources, RoutingsResources, PassengersResources);

@@ -1,4 +1,7 @@
-﻿using Aero.Shared.Domain.Identity;
+﻿using Aero.Shared.Application;
+using Aero.Shared.Application.Queries.Users;
+using Aero.Shared.Contracts.Responses;
+using Aero.Shared.Domain.Identity;
 using FluentValidation;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -107,5 +110,6 @@ public static class UserEndpoints
         return app;
     }
 }
+
 
 

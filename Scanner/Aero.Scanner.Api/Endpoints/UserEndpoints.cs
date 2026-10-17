@@ -68,7 +68,7 @@ public static class UserEndpoints
         var query = db.UserSet
             .AsNoTracking()
             .Include(u => u.Company)
-            .Include(u => u.UserRoles).ThenInclude(ur => ur.Role)
+            .Include(u => u.Roles).ThenInclude(ur => ur.Role)
             .AsQueryable();
 
         if (!isAirport)
@@ -90,7 +90,7 @@ public static class UserEndpoints
         var user = await db.UserSet
             .AsNoTracking()
             .Include(u => u.Company)
-            .Include(u => u.UserRoles).ThenInclude(ur => ur.Role)
+            .Include(u => u.Roles).ThenInclude(ur => ur.Role)
             .FirstOrDefaultAsync(u => u.Id == id, ct);
 
         if (user is null) return TypedResults.NotFound();
@@ -133,7 +133,7 @@ public static class UserEndpoints
 
         var created = await db.UserSet
             .Include(u => u.Company)
-            .Include(u => u.UserRoles).ThenInclude(ur => ur.Role)
+            .Include(u => u.Roles).ThenInclude(ur => ur.Role)
             .FirstAsync(u => u.Id == user.Id, ct);
 
         return TypedResults.Created($"/api/users/{user.Id}", ToDto(created));
@@ -149,7 +149,7 @@ public static class UserEndpoints
 
         var user = await db.UserSet
             .Include(u => u.Company)
-            .Include(u => u.UserRoles).ThenInclude(ur => ur.Role)
+            .Include(u => u.Roles).ThenInclude(ur => ur.Role)
             .FirstOrDefaultAsync(u => u.Id == id, ct);
 
         if (user is null) return TypedResults.NotFound();
@@ -161,7 +161,7 @@ public static class UserEndpoints
         user.UpdateDetails(request.DisplayName);
 
         // Replace roles
-        foreach (var ur in user.UserRoles.ToList())
+        foreach (var ur in user.Roles.ToList())
             user.RemoveRole(ur.RoleName);
         foreach (var roleName in request.RoleNames.Distinct())
         {
@@ -212,7 +212,7 @@ public static class UserEndpoints
         u.Id,
         u.Username,
         u.DisplayName,
-        [.. u.UserRoles.Where(ur => ur.Role is not null).Select(ur => ur.Role.Name)],
+        [.. u.Roles.Where(ur => ur.Role is not null).Select(ur => ur.Role.Name)],
         u.Company?.Code ?? string.Empty,
         u.Company?.Name ?? string.Empty,
         u.Company?.Type.ToString() ?? string.Empty,

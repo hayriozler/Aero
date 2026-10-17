@@ -10,8 +10,6 @@ public sealed record MetadataUpdateCommand<TEntity, TRequest>(string Id, TReques
 
 public sealed record MetadataDeleteCommand<TEntity>(string Id);
 
-public sealed record MetadataAuditQuery<TEntity>(string Id);
-
 public enum MetadataDeleteOutcome
 {
     Deleted,

@@ -2,11 +2,10 @@
 
 namespace Aero.Shared.Domain.Identity;
 
-public sealed class Role : AuditBase<int>
+public sealed class Role : AuditBase<string>
 {
     private readonly List<UserRole> _userRoles = [];
 
-    public string Name { get; private set; } = string.Empty;
     public string? Description { get; private set; }
 
     public IReadOnlyCollection<UserRole> UserRoles => _userRoles;
@@ -15,7 +14,7 @@ public sealed class Role : AuditBase<int>
 
     private Role(string name, string? description)
     {
-        Name = name;
+        SetId(name);
         Description = description;
     }
 
@@ -23,7 +22,7 @@ public sealed class Role : AuditBase<int>
 
     public void Update(string name, string? description)
     {
-        Name = name;
+        SetId(name);
         Description = description;
     }
 }

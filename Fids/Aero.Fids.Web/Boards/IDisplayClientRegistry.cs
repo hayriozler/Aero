@@ -1,6 +1,6 @@
 using Aero.Fids.Infrastructure.Boards;
 using Aero.Fids.Infrastructure.Persistence;
-using Aero.Shared.Application.Tenancy;
+using Aero.Shared.Application.Managers;
 using Aero.Shared.Domain;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Concurrent;
@@ -13,7 +13,7 @@ public interface IDisplayClientRegistry
     void Invalidate(string tenantId);
 }
 
-internal sealed class DisplayClientRegistry(IFidsDbContextFactory dbFactory, IInterfaceSettingsService interfaceSettings) : IDisplayClientRegistry
+internal sealed class DisplayClientRegistry(IFidsDbContextFactory dbFactory, IInterfaceSettingsManager interfaceSettings) : IDisplayClientRegistry
 {
     private readonly ConcurrentDictionary<string, Task<IReadOnlyList<DisplayClient>>> _byTenant = new(StringComparer.OrdinalIgnoreCase);
 

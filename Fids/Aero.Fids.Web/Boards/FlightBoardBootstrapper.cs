@@ -1,5 +1,5 @@
 using Aero.Fids.Infrastructure.Flights;
-using Aero.Shared.Application.Tenancy;
+using Aero.Shared.Application.Managers;
 using System.Collections.Concurrent;
 using System.Net.Http.Headers;
 
@@ -7,7 +7,7 @@ namespace Aero.Fids.Web.Boards;
 
 internal sealed class FlightBoardBootstrapper(
     HttpClient http, IFlightBoardStore store, IStatusMappingRegistry statusMappings,
-    IClientAppService clientApps, TimeProvider clock, ILogger<FlightBoardBootstrapper> logger)
+    IClientAppManager clientApps, TimeProvider clock, ILogger<FlightBoardBootstrapper> logger)
     : IFlightBoardBootstrapper
 {
     private const string _clientId = "Aero.Fids";
@@ -130,7 +130,7 @@ internal sealed class FlightBoardBootstrapper(
         }
     }
 
-    private static FidsFlight? ToFidsFlight(MergedFlightRow row, string flightType, string tenantTimeZone, StatusMapper statusMapper)
+    private static FidsFlight? ToFidsFlight(MergedFlightRow row, string flightType, string TimeZoneManager, StatusMapper statusMapper)
     {
         var isArrival = flightType == FlightTypes.Arrival;
         var id = isArrival ? row.ArrivalId : row.DepartureId;
@@ -155,9 +155,9 @@ internal sealed class FlightBoardBootstrapper(
             row.FlightDate,
             statusMapper.MapFlightStatus(status, flightType),
             scheduledTime ?? DateTimeOffset.UtcNow,
-            TenantLocalTime.Format(scheduledTime ?? DateTimeOffset.UtcNow, tenantTimeZone),
+            TenantLocalTime.Format(scheduledTime ?? DateTimeOffset.UtcNow, TimeZoneManager),
             estimatedTime,
-            TenantLocalTime.FormatOrNull(estimatedTime, tenantTimeZone),
+            TenantLocalTime.FormatOrNull(estimatedTime, TimeZoneManager),
             terminalCode,
             routeAirportCode ?? "",
             [

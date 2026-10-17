@@ -99,9 +99,9 @@
     private int _defaultDurationMinutes = Aero.Flights.Contracts.Flights.ResourceDefaultsConstants.FallbackDurationMinutes;
     private bool _loading;
     private string? _loadedRoute;
-    private TimeZoneInfo _tenantTimeZone = TimeZoneInfo.Utc;
-    private string _dateFormat = TenantDateTimeFormat.DefaultDateFormat;
-    private string _timeFormat = TenantDateTimeFormat.DefaultTimeFormat;
+    private TimeZoneInfo _TimeZoneManager = TimeZoneInfo.Utc;
+    private string _dateFormat = DateTimeFormatter.DefaultDateFormat;
+    private string _timeFormat = DateTimeFormatter.DefaultTimeFormat;
     private string _gridDateFormat = "dd.MM";
 
     private IReadOnlyList<FlightResourceCodeOption> CodeOptions => _codeOptions;
@@ -111,9 +111,9 @@
         if (AuthState is not null)
         {
             var state = await AuthState;
-            _tenantTimeZone = TenantTimeZone.Resolve(state.User);
-            _dateFormat = TenantDateTimeFormat.ResolveDateFormat(state.User);
-            _timeFormat = TenantDateTimeFormat.ResolveTimeFormat(state.User);
+            _TimeZoneManager = TimeZoneManager.Resolve(state.User);
+            _dateFormat = DateTimeFormatter.ResolveDateFormat(state.User);
+            _timeFormat = DateTimeFormatter.ResolveTimeFormat(state.User);
         }
 
         if (string.IsNullOrWhiteSpace(RouteBase) || RouteBase == _loadedRoute)
@@ -289,15 +289,15 @@
     // timestamp itself.
     private Task StampActualBeginNowAsync(OpsParkPositionResponse item)
     {
-        var nowLocal = TenantTimeZone.ToLocal(DateTimeOffset.UtcNow, _tenantTimeZone);
-        var beginActual = TenantTimeZone.ToUtcOffset(nowLocal.Date + nowLocal.TimeOfDay, _tenantTimeZone);
+        var nowLocal = TimeZoneManager.ToLocal(DateTimeOffset.UtcNow, _TimeZoneManager);
+        var beginActual = TimeZoneManager.ToUtcOffset(nowLocal.Date + nowLocal.TimeOfDay, _TimeZoneManager);
         return UpdateAsync(item, code: item.Code, beginPlan: item.BeginPlan, endPlan: item.EndPlan, beginActual: beginActual, endActual: item.EndActual);
     }
 
     private Task StampActualEndNowAsync(OpsParkPositionResponse item)
     {
-        var nowLocal = TenantTimeZone.ToLocal(DateTimeOffset.UtcNow, _tenantTimeZone);
-        var endActual = TenantTimeZone.ToUtcOffset(nowLocal.Date + nowLocal.TimeOfDay, _tenantTimeZone);
+        var nowLocal = TimeZoneManager.ToLocal(DateTimeOffset.UtcNow, _TimeZoneManager);
+        var endActual = TimeZoneManager.ToUtcOffset(nowLocal.Date + nowLocal.TimeOfDay, _TimeZoneManager);
         return UpdateAsync(item, code: item.Code, beginPlan: item.BeginPlan, endPlan: item.EndPlan, beginActual: item.BeginActual, endActual: endActual);
     }
 
@@ -326,8 +326,8 @@
         if (newDate is not { } date)
             return null;
 
-        var time = existing is { } e ? TenantTimeZone.ToLocal(e, _tenantTimeZone).TimeOfDay : TimeSpan.Zero;
-        return TenantTimeZone.ToUtcOffset(date.Date + time, _tenantTimeZone);
+        var time = existing is { } e ? TimeZoneManager.ToLocal(e, _TimeZoneManager).TimeOfDay : TimeSpan.Zero;
+        return TimeZoneManager.ToUtcOffset(date.Date + time, _TimeZoneManager);
     }
 
     private DateTimeOffset? CombineTime(DateTimeOffset? existing, TimeSpan? newTime)
@@ -335,15 +335,15 @@
         if (newTime is not { } time)
             return null;
 
-        var date = existing is { } e ? TenantTimeZone.ToLocal(e, _tenantTimeZone).Date : DateTime.Today;
-        return TenantTimeZone.ToUtcOffset(date + time, _tenantTimeZone);
+        var date = existing is { } e ? TimeZoneManager.ToLocal(e, _TimeZoneManager).Date : DateTime.Today;
+        return TimeZoneManager.ToUtcOffset(date + time, _TimeZoneManager);
     }
 
     private DateTime? ToLocalDate(DateTimeOffset? value) =>
-        value is { } v ? TenantTimeZone.ToLocal(v, _tenantTimeZone).Date : null;
+        value is { } v ? TimeZoneManager.ToLocal(v, _TimeZoneManager).Date : null;
 
     private TimeSpan? ToLocalTime(DateTimeOffset? value) =>
-        value is { } v ? TenantTimeZone.ToLocal(v, _tenantTimeZone).TimeOfDay : null;
+        value is { } v ? TimeZoneManager.ToLocal(v, _TimeZoneManager).TimeOfDay : null;
 
     private async Task DeleteAsync(OpsParkPositionResponse existing)
     {
@@ -367,5 +367,5 @@
     private static string? Blank(string? value) => string.IsNullOrWhiteSpace(value) ? null : value;
 
     private string FormatDateTime(DateTimeOffset? value) =>
-        value is { } v ? TenantTimeZone.ToLocal(v, _tenantTimeZone).ToString($"{_dateFormat} {_timeFormat}") : "—";
+        value is { } v ? TimeZoneManager.ToLocal(v, _TimeZoneManager).ToString($"{_dateFormat} {_timeFormat}") : "—";
 }

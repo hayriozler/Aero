@@ -1,14 +1,14 @@
 using Aero.Flights.Application.Common;
-using Aero.Flights.Application.Interfaces;
 using Aero.Flights.Application.Metadatas;
-using Aero.Flights.Contracts.Metadatas;
-using Aero.Flights.Domain.Common;
+using Aero.Shared.Contracts.Responses;
+using Aero.Shared.Domain;
+using Aero.Shared.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 
 namespace Aero.Flights.Application.Flights.Queries;
 
-public sealed class FlightAuditQueryHandler<TEntity, TLog>(IAeroFlightDbContext db)
+public sealed class FlightAuditQueryHandler<TEntity, TLog>(IDataStoreContext db)
     : IQueryHandler<MetadataAuditQuery<TEntity>, IReadOnlyList<AuditEntryResponse>>
     where TLog : AuditLogBase
 {

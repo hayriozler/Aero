@@ -125,16 +125,16 @@
     private Dictionary<string, string> _airportLabels = [];
     private Dictionary<string, string> _aircraftTypeLabels = [];
     private Dictionary<string, string> _aircraftLabels = [];
-    private TimeZoneInfo _tenantTimeZone = TimeZoneInfo.Utc;
-    private string _dateFormat = TenantDateTimeFormat.DefaultDateFormat;
+    private TimeZoneInfo _timeZoneManager = TimeZoneInfo.Utc;
+    private string _dateFormat = DateTimeFormatter.DefaultDateFormat;
 
     protected override async Task OnInitializedAsync()
     {
         if (AuthState is not null)
         {
             var state = await AuthState;
-            _tenantTimeZone = TenantTimeZone.Resolve(state.User);
-            _dateFormat = TenantDateTimeFormat.ResolveDateFormat(state.User);
+            _timeZoneManager = TimeZoneManager.Resolve(state.User);
+            _dateFormat = DateTimeFormatter.ResolveDateFormat(state.User);
         }
         try
         {
@@ -288,7 +288,7 @@
 
         var localDate = _model.ScheduledDate ?? DateTime.Today;
         var localTime = _model.ScheduledTime ?? TimeSpan.Zero;
-        var scheduled = TenantTimeZone.ToUtcOffset(localDate.Date + localTime, _tenantTimeZone);
+        var scheduled = TimeZoneManager.ToUtcOffset(localDate.Date + localTime, _timeZoneManager);
         var aircraftType = string.IsNullOrWhiteSpace(_model.AircraftType) ? null : _model.AircraftType;
         var registration = string.IsNullOrWhiteSpace(_model.Registration) ? null : _model.Registration;
 

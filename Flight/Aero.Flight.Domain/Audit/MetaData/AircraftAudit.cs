@@ -2,4 +2,4 @@ using Aero.Shared.Domain;
 
 namespace Aero.Flights.Domain.Audit.MetaData;
 
-public sealed class AircraftAudit : AuditLogBase { }
+public record class AircraftAudit : AuditLogBase { }

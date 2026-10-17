@@ -280,9 +280,9 @@
     private DateTime? _fromDate = DateTime.Today;
     private DateTime? _toDate = DateTime.Today.AddDays(1);
     private IReadOnlyCollection<string> _selectedStatuses = [_allOption];
-    private TimeZoneInfo _tenantTimeZone = TimeZoneInfo.Utc;
-    private string _dateFormat = TenantDateTimeFormat.DefaultDateFormat;
-    private string _timeFormat = TenantDateTimeFormat.DefaultTimeFormat;
+    private TimeZoneInfo _TimeZoneManager = TimeZoneInfo.Utc;
+    private string _dateFormat = DateTimeFormatter.DefaultDateFormat;
+    private string _timeFormat = DateTimeFormatter.DefaultTimeFormat;
     private string _gridDateFormat = "dd.MM";
     private List<MetadataOption> _terminals = [];
     private List<MetadataOption> _countryTypes = [];
@@ -314,9 +314,9 @@
         if (AuthState is not null)
         {
             var state = await AuthState;
-            _tenantTimeZone = TenantTimeZone.Resolve(state.User);
-            _dateFormat = TenantDateTimeFormat.ResolveDateFormat(state.User);
-            _timeFormat = TenantDateTimeFormat.ResolveTimeFormat(state.User);
+            _TimeZoneManager = TimeZoneManager.Resolve(state.User);
+            _dateFormat = DateTimeFormatter.ResolveDateFormat(state.User);
+            _timeFormat = DateTimeFormatter.ResolveTimeFormat(state.User);
         }
 
         await LoadGridDateFormatAsync();
@@ -623,12 +623,12 @@
     }
 
     private string FormatLocal(DateTimeOffset? scheduled) =>
-        scheduled is { } value ? TenantTimeZone.ToLocal(value, _tenantTimeZone).ToString($"{_dateFormat} {_timeFormat}") : "—";
+        scheduled is { } value ? TimeZoneManager.ToLocal(value, _TimeZoneManager).ToString($"{_dateFormat} {_timeFormat}") : "—";
 
     // STA/STD specifically drop the year — the configured Resources.Grid.DateFormat (day.month,
     // same setting the resource grids use), not the full Display.DateFormat.
     private string FormatLocalShort(DateTimeOffset? scheduled) =>
-        scheduled is { } value ? TenantTimeZone.ToLocal(value, _tenantTimeZone).ToString($"{_gridDateFormat} {_timeFormat}") : "—";
+        scheduled is { } value ? TimeZoneManager.ToLocal(value, _TimeZoneManager).ToString($"{_gridDateFormat} {_timeFormat}") : "—";
 
     private Color StatusColor(string status) => FlightStatusColors.Resolve(_statusColors, status.ToUpperInvariant());
 

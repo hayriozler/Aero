@@ -1,3 +1,3 @@
-namespace Aero.Flights.Application.Common;
+namespace Aero.Shared.Application;
 
 public sealed record PagedResult<T>(IReadOnlyList<T> Items, int Page, int PageSize, int TotalCount);

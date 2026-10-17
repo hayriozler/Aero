@@ -145,8 +145,8 @@
     private bool _loading;
     private string? _loadedRoute;
     private string? _bulkStatusCode;
-    private TimeZoneInfo _tenantTimeZone = TimeZoneInfo.Utc;
-    private string _dateFormat = TenantDateTimeFormat.DefaultDateFormat;
+    private TimeZoneInfo _timeZoneManager = TimeZoneInfo.Utc;
+    private string _dateFormat = DateTimeFormatter.DefaultDateFormat;
     private string _gridDateFormat = "dd.MM";
 
     private IReadOnlyList<FlightResourceCodeOption> CodeOptions => _codeOptions;
@@ -158,8 +158,8 @@
         if (AuthState is not null)
         {
             var state = await AuthState;
-            _tenantTimeZone = TenantTimeZone.Resolve(state.User);
-            _dateFormat = TenantDateTimeFormat.ResolveDateFormat(state.User);
+            _timeZoneManager = TimeZoneManager.Resolve(state.User);
+            _dateFormat = DateTimeFormatter.ResolveDateFormat(state.User);
         }
 
         if (string.IsNullOrWhiteSpace(RouteBase) || RouteBase == _loadedRoute)
@@ -398,8 +398,8 @@
 
     private DateTimeOffset NowStamp()
     {
-        var nowLocal = TenantTimeZone.ToLocal(DateTimeOffset.UtcNow, _tenantTimeZone);
-        return TenantTimeZone.ToUtcOffset(nowLocal.Date + nowLocal.TimeOfDay, _tenantTimeZone);
+        var nowLocal = TimeZoneManager.ToLocal(DateTimeOffset.UtcNow, _timeZoneManager);
+        return TimeZoneManager.ToUtcOffset(nowLocal.Date + nowLocal.TimeOfDay, _timeZoneManager);
     }
 
     // item carries PayerCompanyCode/IsComplimentary through unchanged — none of the per-field
@@ -424,8 +424,8 @@
         if (newDate is not { } date)
             return null;
 
-        var time = existing is { } e ? TenantTimeZone.ToLocal(e, _tenantTimeZone).TimeOfDay : TimeSpan.Zero;
-        return TenantTimeZone.ToUtcOffset(date.Date + time, _tenantTimeZone);
+        var time = existing is { } e ? TimeZoneManager.ToLocal(e, _timeZoneManager).TimeOfDay : TimeSpan.Zero;
+        return TimeZoneManager.ToUtcOffset(date.Date + time, _timeZoneManager);
     }
 
     private DateTimeOffset? CombineTime(DateTimeOffset? existing, TimeSpan? newTime)
@@ -433,15 +433,15 @@
         if (newTime is not { } time)
             return null;
 
-        var date = existing is { } e ? TenantTimeZone.ToLocal(e, _tenantTimeZone).Date : DateTime.Today;
-        return TenantTimeZone.ToUtcOffset(date + time, _tenantTimeZone);
+        var date = existing is { } e ? TimeZoneManager.ToLocal(e, _timeZoneManager).Date : DateTime.Today;
+        return TimeZoneManager.ToUtcOffset(date + time, _timeZoneManager);
     }
 
     private DateTime? ToLocalDate(DateTimeOffset? value) =>
-        value is { } v ? TenantTimeZone.ToLocal(v, _tenantTimeZone).Date : null;
+        value is { } v ? TimeZoneManager.ToLocal(v, _timeZoneManager).Date : null;
 
     private TimeSpan? ToLocalTime(DateTimeOffset? value) =>
-        value is { } v ? TenantTimeZone.ToLocal(v, _tenantTimeZone).TimeOfDay : null;
+        value is { } v ? TimeZoneManager.ToLocal(v, _timeZoneManager).TimeOfDay : null;
 
     private async Task DeleteAsync(FlightResourceResponse existing)
     {

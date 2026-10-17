@@ -111,9 +111,9 @@
     ];
 
     private DateTime? _date = DateTime.Today;
-    private TimeZoneInfo _tenantTimeZone = TimeZoneInfo.Utc;
-    private string _dateFormat = TenantDateTimeFormat.DefaultDateFormat;
-    private string _timeFormat = TenantDateTimeFormat.DefaultTimeFormat;
+    private TimeZoneInfo _timeZoneManager = TimeZoneInfo.Utc;
+    private string _dateFormat = DateTimeFormatter.DefaultDateFormat;
+    private string _timeFormat = DateTimeFormatter.DefaultTimeFormat;
     private bool _loading;
     private OpsOverview _overview = new(0, 0, 0, [], [], []);
     private int[] _hourlyLoad = new int[24];
@@ -125,9 +125,9 @@
         if (AuthState is not null)
         {
             var state = await AuthState;
-            _tenantTimeZone = TenantTimeZone.Resolve(state.User);
-            _dateFormat = TenantDateTimeFormat.ResolveDateFormat(state.User);
-            _timeFormat = TenantDateTimeFormat.ResolveTimeFormat(state.User);
+            _timeZoneManager = TimeZoneManager.Resolve(state.User);
+            _dateFormat = DateTimeFormatter.ResolveDateFormat(state.User);
+            _timeFormat = DateTimeFormatter.ResolveTimeFormat(state.User);
         }
 
         await LoadAsync();
@@ -151,7 +151,7 @@
             _hourlyLoad = new int[24];
             foreach (var m in _overview.MovementTimes)
             {
-                var localHour = TenantTimeZone.ToLocal(m.ScheduledTime, _tenantTimeZone).Hour;
+                var localHour = TimeZoneManager.ToLocal(m.ScheduledTime, _timeZoneManager).Hour;
                 _hourlyLoad[localHour]++;
             }
             _maxHourlyLoad = _hourlyLoad.Length == 0 ? 0 : _hourlyLoad.Max();
@@ -180,7 +180,7 @@
     }
 
     private string FormatLocal(DateTimeOffset value) =>
-        TenantTimeZone.ToLocal(value, _tenantTimeZone).ToString(_timeFormat);
+        TimeZoneManager.ToLocal(value, _timeZoneManager).ToString(_timeFormat);
 
     private sealed record ResourceTypeInfo(string Key, string Label, string Route);
     private sealed record UtilizationRow(string Label, int Occupied, int Total, int Pct);

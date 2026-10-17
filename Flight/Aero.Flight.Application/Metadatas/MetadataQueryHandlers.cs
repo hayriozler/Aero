@@ -1,11 +1,9 @@
-using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
-using Aero.Flights.Application.Common;
-using Aero.Flights.Application.Interfaces;
+using System.Linq.Expressions;
 namespace Aero.Flights.Application.Metadatas;
 
 public sealed class MetadataListQueryHandler<TEntity, TResponse>(
-    IAeroFlightDbContext db, IMetadataReader<TEntity, TResponse> reader)
+    AeroFlightDbContext db, IMetadataReader<TEntity, TResponse> reader)
     : IQueryHandler<MetadataListQuery<TEntity>, IReadOnlyList<TResponse>>
     where TEntity : class
 {
@@ -17,7 +15,7 @@ public sealed class MetadataListQueryHandler<TEntity, TResponse>(
 }
 
 public sealed class MetadataGetQueryHandler<TEntity, TResponse>(
-    IAeroFlightDbContext db, IMetadataReader<TEntity, TResponse> reader)
+    AeroFlightDbContext db, IMetadataReader<TEntity, TResponse> reader)
     : IQueryHandler<MetadataGetQuery<TEntity>, TResponse?>
     where TEntity : class
 {

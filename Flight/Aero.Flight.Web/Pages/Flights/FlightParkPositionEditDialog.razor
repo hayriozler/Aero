@@ -86,16 +86,16 @@
     private TimeSpan? _actualBeginTime;
     private DateTime? _actualEndDate;
     private TimeSpan? _actualEndTime;
-    private TimeZoneInfo _tenantTimeZone = TimeZoneInfo.Utc;
-    private string _dateFormat = TenantDateTimeFormat.DefaultDateFormat;
+    private TimeZoneInfo _timeZoneManager = TimeZoneInfo.Utc;
+    private string _dateFormat = DateTimeFormatter.DefaultDateFormat;
 
     protected override async Task OnInitializedAsync()
     {
         if (AuthState is not null)
         {
             var state = await AuthState;
-            _tenantTimeZone = TenantTimeZone.Resolve(state.User);
-            _dateFormat = TenantDateTimeFormat.ResolveDateFormat(state.User);
+            _timeZoneManager = TimeZoneManager.Resolve(state.User);
+            _dateFormat = DateTimeFormatter.ResolveDateFormat(state.User);
         }
 
         if (Existing is { } e)
@@ -103,30 +103,30 @@
             _model.Code = e.Code ?? "";
             _model.PayerCompanyCode = e.PayerCompanyCode ?? "";
 
-            var beginLocal = TenantTimeZone.ToLocal(e.BeginPlan, _tenantTimeZone);
+            var beginLocal = TimeZoneManager.ToLocal(e.BeginPlan, _timeZoneManager);
             _beginDate = beginLocal.Date;
             _beginTime = beginLocal.TimeOfDay;
 
-            var endLocal = TenantTimeZone.ToLocal(e.EndPlan, _tenantTimeZone);
+            var endLocal = TimeZoneManager.ToLocal(e.EndPlan, _timeZoneManager);
             _endDate = endLocal.Date;
             _endTime = endLocal.TimeOfDay;
 
             if (e.BeginActual is { } ba)
             {
-                var local = TenantTimeZone.ToLocal(ba, _tenantTimeZone);
+                var local = TimeZoneManager.ToLocal(ba, _timeZoneManager);
                 _actualBeginDate = local.Date;
                 _actualBeginTime = local.TimeOfDay;
             }
             if (e.EndActual is { } ea)
             {
-                var local = TenantTimeZone.ToLocal(ea, _tenantTimeZone);
+                var local = TimeZoneManager.ToLocal(ea, _timeZoneManager);
                 _actualEndDate = local.Date;
                 _actualEndTime = local.TimeOfDay;
             }
         }
         else
         {
-            var nowLocal = TenantTimeZone.ToLocal(DateTimeOffset.UtcNow, _tenantTimeZone);
+            var nowLocal = TimeZoneManager.ToLocal(DateTimeOffset.UtcNow, _timeZoneManager);
             var endLocal = nowLocal.AddMinutes(DefaultDurationMinutes);
             _beginDate = nowLocal.Date;
             _beginTime = nowLocal.TimeOfDay;
@@ -141,8 +141,8 @@
         if (!_form.IsValid || _beginDate is null || _endDate is null)
             return;
 
-        var beginPlan = TenantTimeZone.ToUtcOffset(_beginDate.Value.Date + (_beginTime ?? TimeSpan.Zero), _tenantTimeZone);
-        var endPlan = TenantTimeZone.ToUtcOffset(_endDate.Value.Date + (_endTime ?? TimeSpan.Zero), _tenantTimeZone);
+        var beginPlan = TimeZoneManager.ToUtcOffset(_beginDate.Value.Date + (_beginTime ?? TimeSpan.Zero), _timeZoneManager);
+        var endPlan = TimeZoneManager.ToUtcOffset(_endDate.Value.Date + (_endTime ?? TimeSpan.Zero), _timeZoneManager);
         var beginActual = Combine(_actualBeginDate, _actualBeginTime);
         var endActual = Combine(_actualEndDate, _actualEndTime);
 
@@ -182,14 +182,14 @@
     // have no status field, so there's nothing to nudge beyond the timestamp itself.
     private void StampActualBeginNow()
     {
-        var nowLocal = TenantTimeZone.ToLocal(DateTimeOffset.UtcNow, _tenantTimeZone);
+        var nowLocal = TimeZoneManager.ToLocal(DateTimeOffset.UtcNow, _timeZoneManager);
         _actualBeginDate = nowLocal.Date;
         _actualBeginTime = nowLocal.TimeOfDay;
     }
 
     private void StampActualEndNow()
     {
-        var nowLocal = TenantTimeZone.ToLocal(DateTimeOffset.UtcNow, _tenantTimeZone);
+        var nowLocal = TimeZoneManager.ToLocal(DateTimeOffset.UtcNow, _timeZoneManager);
         _actualEndDate = nowLocal.Date;
         _actualEndTime = nowLocal.TimeOfDay;
     }
@@ -209,7 +209,7 @@
     }
 
     private DateTimeOffset? Combine(DateTime? date, TimeSpan? time) =>
-        date is { } d ? TenantTimeZone.ToUtcOffset(d.Date + (time ?? TimeSpan.Zero), _tenantTimeZone) : null;
+        date is { } d ? TimeZoneManager.ToUtcOffset(d.Date + (time ?? TimeSpan.Zero), _timeZoneManager) : null;
 
     private static string? Blank(string? value) => string.IsNullOrWhiteSpace(value) ? null : value;
 

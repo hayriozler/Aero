@@ -1,4 +1,3 @@
-using Aero.Flights.Contracts.Identity;
 using Aero.Flights.Web.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -22,7 +21,7 @@ public static class AuthEndpoints
             {
                 new(ClaimTypes.Name, result.Username),
                 new(TenantClaimTypes.Tenant, form.TenantId),
-                new("tenantTimeZone", result.TimeZone),
+                new("TimeZoneManager", result.TimeZone),
                 new("tenantDateFormat", result.DateFormat),
                 new("tenantTimeFormat", result.TimeFormat),
                 new("api_token", result.Token),

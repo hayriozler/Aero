@@ -111,7 +111,7 @@ public partial class FlightEditPanel
         _model.FlightNumber = d.FlightNumber;
         _model.StatusCode = d.Status;
 
-        var local = TenantTimeZone.ToLocal(d.Sta, _tenantTimeZone);
+        var local = TimeZoneManager.ToLocal(d.Sta, _timeZoneManager);
         _model.ScheduledDate = local.Date;
         _model.ScheduledTime = local.TimeOfDay;
         _model.AirportCode = d.OriginAirportCode;
@@ -161,7 +161,7 @@ public partial class FlightEditPanel
         _model.FlightNumber = d.FlightNumber;
         _model.StatusCode = d.Status;
 
-        var local = TenantTimeZone.ToLocal(d.Std, _tenantTimeZone);
+        var local = TimeZoneManager.ToLocal(d.Std, _timeZoneManager);
         _model.ScheduledDate = local.Date;
         _model.ScheduledTime = local.TimeOfDay;
         _model.AirportCode = d.DestinationAirportCode;
@@ -212,7 +212,7 @@ public partial class FlightEditPanel
 
         var localDate = _model.ScheduledDate ?? DateTime.Today;
         var localTime = _model.ScheduledTime ?? TimeSpan.Zero;
-        var scheduled = TenantTimeZone.ToUtcOffset(localDate.Date + localTime, _tenantTimeZone);
+        var scheduled = TimeZoneManager.ToUtcOffset(localDate.Date + localTime, _timeZoneManager);
 
         _saving = true;
         try
@@ -415,7 +415,7 @@ public partial class FlightEditPanel
 
         var localDate = _model.ScheduledDate ?? DateTime.Today;
         var localTime = _model.ScheduledTime ?? TimeSpan.Zero;
-        var scheduled = TenantTimeZone.ToUtcOffset(localDate.Date + localTime, _tenantTimeZone);
+        var scheduled = TimeZoneManager.ToUtcOffset(localDate.Date + localTime, _timeZoneManager);
 
         var parameters = new DialogParameters<LinkFlightDialog>
         {
@@ -482,7 +482,7 @@ public partial class FlightEditPanel
         if (utc is not { } value)
             return (null, null);
 
-        var local = TenantTimeZone.ToLocal(value, _tenantTimeZone);
+        var local = TimeZoneManager.ToLocal(value, _timeZoneManager);
         return (local.Date, local.TimeOfDay);
     }
 
@@ -493,7 +493,7 @@ public partial class FlightEditPanel
         if (date is not { } d || time is not { } t)
             return null;
 
-        return TenantTimeZone.ToUtcOffset(d.Date + t, _tenantTimeZone);
+        return TimeZoneManager.ToUtcOffset(d.Date + t, _timeZoneManager);
     }
 
     private string CountryTypeLabel(string code)

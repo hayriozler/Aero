@@ -61,7 +61,7 @@ public sealed class FlightFieldMapper
         if (flightId is null || string.IsNullOrEmpty(flightType))
             return null;
 
-        var tenantTimeZone = GetString(root, FidsFlightFields.TenantTimeZone, flightType) ?? "UTC";
+        var TimeZoneManager = GetString(root, FidsFlightFields.TimeZoneManager, flightType) ?? "UTC";
         var scheduledTime = GetDateTimeOffset(root, FidsFlightFields.ScheduledTime, flightType) ?? DateTimeOffset.UtcNow;
         var estimatedTime = GetDateTimeOffset(root, FidsFlightFields.EstimatedTime, flightType);
         var status = statusMapper.MapFlightStatus(GetString(root, FidsFlightFields.Status, flightType), flightType);
@@ -73,9 +73,9 @@ public sealed class FlightFieldMapper
             GetDateOnly(root, FidsFlightFields.FlightDate, flightType) ?? DateOnly.FromDateTime(DateTime.UtcNow),
             status,
             scheduledTime,
-            TenantLocalTime.Format(scheduledTime, tenantTimeZone),
+            TenantLocalTime.Format(scheduledTime, TimeZoneManager),
             estimatedTime,
-            TenantLocalTime.FormatOrNull(estimatedTime, tenantTimeZone),
+            TenantLocalTime.FormatOrNull(estimatedTime, TimeZoneManager),
             GetString(root, FidsFlightFields.TerminalCode, flightType),
             GetString(root, FidsFlightFields.RouteAirportCode, flightType) ?? "",
             BuildResources(root, flightType, statusMapper));

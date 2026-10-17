@@ -85,9 +85,9 @@
 
     private string _selectedType = _resourceTypes[0].ApiType;
     private DateTime? _date = DateTime.Today;
-    private TimeZoneInfo _tenantTimeZone = TimeZoneInfo.Utc;
-    private string _dateFormat = TenantDateTimeFormat.DefaultDateFormat;
-    private string _timeFormat = TenantDateTimeFormat.DefaultTimeFormat;
+    private TimeZoneInfo _timeZoneManager = TimeZoneInfo.Utc;
+    private string _dateFormat = DateTimeFormatter.DefaultDateFormat;
+    private string _timeFormat = DateTimeFormatter.DefaultTimeFormat;
     private bool _loading;
     private bool _poolLoading;
     private bool _initialized;
@@ -105,9 +105,9 @@
         if (AuthState is not null)
         {
             var state = await AuthState;
-            _tenantTimeZone = TenantTimeZone.Resolve(state.User);
-            _dateFormat = TenantDateTimeFormat.ResolveDateFormat(state.User);
-            _timeFormat = TenantDateTimeFormat.ResolveTimeFormat(state.User);
+            _timeZoneManager = TimeZoneManager.Resolve(state.User);
+            _dateFormat = DateTimeFormatter.ResolveDateFormat(state.User);
+            _timeFormat = DateTimeFormatter.ResolveTimeFormat(state.User);
         }
 
         await LoadAsync();
@@ -258,7 +258,7 @@
             return;
         }
 
-        var beginPlan = TenantTimeZone.ToUtcOffset(localStart, _tenantTimeZone);
+        var beginPlan = TimeZoneManager.ToUtcOffset(localStart, _timeZoneManager);
         var endPlan = beginPlan.AddMinutes(_defaultDurationMinutes);
         var directionSegment = string.Equals(direction, "Arrival", StringComparison.OrdinalIgnoreCase) ? "arrivals" : "departures";
         var option = CurrentOption;
@@ -317,8 +317,8 @@
             return false;
         }
 
-        var beginPlan = TenantTimeZone.ToUtcOffset(localStart, _tenantTimeZone);
-        var endPlan = TenantTimeZone.ToUtcOffset(localEnd, _tenantTimeZone);
+        var beginPlan = TimeZoneManager.ToUtcOffset(localStart, _timeZoneManager);
+        var endPlan = TimeZoneManager.ToUtcOffset(localEnd, _timeZoneManager);
         var directionSegment = string.Equals(direction, "Arrival", StringComparison.OrdinalIgnoreCase) ? "arrivals" : "departures";
         var option = CurrentOption;
 
@@ -412,8 +412,8 @@
             return;
         }
 
-        var beginPlan = TenantTimeZone.ToUtcOffset(localStart, _tenantTimeZone);
-        var endPlan = TenantTimeZone.ToUtcOffset(localEnd, _tenantTimeZone);
+        var beginPlan = TimeZoneManager.ToUtcOffset(localStart, _timeZoneManager);
+        var endPlan = TimeZoneManager.ToUtcOffset(localEnd, _timeZoneManager);
         var directionSegment = string.Equals(direction, "Arrival", StringComparison.OrdinalIgnoreCase) ? "arrivals" : "departures";
         var option = CurrentOption;
 
@@ -451,14 +451,14 @@
     }
 
     private string ToLocalWallClock(DateTimeOffset value) =>
-        TenantTimeZone.ToLocal(value, _tenantTimeZone).ToString("yyyy-MM-ddTHH:mm:ss");
+        TimeZoneManager.ToLocal(value, _timeZoneManager).ToString("yyyy-MM-ddTHH:mm:ss");
 
     // vis-timeline's default initial window spans however wide the fed-in items are, which reads as
     // roughly hourly resolution — start on a 2-hour window instead so 5-minute ticks are visible
     // immediately; drag left/right within the chart (vis-timeline's native pan) to see more.
     private object BuildInitialWindowOptions()
     {
-        var nowLocal = TenantTimeZone.ToLocal(DateTimeOffset.UtcNow, _tenantTimeZone);
+        var nowLocal = TimeZoneManager.ToLocal(DateTimeOffset.UtcNow, _timeZoneManager);
         var selectedDay = _date is { } d ? DateOnly.FromDateTime(d) : DateOnly.FromDateTime(DateTime.Today);
         var start = selectedDay == DateOnly.FromDateTime(nowLocal.Date) ? nowLocal : selectedDay.ToDateTime(TimeOnly.MinValue);
 
@@ -471,10 +471,10 @@
 
 
     private string FormatLocal(DateTimeOffset value) =>
-        TenantTimeZone.ToLocal(value, _tenantTimeZone).ToString(_timeFormat);
+        TimeZoneManager.ToLocal(value, _timeZoneManager).ToString(_timeFormat);
 
     private string FormatFull(DateTimeOffset value) =>
-        TenantTimeZone.ToLocal(value, _tenantTimeZone).ToString($"{_dateFormat} {_timeFormat}");
+        TimeZoneManager.ToLocal(value, _timeZoneManager).ToString($"{_dateFormat} {_timeFormat}");
 
     private static string DirectionLetter(string direction) => direction.ToUpperInvariant() switch
     {

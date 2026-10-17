@@ -22,7 +22,7 @@ internal sealed partial class FieldMappingSeeder(FidsDbContext db, ILogger<Field
         (FidsFlightFields.TerminalCode, null, "flight.terminalCode"),
         (FidsFlightFields.RouteAirportCode, "Arrival", "flight.originAirportCode"),
         (FidsFlightFields.RouteAirportCode, "Departure", "flight.destinationAirportCode"),
-        (FidsFlightFields.TenantTimeZone, null, "tenantTimeZone"),
+        (FidsFlightFields.TimeZoneManager, null, "TimeZoneManager"),
 
         (FidsFlightFields.Gates, null, "gatesResources[].resource.code"),
         (FidsFlightFields.GateStatuses, null, "gatesResources[].resource.statusCode"),

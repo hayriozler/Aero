@@ -10,13 +10,13 @@ public abstract class AuditBase<TKey>
     public DateTimeOffset? UpdatedAt { get; private set; }
     public string? UpdatedBy { get; private set; }
 
-    internal void SetAuditOnCreate(string createdBy, DateTimeOffset createdAt)
+    public void SetOnCreate(string createdBy, DateTimeOffset createdAt)
     {
         CreatedBy = createdBy;
         CreatedAt = createdAt;
     }
 
-    internal void SetAuditOnUpdate(string updatedBy, DateTimeOffset updatedAt)
+    public void SetOnUpdate(string updatedBy, DateTimeOffset updatedAt)
     {
         UpdatedBy = updatedBy;
         UpdatedAt = updatedAt;

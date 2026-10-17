@@ -1,10 +1,12 @@
-﻿using Aero.Shared.Domain.Identity;
+﻿using Aero.Flights.Domain.Common;
+using Aero.Shared.Domain.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace Aero.Shared.Infrastructure.Persistence;
 
 public interface IDataStoreContext
 {
+    DbSet<AeroConfiguration> AeroConfigurationSet { get; }
     DbSet<User> UserSet { get; }
     DbSet<Role> RoleSet { get; }
     DbSet<UserRole> UserRoleSet { get; }

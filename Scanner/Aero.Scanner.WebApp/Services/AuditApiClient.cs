@@ -1,4 +1,4 @@
-using Aero.Scanner.Shared.Dtos;
+using Aero.Shared.Contracts.Dtos;
 
 namespace Aero.Scanner.WebApp.Services;
 

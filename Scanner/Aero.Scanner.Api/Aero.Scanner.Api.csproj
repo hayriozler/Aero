@@ -12,7 +12,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\Aero.Shared.Contracts\Aero.Shared.Contracts.csproj" />
     <ProjectReference Include="..\..\ServiceDefaults\Aero.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\..\Shared\Aero.Shared.Application\Aero.Shared.Application.csproj" />
     <ProjectReference Include="..\..\Shared\Aero.Shared.Infrastructure\Aero.Shared.Infrastructure.csproj" />
     <ProjectReference Include="..\..\Shared\Aero.Shared.WebUtilities\Aero.Shared.WebUtilities.csproj" />
     <ProjectReference Include="..\Aero.Scanner.Shared\Aero.Scanner.Shared.csproj" />

@@ -4,7 +4,7 @@ namespace Aero.Shared.Domain.Identity;
 
 public class User : AuditBase<int>
 {
-    private readonly List<UserRole> _userRoles = [];
+    private readonly List<UserRole> _roles = [];
     private readonly List<RefreshToken> _refreshTokens = [];
     public string Username { get; private set; } = string.Empty;
     public string PasswordHash { get; private set; } = string.Empty;
@@ -14,7 +14,7 @@ public class User : AuditBase<int>
     public DateTimeOffset? ExpirationDate { get; private set; }
     public bool IsActive { get; private set; } = true;
     public DateTime? LastLoginAt { get; private set; }
-    public IReadOnlyCollection<UserRole> UserRoles => _userRoles;
+    public IReadOnlyCollection<UserRole> Roles => _roles;
     public IReadOnlyCollection<RefreshToken> RefreshTokens => _refreshTokens.AsReadOnly();
     public void UpdateProfile(string? realName) => RealName = realName;
 
@@ -25,13 +25,13 @@ public class User : AuditBase<int>
     }
     public void AssignRole(string roleName)
     {
-        if (_userRoles.Any(ur => ur.RoleName == roleName)) return;
-        _userRoles.Add(UserRole.Create(Id, roleName));
+        if (_roles.Any(ur => ur.RoleName == roleName)) return;
+        _roles.Add(UserRole.Create(Id, roleName));
     }
     public void RemoveRole(string roleName)
     {
-        var entry = _userRoles.FirstOrDefault(ur => ur.RoleName == roleName);
-        if (entry is not null) _userRoles.Remove(entry);
+        var entry = _roles.FirstOrDefault(ur => ur.RoleName == roleName);
+        if (entry is not null) _roles.Remove(entry);
     }
     public Result UpdatePassword(string newPasswordHash)
     {

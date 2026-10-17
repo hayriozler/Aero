@@ -101,7 +101,7 @@ public sealed class FlightOutboxInterceptor(IHttpContextAccessor httpContextAcce
             return;
 
         var changedBy = ResolveUser();
-        var tenantTimeZone = await ResolveTenantTimeZoneAsync(context, ct);
+        var TimeZoneManager = await ResolveTimeZoneManagerAsync(context, ct);
 
         foreach (var ((flightType, flightId), group) in groups)
         {
@@ -126,9 +126,9 @@ public sealed class FlightOutboxInterceptor(IHttpContextAccessor httpContextAcce
             var changes = group.Changes ?? [];
 
             FlightChanged payload = isArrival
-                ? new ArrivalFlightChanged(Guid.NewGuid(), routingKey, now, changedBy, tenantTimeZone, flightJson, changes,
+                ? new ArrivalFlightChanged(Guid.NewGuid(), routingKey, now, changedBy, TimeZoneManager, flightJson, changes,
                     group.GatesResources, group.BeltsResources, group.ParkPositionsResources, group.RoutingsResources, group.PassengersResources)
-                : new DepartureFlightChanged(Guid.NewGuid(), routingKey, now, changedBy, tenantTimeZone, flightJson, changes,
+                : new DepartureFlightChanged(Guid.NewGuid(), routingKey, now, changedBy, TimeZoneManager, flightJson, changes,
                     group.GatesResources, group.BeltsResources, group.ParkPositionsResources, group.RoutingsResources, group.CountersResources, group.PassengersResources);
 
             context.Add(OutboxMessage.Create(ExchangeNames.Flights, routingKey, payload.GetType().Name,
@@ -360,7 +360,7 @@ public sealed class FlightOutboxInterceptor(IHttpContextAccessor httpContextAcce
     // service depends on IAeroFlightDbContext, and this interceptor is constructed while AeroFlightDbContext
     // itself is still being built (inside its own options factory), so injecting it here would
     // be a circular dependency.
-    private static async Task<string> ResolveTenantTimeZoneAsync(DbContext context, CancellationToken ct) =>
+    private static async Task<string> ResolveTimeZoneManagerAsync(DbContext context, CancellationToken ct) =>
         await context.Set<AeroConfiguration>()
             .Where(c => c.ConfigurationName == "Display.TimeZone")
             .Select(c => c.Value)

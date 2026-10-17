@@ -10,8 +10,8 @@ internal sealed class UserPermissionService(IDataStoreContext db) : IUserPermiss
         if (roleNames.Count == 0)
             return new HashSet<string>();
         var codes = await (from rp in db.RolePermissionSet
-                           join r in db.RoleSet on rp.RoleId equals r.Id
-                           where roleNames.Contains(r.Name)
+                           join r in db.RoleSet on rp.RoleName equals r.Id
+                           where roleNames.Contains(r.Id)
                            select rp.PermissionCode).Distinct()
                            .ToListAsync(ct);
 

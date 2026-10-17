@@ -1,5 +1,5 @@
 using Aero.Fids.Infrastructure.Persistence;
-using Aero.Shared.Application.Tenancy;
+using Aero.Shared.Application.Managers;
 
 namespace Aero.Fids.Web.Boards;
 
@@ -11,7 +11,7 @@ public interface IPublicSignageReader
     Task<(byte[] Data, string ContentType)?> GetImageAsync(string tenantId, long id, CancellationToken ct);
 }
 
-internal sealed class PublicSignageReader(IFidsDbContextFactory dbFactory, IInterfaceSettingsService interfaceSettings) : IPublicSignageReader
+internal sealed class PublicSignageReader(IFidsDbContextFactory dbFactory, IInterfaceSettingsManager interfaceSettings) : IPublicSignageReader
 {
     public async Task<IReadOnlyList<ActiveSignageItem>> GetActiveAsync(string tenantId, CancellationToken ct)
     {

@@ -24,7 +24,7 @@ else
             </TemplateColumn>
             <PropertyColumn Property="x => x.ChangedBy" Title="Changed By" Sortable="false" />
             <TemplateColumn Title="When" SortBy="@(x => x.Timestamp)">
-                <CellTemplate>@TenantTimeZone.ToLocal(context.Item.Timestamp, _tenantTimeZone).ToString($"{_dateFormat} {_timeFormat}")</CellTemplate>
+                <CellTemplate>@TimeZoneManager.ToLocal(context.Item.Timestamp, _timeZoneManager).ToString($"{_dateFormat} {_timeFormat}")</CellTemplate>
             </TemplateColumn>
         </Columns>
         <ChildRowContent>
@@ -55,18 +55,18 @@ else
 
     private IReadOnlyList<AuditEntryDto> _entries = [];
     private bool _loading = true;
-    private TimeZoneInfo _tenantTimeZone = TimeZoneInfo.Utc;
-    private string _dateFormat = TenantDateTimeFormat.DefaultDateFormat;
-    private string _timeFormat = TenantDateTimeFormat.DefaultTimeFormat;
+    private TimeZoneInfo _timeZoneManager = TimeZoneInfo.Utc;
+    private string _dateFormat = DateTimeFormatter.DefaultDateFormat;
+    private string _timeFormat = DateTimeFormatter.DefaultTimeFormat;
 
     protected override async Task OnInitializedAsync()
     {
         if (AuthState is not null)
         {
             var state = await AuthState;
-            _tenantTimeZone = TenantTimeZone.Resolve(state.User);
-            _dateFormat = TenantDateTimeFormat.ResolveDateFormat(state.User);
-            _timeFormat = TenantDateTimeFormat.ResolveTimeFormat(state.User);
+            _timeZoneManager = TimeZoneManager.Resolve(state.User);
+            _dateFormat = DateTimeFormatter.ResolveDateFormat(state.User);
+            _timeFormat = DateTimeFormatter.ResolveTimeFormat(state.User);
         }
 
         try
@@ -121,7 +121,7 @@ else
                 {
                     var child = obj[key];
                     if (child is JsonValue value && value.TryGetValue<string>(out var text) && TryParseTimestamp(text, out var dto))
-                        obj[key] = TenantTimeZone.ToLocal(dto, _tenantTimeZone).ToString("yyyy-MM-dd HH:mm:ss");
+                        obj[key] = TimeZoneManager.ToLocal(dto, _timeZoneManager).ToString("yyyy-MM-dd HH:mm:ss");
                     else if (child is null)
                         obj[key] = JsonValue.Create("");
                     else

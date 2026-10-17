@@ -22,7 +22,7 @@ public static class EntityTypeBuilderAuditExtensions
         Expression<Func<T, TProp>> property) where T : class
     {
         if (property.Body is MemberExpression member)
-            AuditDisplayNameRegistry.IgnoreRegister(typeof(T), member.Member.Name);
+            AuditDisplayNameRegistry.RegisterIgnore(typeof(T), member.Member.Name);
 
         return builder;
     }

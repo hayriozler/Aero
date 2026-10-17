@@ -1,42 +1,28 @@
-using Aero.Flights.Application.Common;
-using Aero.Flights.Application.Configuration;
-using Aero.Flights.Application.Flights;
-using Aero.Flights.Application.Flights.CodeShares;
-using Aero.Flights.Application.Flights.Commands;
-using Aero.Flights.Application.Flights.Delays;
-using Aero.Flights.Application.Flights.InboundProcessors;
-using Aero.Flights.Application.Flights.MovementMessages;
-using Aero.Flights.Application.Flights.ParkPositiions;
-using Aero.Flights.Application.Flights.Queries;
-using Aero.Flights.Application.Flights.Resources;
-using Aero.Flights.Application.Flights.Routings;
-using Aero.Flights.Application.Flights.Services;
-using Aero.Flights.Application.Identity;
-using Aero.Flights.Application.Identity.Auth;
-using Aero.Flights.Application.Identity.Roles;
-using Aero.Flights.Application.Identity.Users;
-using Aero.Flights.Application.Interfaces;
-using Aero.Flights.Application.Metadatas;
-using Aero.Flights.Application.Resources;
-using Aero.Flights.Application.SeasonalFlightSchedules;
-using Aero.Flights.Contracts.Flights;
-using Aero.Flights.Contracts.Identity;
-using Aero.Flights.Contracts.Metadatas;
-using Aero.Flights.Contracts.SeasonalFlightSchedules;
-using Aero.Flights.Domain.Audit.Identity;
-using Aero.Flights.Domain.Identity;
-using Aero.Flights.Domain.Ops;
-using Aero.Flights.Domain.Ops.Delays;
-using Aero.Flights.Domain.Ops.MovementMessages;
-using Aero.Flights.Domain.Ops.Resources;
-using Aero.Flights.Domain.Ops.Routing;
-using Aero.Flights.Domain.Ops.Services;
-using Aero.Flights.Infrastructure.Identity;
 using Aero.Flights.Infrastructure.Messaging;
 using Aero.Flights.Infrastructure.Metadata;
 using Aero.Flights.Infrastructure.Persistence;
 using Aero.Flights.Infrastructure.Persistence.Interceptors;
 using Aero.Flights.Infrastructure.Rules;
+using Aero.Shared.Application;
+using Aero.Shared.Application.Commands.Logins;
+using Aero.Shared.Application.Commands.RolePermissions;
+using Aero.Shared.Application.Commands.Roles;
+using Aero.Shared.Application.Commands.UserRoles;
+using Aero.Shared.Application.Commands.Users;
+using Aero.Shared.Application.Handlers.Audits;
+using Aero.Shared.Application.Handlers.Logins;
+using Aero.Shared.Application.Handlers.RolePermissions;
+using Aero.Shared.Application.Handlers.Roles;
+using Aero.Shared.Application.Handlers.UserRoles;
+using Aero.Shared.Application.Handlers.Users;
+using Aero.Shared.Application.Managers;
+using Aero.Shared.Application.Queries.Audits;
+using Aero.Shared.Application.Queries.RolePermissions;
+using Aero.Shared.Application.Queries.Roles;
+using Aero.Shared.Application.Queries.Users;
+using Aero.Shared.Contracts.Responses;
+using Aero.Shared.Domain.Identity;
+using Aero.Shared.Domain.Identity.Audits;
 using Aero.Shared.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -93,7 +79,7 @@ public static class DependencyInjectionService
 
     private static IServiceCollection AddIdentityHandlers(this IServiceCollection services)
     {
-        services.AddScoped<IPasswordHasherService, PasswordHasher>();
+        services.AddScoped<IPasswordHasherService, PasswordHasherService>();
         services.AddScoped<IJwtTokenService, JwtTokenService>();
         services.AddScoped<IUserPermissionService, UserPermissionService>();
 
@@ -104,8 +90,8 @@ public static class DependencyInjectionService
         services.AddScoped<IQueryHandler<GetUserQuery, UserResponse?>, GetUserQueryHandler>();
         services.AddScoped<ICommandHandler<CreateUserCommand, UserResponse>, CreateUserCommandHandler>();
         services.AddScoped<ICommandHandler<UpdateUserCommand, UserResponse?>, UpdateUserCommandHandler>();
-        services.AddScoped<ICommandHandler<AssignRoleCommand>, AssignRoleCommandHandler>();
-        services.AddScoped<ICommandHandler<RemoveRoleCommand>, RemoveRoleCommandHandler>();
+        services.AddScoped<ICommandHandler<AssignUserRoleCommand>, AssignUserRoleCommandHandler>();
+        services.AddScoped<ICommandHandler<RemoveUserRoleCommand>, RemoveUserRoleCommandHandler>();
         services.AddScoped<ICommandHandler<DeleteUserCommand, DeleteUserResult>, DeleteUserCommandHandler>();
 
         services.AddScoped<IQueryHandler<GetRolesQuery, IReadOnlyList<RoleResponse>>, GetRolesQueryHandler>();
@@ -116,8 +102,8 @@ public static class DependencyInjectionService
         services.AddScoped<IQueryHandler<GetRolePermissionsQuery, IReadOnlyList<string>>, GetRolePermissionsQueryHandler>();
         services.AddScoped<ICommandHandler<SetRolePermissionsCommand>, SetRolePermissionsCommandHandler>();
 
-        services.AddScoped<IQueryHandler<MetadataAuditQuery<User>, IReadOnlyList<AuditEntryResponse>>, IdentityAuditQueryHandler<User, UserAudit>>();
-        services.AddScoped<IQueryHandler<MetadataAuditQuery<Role>, IReadOnlyList<AuditEntryResponse>>, IdentityAuditQueryHandler<Role, RoleAudit>>();
+        services.AddScoped<IQueryHandler<AuditQuery<User>, IReadOnlyList<AuditEntryResponse>>, AuditQueryHandler<User, UserAudit>>();
+        services.AddScoped<IQueryHandler<AuditQuery<Role>, IReadOnlyList<AuditEntryResponse>>, AuditQueryHandler<Role, RoleAudit>>();
         return services;
     }
 
@@ -147,7 +133,7 @@ public static class DependencyInjectionService
         services.AddFieldUpdateCrud<ArrivalFlight>();
         services.AddFieldUpdateCrud<DepartureFlight>();
 
-        services.AddScoped<IAeroConfigService, AeroConfigService>();
+        services.AddScoped<IAeroConfigManager, AeroConfigManager>();
         return services;
     }
 
@@ -335,7 +321,7 @@ public static class DependencyInjectionService
     }
 
     private static IServiceCollection AddFieldUpdateCrud<TFlight>(this IServiceCollection services)
-        where TFlight : Aero.Flights.Domain.Ops.Flight
+        where TFlight : Flight
     {
         services.AddScoped<ICommandHandler<UpdateFlightStatusCommand<TFlight>, bool>, UpdateFlightStatusCommandHandler<TFlight>>();
         services.AddScoped<ICommandHandler<UpdateFlightTerminalCommand<TFlight>, bool>, UpdateFlightTerminalCommandHandler<TFlight>>();

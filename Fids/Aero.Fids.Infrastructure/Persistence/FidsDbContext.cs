@@ -1,8 +1,8 @@
 using Aero.Fids.Infrastructure.Boards;
 using Aero.Fids.Infrastructure.Flights;
-using Aero.Fids.Infrastructure.Identity;
 using Aero.Fids.Infrastructure.Settings;
 using Aero.Fids.Infrastructure.Signage;
+using Aero.Shared.Domain.Identity;
 using Aero.Shared.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -18,14 +18,14 @@ public sealed class FidsDbContext(DbContextOptions<FidsDbContext> options) : Dat
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<FidsUser>(entity =>
+        modelBuilder.Entity<User>(entity =>
         {
-            entity.ToTable("FidsUser");
+            entity.ToTable("Users");
             entity.HasKey(u => u.Id);
             entity.Property(u => u.Username).IsRequired().HasMaxLength(100);
             entity.HasIndex(u => u.Username).IsUnique();
             entity.Property(u => u.PasswordHash).IsRequired().HasMaxLength(200);
-            entity.Property(u => u.Role).IsRequired().HasMaxLength(30);
+            entity.Property(u => u.Roles).IsRequired().HasMaxLength(30);
         });
 
         modelBuilder.Entity<DisplayClient>(entity =>

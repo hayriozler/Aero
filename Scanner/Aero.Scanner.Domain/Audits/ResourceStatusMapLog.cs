@@ -2,4 +2,4 @@ using Aero.Shared.Domain;
 
 namespace Aero.Scanner.Domain.Audits;
 
-public sealed class ResourceStatusMapLog : AuditLogBase { }
+public sealed record ResourceStatusMapLog : AuditLogBase { }
