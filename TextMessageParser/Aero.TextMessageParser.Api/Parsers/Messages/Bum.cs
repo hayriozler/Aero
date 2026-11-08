@@ -18,7 +18,7 @@ public sealed class Bum(IReadOnlyDictionary<string, Element> elementMap)
         new(Consts.I, ElementRequirement.Conditional, IsMultiple: false),
         new(Consts.O, ElementRequirement.Conditional, IsMultiple: false),
         new(Consts.Q, ElementRequirement.Conditional, IsMultiple: false),
-        new(Consts.S, ElementRequirement.Conditional, IsMultiple: false),
+        new(Consts.S, ElementRequirement.Optional,    IsMultiple: false),
         new(Consts.H, ElementRequirement.Optional,    IsMultiple: false),
         new(Consts.W, ElementRequirement.Optional,    IsMultiple: false),
         new(Consts.P, ElementRequirement.Conditional, IsMultiple: false),

@@ -10,6 +10,18 @@ public class MessageProcessingService(
     LoggerService<MessageProcessingService> logger,
     IServiceScopeFactory serviceFactory) : BackgroundService
 {
+    private const string ClaimSql = @"
+                UPDATE ""messages"".""TextMessages""
+                SET ""Status"" = '" + TextMessageStatus.Processing + @"', ""ProcessingStartedAt"" = {0}
+                WHERE ""Id"" IN (
+                    SELECT ""Id"" FROM ""messages"".""TextMessages""
+                    WHERE ""Status"" = '" + TextMessageStatus.NotProcessed + @"' AND ""Completed"" = false
+                    ORDER BY ""RecordDateTime""
+                    LIMIT {1}
+                    FOR UPDATE SKIP LOCKED
+                )
+                RETURNING ""Id"" AS ""Value""";
+
     private const int _batchSize = 20;
     private static readonly TimeSpan _interval = TimeSpan.FromSeconds(5);
     private static readonly TimeSpan _staleThreshold = TimeSpan.FromMinutes(2);
@@ -22,11 +34,11 @@ public class MessageProcessingService(
         var cutoff = DateTime.UtcNow - _staleThreshold;
 
         var recovered = await dbContext.TextMessagesSet
-            .Where(m => m.Status == "PROCESSING"
+            .Where(m => m.Status == TextMessageStatus.Processing
                      && m.Completed == false
                      && m.ProcessingStartedAt < cutoff)
             .ExecuteUpdateAsync(s => s
-                .SetProperty(m => m.Status, "NOT_PROCESSED")
+                .SetProperty(m => m.Status, TextMessageStatus.NotProcessed)
                 .SetProperty(m => m.ProcessingStartedAt, (DateTime?)null),
                 cancellationToken);
 
@@ -41,17 +53,7 @@ public class MessageProcessingService(
         var claimedAt = DateTime.UtcNow;
 
         var claimedIds = await textParserDataContext.Database
-            .SqlQueryRaw<long>(@"
-                UPDATE ""messages"".""TextMessages""
-                SET ""Status"" = 'PROCESSING', ""ProcessingStartedAt"" = {0}
-                WHERE ""Id"" IN (
-                    SELECT ""Id"" FROM ""messages"".""TextMessages""
-                    WHERE ""Status"" = 'NOT_PROCESSED' AND ""Completed"" = false
-                    ORDER BY ""RecordDateTime""
-                    LIMIT {1}
-                    FOR UPDATE SKIP LOCKED
-                )
-                RETURNING ""Id"" AS ""Value""", claimedAt, _batchSize)
+            .SqlQueryRaw<long>(ClaimSql, claimedAt, _batchSize)
             .ToListAsync(cancellationToken);
 
         if (claimedIds.Count == 0)
@@ -73,16 +75,14 @@ public class MessageProcessingService(
                 var isSuccess = await ProcessMessageAsync(msg, scope.ServiceProvider, textParserDataContext, cancellationToken);
                 if (isSuccess)
                 {
-                    msg.Status = "PROCESSED";
+                    msg.MarkProcessed(DateTime.UtcNow);
                     logger.LogInfo("Message {Id} processed successfully", msg.Id);
                 }
                 else
                 {
-                    msg.Status = "ERROR";
+                    msg.MarkFailed(DateTime.UtcNow);
                     logger.LogInfo("Message {Id} processed with errors", msg.Id);
                 }
-                msg.Completed = true;
-                msg.ProcessDateTime = DateTime.UtcNow;
                 await textParserDataContext.SaveChangesAsync(cancellationToken);
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
@@ -108,9 +108,7 @@ public class MessageProcessingService(
             using var scope = serviceFactory.CreateScope();
             var dbContext = scope.ServiceProvider.GetRequiredService<TextMessageParserDbContext>();
             var message = await dbContext.TextMessagesSet.FirstAsync(m => m.Id == messageId, cancellationToken);
-            message.Status = "ERROR";
-            message.Completed = true;
-            message.ProcessDateTime = DateTime.UtcNow;
+            message.MarkFailed(DateTime.UtcNow);
 
             var description = $"{exception.GetType().Name}: {exception.Message}";
             if (description.Length > 250) description = description[..250];

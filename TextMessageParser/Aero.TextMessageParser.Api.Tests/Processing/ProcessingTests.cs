@@ -31,8 +31,8 @@ public class ProcessingTests
         var helperStart = source.IndexOf("private async Task RecordFailureAsync", StringComparison.Ordinal);
         Check.True(helperStart > 0, "RecordFailureAsync not found. " + Why);
         var helperBody = source.Substring(helperStart);
-        Check.True(helperBody.Contains("Completed = true") && helperBody.Contains("TextMessageErrorSet.Add") && helperBody.Contains("SaveChangesAsync"),
-            "RecordFailureAsync must set Completed = true, add a TextMessageError and call SaveChangesAsync. " + Why);
+        Check.True(helperBody.Contains("MarkFailed") && helperBody.Contains("TextMessageErrorSet.Add") && helperBody.Contains("SaveChangesAsync"),
+            "RecordFailureAsync must call TextMessage.MarkFailed (which sets Status ERROR and Completed), add a TextMessageError and call SaveChangesAsync. " + Why);
     }
 
     [Fact(DisplayName = "Bug 8 (source guard): stale PROCESSING rows are recovered periodically inside the loop, not only once at startup")]

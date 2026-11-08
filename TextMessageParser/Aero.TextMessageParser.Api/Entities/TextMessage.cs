@@ -2,32 +2,27 @@ using Aero.TextMessageParser.Api.ValueObjects;
 
 namespace Aero.TextMessageParser.Api.Entities;
 
+public static class TextMessageStatus
+{
+    public const string NotProcessed = "NOT_PROCESSED";
+    public const string Processing = "PROCESSING";
+    public const string Processed = "PROCESSED";
+    public const string Error = "ERROR";
+}
+
 public sealed class TextMessage
 {
-    private TextMessage() { } //for eF core
-    public long Id { get; set; }
+    private TextMessage() { }
+    public long Id { get; internal set; }
     public MessageHeader Header { get; private set; } = default!;
     public MessageFooter Footer { get; private set; } = default!;
     public string Message { get; private set; } = string.Empty;
-    public required DateTime RecordDateTime
-    {
-        get; set;
-    }
-    public DateTime? ProcessDateTime
-    {
-        get; set;
-    }
-    public bool Completed
-    {
-        get; set;
-    } = false;
-    public string Status
-    {
-        get; set;
-    } = "NOT_PROCESSED";
+    public DateTime RecordDateTime { get; private set; }
+    public DateTime? ProcessDateTime { get; private set; }
+    public bool Completed { get; private set; }
+    public string Status { get; private set; } = TextMessageStatus.NotProcessed;
+    public DateTime? ProcessingStartedAt { get; private set; }
 
-    /// <summary>UTC timestamp when Status was set to PROCESSING — used for stale-record recovery.</summary>
-    public DateTime? ProcessingStartedAt { get; set; }
     public static TextMessage Create(string textMessage, MessageHeader header, MessageFooter footer) =>
     new()
     {
@@ -36,4 +31,18 @@ public sealed class TextMessage
         Footer = footer,
         RecordDateTime = DateTime.UtcNow
     };
+
+    public void MarkProcessed(DateTime processedAtUtc) => Complete(TextMessageStatus.Processed, processedAtUtc);
+
+    public void MarkFailed(DateTime processedAtUtc) => Complete(TextMessageStatus.Error, processedAtUtc);
+
+    private void Complete(string status, DateTime processedAtUtc)
+    {
+        if (Status != TextMessageStatus.Processing)
+            throw new InvalidOperationException(
+                $"Text message {Id} is {Status}; only a claimed ({TextMessageStatus.Processing}) message can be completed.");
+        Status = status;
+        Completed = true;
+        ProcessDateTime = processedAtUtc;
+    }
 }

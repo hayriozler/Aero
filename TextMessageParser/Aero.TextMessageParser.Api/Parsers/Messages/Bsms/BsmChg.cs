@@ -4,7 +4,6 @@ using Aero.TextMessageParser.Api.Parsers.Elements;
 
 namespace Aero.TextMessageParser.Api.Parsers.Messages.Bsms;
 
-public sealed record DepartureBagChg();
 public sealed class BsmChg(IReadOnlyDictionary<string, Element> elementMap)
     : BsmBase<TextMessageDepartureBagChgDto>(Consts.CHG, elementMap)
 {

@@ -135,6 +135,15 @@ Model_contains_parsed_result_storage: expects at least one non-owned entity from
 ## Bug 15 - Additional finding: production DbContext model cannot be built (fixed)
 Production_model_builds: `new TextMessageParserDbContext(options).Model` throws "The entity type 'Permission' requires a primary key". `DataStoreContext` has DbSets for User, Role, Permission and so on but applies configurations only from the Api assembly. Any real DbContext use (endpoint save, processing service) fails. Tests use `TestParserDbContext` to work around it.
 
+## TextMessage entity behavior (clean architecture step)
+`TextMessage` now owns its state transitions: `MarkProcessed` and `MarkFailed` complete a claimed (PROCESSING) message and throw `InvalidOperationException` otherwise. Setters are private; status values live in `TextMessageStatus`. The claim itself stays a set-based SQL statement (`FOR UPDATE SKIP LOCKED`), so there is deliberately no `MarkProcessing` method.
+| Test | Input | Expected | Actual |
+|---|---|---|---|
+| New_message_state (Baseline) | `TextMessage.Create` | NOT_PROCESSED, not completed, RecordDateTime set | Green |
+| Mark_processed_completes_a_claimed_message | Claimed message, `MarkProcessed(at)` | PROCESSED, Completed, ProcessDateTime = at | Green |
+| Mark_failed_completes_a_claimed_message | Claimed message, `MarkFailed(at)` | ERROR, Completed, ProcessDateTime = at | Green |
+| Completing_requires_a_claimed_message | Unclaimed message, and an already completed one | InvalidOperationException | Green |
+
 ## Baseline (Kind=Baseline, all green)
 Single-tag BSM parse; BSM CHG and DEL parse; SplitOnSlash (4 cases); ValidationHelper flight number (5), IATA date (5), airport code (4); Install extensions; model builds with test context; endpoint accepts valid BSM; GetMessageIdentifier happy path; scalar JSON; ElementS valid lengths (5); malformed controls (7).
 
