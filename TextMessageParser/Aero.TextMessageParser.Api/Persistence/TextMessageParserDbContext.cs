@@ -12,6 +12,7 @@ public class TextMessageParserDbContext(DbContextOptions<TextMessageParserDbCont
     public DbSet<TextMessage> TextMessagesSet => Set<TextMessage>();
     public DbSet<TextMessageError> TextMessageErrorSet => Set<TextMessageError>();
     public DbSet<ElementError> TextMessageElementErrorSet => Set<ElementError>();
+    public DbSet<ParsedMessage> ParsedMessages => Set<ParsedMessage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

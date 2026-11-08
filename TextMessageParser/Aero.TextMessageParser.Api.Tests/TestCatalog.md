@@ -213,3 +213,13 @@ Single-tag BSM parse; BSM CHG and DEL parse; SplitOnSlash (4 cases); ValidationH
 
 ## Manual check of the partial indexes (2026-11-08)
 Not an automated test. On a temporary `postgres:17-alpine` container both migrations were applied, 100000 rows were inserted (100 `NOT_PROCESSED`, the rest `PROCESSED`) and the claim query was explained. The plan is an `Index Scan using IX_TextMessages_Pending` without a Sort node; the index is 16 kB while the table index on the primary key is 2208 kB. `Completed` is no longer a column, it is computed from `Status`.
+
+## ParsedMessageTests (#14)
+| Test | Scenario | Expected | State |
+|---|---|---|---|
+| Parsed_message_carries_the_parsed_values | BSM with .V .F .N .P mapped by `ParsedMessageFactory` | Airline LH, flight 400, bag tag 0220123456, passenger JOHN DOE, not consumed | Green |
+| Missing_passenger_elements_become_null | BSM without .S and .P | Passenger status, sequence number and seat are null (the default char `'\0'` is rejected by PostgreSQL) | Green |
+| Mark_consumed_sets_flag | `MarkConsumed(at)` | `IsConsumed` true, `ConsumedAt` = at | Green |
+
+## Manual check of parsed results and read endpoint (2026-11-08)
+Not an automated test. On a temporary `postgres:17-alpine` container all four migrations were applied, the API was started and three BSM messages were posted (full message, message without .S/.W/.O, message with two bag tags). All three became PROCESSED with one `ParsedMessages` row each plus bag tags and onward flights. `GET /api/parsedmessages` returned the three records, `POST /api/parsedmessages/consumed` with ids 1 and 2 answered `{"updated":2}`, and a second GET returned only record 3. The first run exposed that a missing .S wrote `'\0'` into a text column and PostgreSQL rejected it; that is fixed and covered by a test.

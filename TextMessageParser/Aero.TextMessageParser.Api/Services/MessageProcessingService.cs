@@ -12,10 +12,10 @@ public class MessageProcessingService(
 {
     private const string ClaimSql = @"
                 UPDATE ""messages"".""TextMessages""
-                SET ""Status"" = '" + TextMessageStatus.Processing + @"', ""ProcessingStartedAt"" = {0}
+                SET ""Status"" = '" + TextMessageStatusStore.Processing + @"', ""ProcessingStartedAt"" = {0}
                 WHERE ""Id"" IN (
                     SELECT ""Id"" FROM ""messages"".""TextMessages""
-                    WHERE ""Status"" = '" + TextMessageStatus.NotProcessed + @"'
+                    WHERE ""Status"" = '" + TextMessageStatusStore.NotProcessed + @"'
                     ORDER BY ""RecordDateTime""
                     LIMIT {1}
                     FOR UPDATE SKIP LOCKED

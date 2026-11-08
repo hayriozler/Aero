@@ -56,6 +56,214 @@ namespace Aero.TextMessageParser.Migrations.Migrations
                     b.ToTable("ElementErrors", "messages");
                 });
 
+            modelBuilder.Entity("Aero.TextMessageParser.Api.Entities.ParsedBagTag", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("BIGINT");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("BagTag")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<long>("ParsedMessageId")
+                        .HasColumnType("BIGINT");
+
+                    b.HasKey("Id")
+                        .HasName("PK_ParsedBagTagId");
+
+                    b.HasIndex("BagTag");
+
+                    b.HasIndex("ParsedMessageId");
+
+                    b.ToTable("ParsedBagTags", "messages");
+                });
+
+            modelBuilder.Entity("Aero.TextMessageParser.Api.Entities.ParsedMessage", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("BIGINT");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<char?>("AckRequest")
+                        .HasColumnType("character(1)");
+
+                    b.Property<string>("AirlineCode")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)");
+
+                    b.Property<bool?>("AuthorityToLoad")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool?>("AuthorityToTransport")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("BagHeight")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<string>("BagLength")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<bool?>("BagTagStatus")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("BagWidth")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<string>("BaggageTypeCode")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<string>("CheckedBagCount")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<string>("CheckedWeight")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<DateTime?>("ConsumedAt")
+                        .HasColumnType("TIMESTAMPTZ");
+
+                    b.Property<string>("Destination")
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)");
+
+                    b.Property<string>("FlightDate")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<string>("FlightNumber")
+                        .IsRequired()
+                        .HasMaxLength(6)
+                        .HasColumnType("character varying(6)");
+
+                    b.Property<bool>("IsConsumed")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("MessageType")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<char?>("PassengerClass")
+                        .HasColumnType("character(1)");
+
+                    b.Property<string>("PassengerName")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<char?>("PassengerProfileStatus")
+                        .HasColumnType("character(1)");
+
+                    b.Property<string>("PassengerSecurityNumber")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<string>("PassengerSequenceNumber")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<char?>("PassengerStatus")
+                        .HasColumnType("character(1)");
+
+                    b.Property<DateTime>("RecordDateTime")
+                        .HasColumnType("TIMESTAMPTZ");
+
+                    b.Property<string>("SeatNumber")
+                        .HasMaxLength(5)
+                        .HasColumnType("character varying(5)");
+
+                    b.Property<string>("SourceAirport")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)");
+
+                    b.Property<char?>("SourceIndicator")
+                        .HasColumnType("character(1)");
+
+                    b.Property<long>("TextMessageId")
+                        .HasColumnType("BIGINT");
+
+                    b.Property<string>("UncheckedWeight")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<string>("WeightIndicator")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<string>("WeightUnit")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.HasKey("Id")
+                        .HasName("PK_ParsedMessageId");
+
+                    b.HasIndex("Id")
+                        .HasDatabaseName("IX_ParsedMessages_Unconsumed")
+                        .HasFilter("\"IsConsumed\" = false");
+
+                    b.HasIndex("TextMessageId")
+                        .IsUnique();
+
+                    b.HasIndex("AirlineCode", "FlightNumber", "FlightDate");
+
+                    b.ToTable("ParsedMessages", "messages");
+                });
+
+            modelBuilder.Entity("Aero.TextMessageParser.Api.Entities.ParsedOnwardFlight", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("BIGINT");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("AirlineCode")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)");
+
+                    b.Property<char?>("Class")
+                        .HasColumnType("character(1)");
+
+                    b.Property<string>("Destination")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)");
+
+                    b.Property<string>("FlightDate")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<string>("FlightNumber")
+                        .IsRequired()
+                        .HasMaxLength(6)
+                        .HasColumnType("character varying(6)");
+
+                    b.Property<long>("ParsedMessageId")
+                        .HasColumnType("BIGINT");
+
+                    b.HasKey("Id")
+                        .HasName("PK_ParsedOnwardFlightId");
+
+                    b.HasIndex("ParsedMessageId");
+
+                    b.ToTable("ParsedOnwardFlights", "messages");
+                });
+
             modelBuilder.Entity("Aero.TextMessageParser.Api.Entities.TextMessage", b =>
                 {
                     b.Property<long>("Id")
@@ -137,6 +345,33 @@ namespace Aero.TextMessageParser.Migrations.Migrations
                     b.ToTable("MessageErrors", "messages");
                 });
 
+            modelBuilder.Entity("Aero.TextMessageParser.Api.Entities.ParsedBagTag", b =>
+                {
+                    b.HasOne("Aero.TextMessageParser.Api.Entities.ParsedMessage", null)
+                        .WithMany("BagTags")
+                        .HasForeignKey("ParsedMessageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Aero.TextMessageParser.Api.Entities.ParsedMessage", b =>
+                {
+                    b.HasOne("Aero.TextMessageParser.Api.Entities.TextMessage", null)
+                        .WithOne()
+                        .HasForeignKey("Aero.TextMessageParser.Api.Entities.ParsedMessage", "TextMessageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Aero.TextMessageParser.Api.Entities.ParsedOnwardFlight", b =>
+                {
+                    b.HasOne("Aero.TextMessageParser.Api.Entities.ParsedMessage", null)
+                        .WithMany("Onwards")
+                        .HasForeignKey("ParsedMessageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Aero.TextMessageParser.Api.Entities.TextMessage", b =>
                 {
                     b.OwnsOne("Aero.TextMessageParser.Api.ValueObjects.MessageFooter", "Footer", b1 =>
@@ -194,6 +429,13 @@ namespace Aero.TextMessageParser.Migrations.Migrations
 
                     b.Navigation("Header")
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Aero.TextMessageParser.Api.Entities.ParsedMessage", b =>
+                {
+                    b.Navigation("BagTags");
+
+                    b.Navigation("Onwards");
                 });
 #pragma warning restore 612, 618
         }

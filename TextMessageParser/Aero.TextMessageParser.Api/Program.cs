@@ -58,5 +58,6 @@ if (app.Environment.IsDevelopment())
 }
 
 app.MapMessagingEndpoints();
+app.MapParsedMessageEndpoints();
 
 await app.RunAsync();

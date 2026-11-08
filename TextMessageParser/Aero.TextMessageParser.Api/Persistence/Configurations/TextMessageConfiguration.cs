@@ -50,6 +50,7 @@ internal sealed class TextMessageConfiguration : IEntityTypeConfiguration<TextMe
 
 
         builder.Property(e => e.Status)
+        .HasConversion(v => TextMessageStatusStore.ToStored(v), s => TextMessageStatusStore.FromStored(s))
         .HasColumnType("TEXT")
         .HasMaxLength(10)
         .HasColumnOrder(7);
@@ -73,11 +74,11 @@ internal sealed class TextMessageConfiguration : IEntityTypeConfiguration<TextMe
 
         builder.HasIndex(x => x.RecordDateTime)
             .HasDatabaseName("IX_TextMessages_Pending")
-            .HasFilter("\"Status\" = 'NOT_PROCESSED'");
+            .HasFilter("\"Status\" = '" + TextMessageStatusStore.NotProcessed + "'");
 
         builder.HasIndex(x => x.ProcessingStartedAt)
             .HasDatabaseName("IX_TextMessages_Processing")
-            .HasFilter("\"Status\" = 'PROCESSING'");
+            .HasFilter("\"Status\" = '" + TextMessageStatusStore.Processing + "'");
 
     }
 }

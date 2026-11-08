@@ -2,12 +2,38 @@ using Aero.TextMessageParser.Api.ValueObjects;
 
 namespace Aero.TextMessageParser.Api.Entities;
 
-public static class TextMessageStatus
+public enum TextMessageStatus
+{
+    NotProcessed,
+    Processing,
+    Processed,
+    Error
+}
+
+public static class TextMessageStatusStore
 {
     public const string NotProcessed = "NOT_PROCESSED";
     public const string Processing = "PROCESSING";
     public const string Processed = "PROCESSED";
     public const string Error = "ERROR";
+
+    public static string ToStored(TextMessageStatus status) => status switch
+    {
+        TextMessageStatus.NotProcessed => NotProcessed,
+        TextMessageStatus.Processing => Processing,
+        TextMessageStatus.Processed => Processed,
+        TextMessageStatus.Error => Error,
+        _ => throw new ArgumentOutOfRangeException(nameof(status), status, null)
+    };
+
+    public static TextMessageStatus FromStored(string stored) => stored switch
+    {
+        NotProcessed => TextMessageStatus.NotProcessed,
+        Processing => TextMessageStatus.Processing,
+        Processed => TextMessageStatus.Processed,
+        Error => TextMessageStatus.Error,
+        _ => throw new ArgumentOutOfRangeException(nameof(stored), stored, null)
+    };
 }
 
 public sealed class TextMessage
@@ -20,7 +46,7 @@ public sealed class TextMessage
     public DateTime RecordDateTime { get; private set; }
     public DateTime? ProcessDateTime { get; private set; }
     public bool Completed => Status is TextMessageStatus.Processed or TextMessageStatus.Error;
-    public string Status { get; private set; } = TextMessageStatus.NotProcessed;
+    public TextMessageStatus Status { get; private set; } = TextMessageStatus.NotProcessed;
     public DateTime? ProcessingStartedAt { get; private set; }
 
     public static TextMessage Create(string textMessage, MessageHeader header, MessageFooter footer) =>
@@ -36,7 +62,7 @@ public sealed class TextMessage
 
     public void MarkFailed(DateTime processedAtUtc) => Complete(TextMessageStatus.Error, processedAtUtc);
 
-    private void Complete(string status, DateTime processedAtUtc)
+    private void Complete(TextMessageStatus status, DateTime processedAtUtc)
     {
         if (Status != TextMessageStatus.Processing)
             throw new InvalidOperationException(
