@@ -1,4 +1,6 @@
-﻿using Aero.Shared.Infrastructure.Persistence;
+﻿using Aero.Flights.Domain.Common;
+using Aero.Shared.Domain.Identity;
+using Aero.Shared.Infrastructure.Persistence;
 using Aero.TextMessageParser.Api.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,4 +13,16 @@ public class TextMessageParserDbContext(DbContextOptions<TextMessageParserDbCont
     public DbSet<TextMessageError> TextMessageErrorSet => Set<TextMessageError>();
     public DbSet<ElementError> TextMessageElementErrorSet => Set<ElementError>();
 
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Ignore<User>();
+        modelBuilder.Ignore<Role>();
+        modelBuilder.Ignore<UserRole>();
+        modelBuilder.Ignore<Permission>();
+        modelBuilder.Ignore<RolePermission>();
+        modelBuilder.Ignore<RefreshToken>();
+        modelBuilder.Ignore<AeroConfiguration>();
+    }
 }
