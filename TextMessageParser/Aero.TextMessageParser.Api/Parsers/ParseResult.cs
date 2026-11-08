@@ -1,10 +1,10 @@
 namespace Aero.TextMessageParser.Api.Parsers;
 
-public sealed record ParseError(string ErrorCode, string? Description, bool IsElementError)
+public sealed record ParseError(string ErrorCode, string? Description, bool IsElementError, string? Line = null)
 {
     public static ParseError ForMessage(string errorCode, string? description) => new(errorCode, description, false);
 
-    public static ParseError ForElement(string errorCode, string? description) => new(errorCode, description, true);
+    public static ParseError ForElement(string errorCode, string? description, string? line = null) => new(errorCode, description, true, line);
 }
 
 public sealed class ParseResult<T> where T : class

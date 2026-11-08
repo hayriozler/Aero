@@ -7,20 +7,20 @@ public class ElementWValidator : IElementValidator
 {
     public ElementValidationResult Validate(ElementDetail elementDetail)
     {
-        var validationResult = new ElementValidationResult();
+        var validationResult = new ElementValidationResult(elementDetail);
         if (elementDetail.Length < 8 || elementDetail.Length > 53)
         {
-            validationResult.AddError(ErrorCodes.ERROR_CODE_MSG_LEN_NOT_CORRECT, "ElementW length wrong");
+            validationResult.AddError(ErrorCodes.ELEMENT_LENGTH_NOT_CORRECT, "ElementW length wrong");
             return validationResult;
         }
         if (elementDetail.ParsedText.Length < 2)
         {
-            validationResult.AddError(ErrorCodes.ERROR_CODE_MSG_LEN_NOT_CORRECT, "ElementW PWI missing");
+            validationResult.AddError(ErrorCodes.ELEMENT_FIELD_MISSING, "ElementW PWI missing");
             return validationResult;
         }
         if (!Consts.PIECE_WEIGHT_ARRAY.ContainsSpan(elementDetail.ParsedText[1].Span))
         {
-            validationResult.AddError(ErrorCodes.ERROR_CODE_MSG_LEN_NOT_CORRECT, "ElementW PWI must be K/L/P");
+            validationResult.AddError(ErrorCodes.ELEMENT_VALUE_NOT_CORRECT, "ElementW PWI must be K/L/P");
             return validationResult;
         }
         if (elementDetail.ParsedText.Length > 2)
@@ -28,13 +28,13 @@ public class ElementWValidator : IElementValidator
             var f = elementDetail.ParsedText[2];
             if (f.Length > 3)
             {
-                validationResult.AddError(ErrorCodes.ERROR_CODE_MSG_LEN_NOT_CORRECT, "ElementW pieces count too long");
+                validationResult.AddError(ErrorCodes.ELEMENT_LENGTH_NOT_CORRECT, "ElementW pieces count too long");
                 return validationResult;
             }
             foreach (var c in f.Span)
                 if (!char.IsDigit(c))
                 {
-                    validationResult.AddError(ErrorCodes.ERROR_CODE_MSG_LEN_NOT_CORRECT, "ElementW pieces must be numeric");
+                    validationResult.AddError(ErrorCodes.ELEMENT_FORMAT_NOT_CORRECT, "ElementW pieces must be numeric");
                     return validationResult;
                 }
         }
@@ -43,13 +43,13 @@ public class ElementWValidator : IElementValidator
             var f = elementDetail.ParsedText[3];
             if (f.Length > 5)
             {
-                validationResult.AddError(ErrorCodes.ERROR_CODE_MSG_LEN_NOT_CORRECT, "ElementW weight too long");
+                validationResult.AddError(ErrorCodes.ELEMENT_LENGTH_NOT_CORRECT, "ElementW weight too long");
                 return validationResult;
             }
             foreach (var c in f.Span)
                 if (!char.IsDigit(c))
                 {
-                    validationResult.AddError(ErrorCodes.ERROR_CODE_MSG_LEN_NOT_CORRECT, "ElementW weight must be numeric");
+                    validationResult.AddError(ErrorCodes.ELEMENT_FORMAT_NOT_CORRECT, "ElementW weight must be numeric");
                     return validationResult;
                 }
         }
@@ -60,13 +60,13 @@ public class ElementWValidator : IElementValidator
                 var f = elementDetail.ParsedText[5];
                 if (f.Length > 3)
                 {
-                    validationResult.AddError(ErrorCodes.ERROR_CODE_MSG_LEN_NOT_CORRECT, "ElementW length dim wrong");
+                    validationResult.AddError(ErrorCodes.ELEMENT_LENGTH_NOT_CORRECT, "ElementW length dim wrong");
                     return validationResult;
                 }
                 foreach (var c in f.Span)
                     if (!char.IsDigit(c))
                     {
-                        validationResult.AddError(ErrorCodes.ERROR_CODE_MSG_LEN_NOT_CORRECT, "ElementW dim must be numeric");
+                        validationResult.AddError(ErrorCodes.ELEMENT_FORMAT_NOT_CORRECT, "ElementW dim must be numeric");
                         return validationResult;
                     }
             }
@@ -75,13 +75,13 @@ public class ElementWValidator : IElementValidator
                 var f = elementDetail.ParsedText[6];
                 if (f.Length > 3)
                 {
-                    validationResult.AddError(ErrorCodes.ERROR_CODE_MSG_LEN_NOT_CORRECT, "ElementW width dim wrong");
+                    validationResult.AddError(ErrorCodes.ELEMENT_FORMAT_NOT_CORRECT, "ElementW width dim wrong");
                     return validationResult;
                 }
                 foreach (var c in f.Span)
                     if (!char.IsDigit(c))
                     {
-                        validationResult.AddError(ErrorCodes.ERROR_CODE_MSG_LEN_NOT_CORRECT, "ElementW dim must be numeric");
+                        validationResult.AddError(ErrorCodes.ELEMENT_FORMAT_NOT_CORRECT, "ElementW dim must be numeric");
                         return validationResult;
                     }
             }
@@ -90,20 +90,20 @@ public class ElementWValidator : IElementValidator
                 var f = elementDetail.ParsedText[7];
                 if (f.Length > 3)
                 {
-                    validationResult.AddError(ErrorCodes.ERROR_CODE_MSG_LEN_NOT_CORRECT, "ElementW height dim wrong");
+                    validationResult.AddError(ErrorCodes.ELEMENT_FORMAT_NOT_CORRECT, "ElementW height dim wrong");
                     return validationResult;
                 }
                 foreach (var c in f.Span)
                     if (!char.IsDigit(c))
                     {
-                        validationResult.AddError(ErrorCodes.ERROR_CODE_MSG_LEN_NOT_CORRECT, "ElementW dim must be numeric");
+                        validationResult.AddError(ErrorCodes.ELEMENT_FORMAT_NOT_CORRECT, "ElementW dim must be numeric");
                         return validationResult;
                     }
             }
         }
         if (elementDetail.ParsedText.Length > 8 && elementDetail.ParsedText[8].Length > 4)
         {
-            validationResult.AddError(ErrorCodes.ERROR_CODE_MSG_LEN_NOT_CORRECT, "ElementW bagtype too long");
+            validationResult.AddError(ErrorCodes.ELEMENT_LENGTH_NOT_CORRECT, "ElementW bagtype too long");
         }
         return validationResult;
     }

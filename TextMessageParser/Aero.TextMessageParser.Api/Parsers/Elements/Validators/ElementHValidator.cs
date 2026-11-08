@@ -6,15 +6,15 @@ public class ElementHValidator : IElementValidator
 {
     public ElementValidationResult Validate(ElementDetail elementDetail)
     {
-        var validationResult = new ElementValidationResult();
+        var validationResult = new ElementValidationResult(elementDetail);
         if (elementDetail.Length < 11 || elementDetail.Length > 28)
         {
-            validationResult.AddError(ErrorCodes.ERROR_CODE_MSG_LEN_NOT_CORRECT, "ElementH length wrong");
+            validationResult.AddError(ErrorCodes.ELEMENT_LENGTH_NOT_CORRECT, "ElementH length wrong");
             return validationResult;
         }
         if (elementDetail.ParsedText.Length < 2)
         {
-            validationResult.AddError(ErrorCodes.ERROR_CODE_MSG_LEN_NOT_CORRECT, "ElementH field missing");
+            validationResult.AddError(ErrorCodes.ELEMENT_FIELD_MISSING, "ElementH field missing");
             return validationResult;
         }
         for (int i = 1; i < elementDetail.ParsedText.Length; i++)
@@ -23,13 +23,13 @@ public class ElementHValidator : IElementValidator
             var f = elementDetail.ParsedText[i];
             if (f.Length > maxLen)
             {
-                validationResult.AddError(ErrorCodes.ERROR_CODE_MSG_LEN_NOT_CORRECT, $"ElementH field {i} too long");
+                validationResult.AddError(ErrorCodes.ELEMENT_LENGTH_NOT_CORRECT, $"ElementH field {i} too long");
                 return validationResult;
             }
             foreach (var c in f.Span)
                 if (!char.IsLetterOrDigit(c))
                 {
-                    validationResult.AddError(ErrorCodes.ERROR_CODE_MSG_LEN_NOT_CORRECT, $"ElementH field {i} invalid char");
+                    validationResult.AddError(ErrorCodes.ELEMENT_FORMAT_NOT_CORRECT, $"ElementH field {i} invalid char");
                     return validationResult;
                 }
         }

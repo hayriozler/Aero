@@ -7,15 +7,15 @@ public class ElementAValidator : IElementValidator
 {
     public ElementValidationResult Validate(ElementDetail elementDetail)
     {
-        var validationResult = new ElementValidationResult();
+        var validationResult = new ElementValidationResult(elementDetail);
         if (elementDetail.Length < 14 || elementDetail.Length > 63)
         {
-            validationResult.AddError(ErrorCodes.ERROR_CODE_MSG_LEN_NOT_CORRECT, "ElementA length is not correct");
+            validationResult.AddError(ErrorCodes.ELEMENT_LENGTH_NOT_CORRECT, "ElementA length is not correct");
             return validationResult;
         }
         if (elementDetail.ParsedText.Length < 1)
         {
-            validationResult.AddError(ErrorCodes.ERROR_CODE_MSG_LEN_NOT_CORRECT, "ElementA required fields missing");
+            validationResult.AddError(ErrorCodes.ELEMENT_FIELD_MISSING, "ElementA required fields missing");
             return validationResult;
         }
         // First Item always be Identifier
@@ -24,14 +24,14 @@ public class ElementAValidator : IElementValidator
             case 2:
                 if (elementDetail.ParsedText[1].IsEmpty || elementDetail.ParsedText[1].Length < 1 || elementDetail.ParsedText[1].Length > 10)
                 {
-                    validationResult.AddError(ErrorCodes.ERROR_CODE_MSG_LEN_NOT_CORRECT, "ElementA ref number length wrong");
+                    validationResult.AddError(ErrorCodes.ELEMENT_LENGTH_NOT_CORRECT, "ElementA ref number length wrong");
 
                 }
                 break;
             case 3:
                 if (elementDetail.ParsedText[2].IsEmpty || elementDetail.ParsedText[2].Length < 3 || elementDetail.ParsedText[2].Length > 7)
                 {
-                    validationResult.AddError(ErrorCodes.ERROR_CODE_MSG_LEN_NOT_CORRECT, "ElementA status length wrong");
+                    validationResult.AddError(ErrorCodes.ELEMENT_LENGTH_NOT_CORRECT, "ElementA status length wrong");
                 }
                 break;
 
@@ -45,7 +45,7 @@ public class ElementAValidator : IElementValidator
             case 5:
                 if (elementDetail.ParsedText[4].IsEmpty || elementDetail.ParsedText[4].Length < 4 || elementDetail.ParsedText[4].Length > 35)
                 {
-                    validationResult.AddError(ErrorCodes.ERROR_CODE_MSG_LEN_NOT_CORRECT, "ElementA free text too long");
+                    validationResult.AddError(ErrorCodes.ELEMENT_LENGTH_NOT_CORRECT, "ElementA free text too long");
                 }
                 break;
         }

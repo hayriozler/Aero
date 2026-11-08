@@ -85,7 +85,7 @@ public abstract class MessageBase<TResult>(
             foreach (var elementResult in kv.Value)
             {
                 if (elementResult.ValidationResult is { IsValid: false } vr)
-                    return ParseResult<TResult>.Failure(ParseError.ForElement(vr.ErrorCode, vr.Description));
+                    return ParseResult<TResult>.Failure(ParseError.ForElement(vr.ErrorCode, vr.Description, vr.Line));
             }
             results.AddRange(kv.Value);
         }
@@ -103,14 +103,14 @@ public abstract class MessageBase<TResult>(
         {
             var actualFooter = message.Footer.EndIdentifier;
             if (actualFooter.Length > 40) actualFooter = actualFooter[..40];
-            result.AddError($"MSG_{MessageName}_END_INVALID",
+            result.AddError(ErrorCodes.MessageEndInvalid(MessageName),
                 $"Message must end with '{EndIdentifier}' but the last line is '{actualFooter}'");
             return result;
         }
 
         if (message.Elements.Count == 0)
         {
-            result.AddError($"MSG_{MessageName}_EMPTY", "Message is empty");
+            result.AddError(ErrorCodes.MessageEmpty(MessageName), "Message is empty");
             return result;
         }
 
@@ -132,7 +132,7 @@ public abstract class MessageBase<TResult>(
 
         if (!unknownId.IsEmpty)
         {
-            result.AddError("UNKNOWN_ELEMENT_FOUND", $"{unknownId} Unknown element found");
+            result.AddError(ErrorCodes.UNKNOWN_ELEMENT_FOUND, $"{unknownId} Unknown element found");
             return result;
         }
 
@@ -140,7 +140,7 @@ public abstract class MessageBase<TResult>(
         {
             if (seenCounts[idx] == 0)
             {
-                result.AddError($"MSG_{MessageName}_MISSING_MANDATORY",
+                result.AddError(ErrorCodes.MessageMissingMandatory(MessageName),
                     $"Mandatory element '{ElementSequences[idx].ElementName}' is missing");
                 return result;
             }
@@ -150,7 +150,7 @@ public abstract class MessageBase<TResult>(
         {
             if (seenCounts[idx] > 1)
             {
-                result.AddError($"MSG_{MessageName}_DUPLICATE",
+                result.AddError(ErrorCodes.MessageDuplicate(MessageName),
                     $"Element {ElementSequences[idx].ElementName} appears {seenCounts[idx]} times but IsMultiple is false");
                 return result;
             }

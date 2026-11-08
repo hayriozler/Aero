@@ -1,10 +1,19 @@
 namespace Aero.TextMessageParser.Api.Contracts;
 
-
 public record ElementValidationResult
 {
+    private readonly ReadOnlyMemory<char> _line;
+
+    public ElementValidationResult() { }
+
+    public ElementValidationResult(ElementDetail elementDetail)
+    {
+        _line = elementDetail.Text;
+    }
+
     public string ErrorCode { get; private set; } = string.Empty;
     public string? Description { get; private set; } = string.Empty;
+    public string Line => _line.ToString();
     public bool IsValid => string.IsNullOrEmpty(ErrorCode);
     public void AddError(string errorCode, string? description = null)
     {

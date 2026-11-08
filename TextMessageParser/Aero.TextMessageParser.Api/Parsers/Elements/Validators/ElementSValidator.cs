@@ -9,16 +9,16 @@ public class ElementSValidator : IElementValidator
 
     public ElementValidationResult Validate(ElementDetail elementDetail)
     {
-        var validationResult = new ElementValidationResult();
+        var validationResult = new ElementValidationResult(elementDetail);
         if (elementDetail.Length < 6 || elementDetail.Length > 26)
         {
-            validationResult.AddError(ErrorCodes.ERROR_CODE_MSG_LEN_NOT_CORRECT, "ElementS length wrong");
+            validationResult.AddError(ErrorCodes.ELEMENT_LENGTH_NOT_CORRECT, "ElementS length wrong");
             return validationResult;
         }
         var fields = elementDetail.ParsedText;
         if (fields.Length < 2 || fields.Length > MaxFieldCount)
         {
-            validationResult.AddError(ErrorCodes.ERROR_CODE_MSG_LEN_NOT_CORRECT, "ElementS field count wrong");
+            validationResult.AddError(ErrorCodes.ELEMENT_LENGTH_NOT_CORRECT, "ElementS field count wrong");
             return validationResult;
         }
         if (!Consts.AUTHORITY_LOAD_ARRAY.ContainsSpan(fields[1].Span))

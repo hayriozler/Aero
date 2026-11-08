@@ -6,10 +6,10 @@ public class ElementFValidator : IElementValidator
 {
     public ElementValidationResult Validate(ElementDetail elementDetail)
     {
-        var validationResult = new ElementValidationResult();
+        var validationResult = new ElementValidationResult(elementDetail);
         if (elementDetail.Length < 15 || elementDetail.Length > 25)
         {
-            validationResult.AddError(ErrorCodes.ERROR_CODE_MSG_LEN_NOT_CORRECT, "ElementF length wrong");
+            validationResult.AddError(ErrorCodes.ELEMENT_LENGTH_NOT_CORRECT, "ElementF length wrong");
             return validationResult;
         }
         if (elementDetail.ParsedText.Length < 4)

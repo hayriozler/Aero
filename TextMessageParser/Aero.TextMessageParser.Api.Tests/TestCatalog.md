@@ -156,6 +156,17 @@ Production_model_builds: `new TextMessageParserDbContext(options).Model` throws 
 | Bcm_variants_share_the_handler (Baseline, 3 cases) | FOM, FCM, DBM | Own sub type, airline and flight number | Green |
 | Missing_source_indicator_names_the_message_type | BSM CHG without `.V/` | No value | Green |
 
+## Error codes and element line (medium item A1, A2)
+`ErrorCodes` are `const`. The generic code 1001 (previously used for every element problem) is split by what failed: `1001` length or field count, `1002` value outside the allowed list, `1003` wrong format (digits, letters, characters, shape), `1004` missing or empty field. Specific codes (`V_01`, `F_01`, `S_01` to `S_08`, ...) keep their values. Message level codes (`MSG_<name>_END_INVALID`, `_EMPTY`, `_MISSING_MANDATORY`, `_DUPLICATE`) are built by helper methods in `ErrorCodes`. `ElementValidationResult` keeps the validated element line (`Line`, converted to a string only when read), `ParseError` carries it, and the element error row stores `<description> | <line>` cut to the 250 character column limit (no schema change).
+| Test | Input | Expected | Actual |
+|---|---|---|---|
+| Validators_report_the_kind_of_problem (4 cases) | `.N/022012345`, `.N/022012345600A`, `.W/X/001/20`, `.P/DOE//JOHN` | 1001, 1003, 1002, 1004 | Green |
+| Result_carries_the_element_line | Invalid and valid `.N/` lines | `Line` equals the validated line | Green |
+| Element_error_row_contains_the_line | BSM with `.F/LH400` | ElementErrors description contains the line | Green |
+| Element_error_description_is_truncated | BSM with a 400 character `.R/` line | Description at most 250 characters | Green |
+| Codes_are_constants_unique_and_short | Reflection over `ErrorCodes` | All const, unique, at most 50 characters | Green |
+| Message_codes_are_centralised | Helper methods | Same strings as before | Green |
+
 ## Baseline (Kind=Baseline, all green)
 Single-tag BSM parse; BSM CHG and DEL parse; SplitOnSlash (4 cases); ValidationHelper flight number (5), IATA date (5), airport code (4); Install extensions; model builds with test context; endpoint accepts valid BSM; GetMessageIdentifier happy path; scalar JSON; ElementS valid lengths (5); malformed controls (7).
 
