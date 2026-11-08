@@ -77,13 +77,13 @@ Additional observation: the validator's field positions for the 2/5/6-part branc
 | Test | Input | Expected | Actual |
 |---|---|---|---|
 | Unknown_element_gives_validation_error | Extra line `.Z/XYZ`, `THIS IS FREE TEXT`, `AB`, `.U/CONT1/1/M/Y/FRA/N` (U is not in BSM) | null result and error code `UNKNOWN_ELEMENT_FOUND` | InvalidOperationException "Sequence contains no matching element" (4 red); the UNKNOWN_ELEMENT_FOUND branch is unreachable |
-| Split_unknown_currently_throws | `SplitSpanMessage` with `.Z/XYZ` | Documents the exception | InvalidOperationException (green) |
 
 ## Bug 8 - Processing failure handling
 | Test | Result |
 |---|---|
 | Failed_message_is_persisted_as_terminal | SKIPPED: needs PostgreSQL (raw claim SQL, private method). Skip reason holds the reproduction: BUM message, observe Status stays PROCESSING, Completed false. |
-| Catch_block_persists_failure (SourceGuard) | RED: the per-message catch block only sets `msg.Status = "ERROR"` in memory (no Completed, no SaveChanges). |
+| Catch_block_persists_failure (SourceGuard) | Green after the fix: the catch block calls `RecordFailureAsync`, which opens a fresh scope and writes Status ERROR, Completed true, ProcessDateTime and a `MSG_HND_02` error row. |
+| Stale_recovery_runs_inside_the_loop (SourceGuard) | Green after the fix: `RecoverStaleRecordsAsync` runs every minute inside the loop, not only at startup. |
 | Bum_handler_throws_not_implemented | Green, documents that `Bum.Handle` throws NotImplementedException (what reaches the catch block). |
 
 ## Bug 9 - Raw SQL alias
@@ -111,7 +111,7 @@ Additional observation: the validator's field positions for the 2/5/6-part branc
 | Test | Input | Expected | Actual |
 |---|---|---|---|
 | GetMessageIdentifier_degenerate_input_does_not_throw_index_exceptions | `null`, `""`, `"BSM"`, 9 spaces, `"\r\n\r\n\r\n"` | No index exception | ArgumentOutOfRangeException for all 5 inputs (5 red) |
-| GetMessageIdentifier_one_line_message_currently_throws | `"BSM"` | Documents | ArgumentOutOfRangeException (green) |
+| Degenerate_text_is_rejected_in_a_controlled_way | `"BSM"` | `TryGetMessageIdentifier` returns false, `GetMessageIdentifier` throws FormatException | Green after the fix (replaces the old test that documented the ArgumentOutOfRangeException) |
 | Bsm_with_mismatching_end_line_is_rejected | BSM ending with `ENDBUM` | null + error row | Accepted |
 | Bsm_without_end_line_is_rejected | BSM without any END line | null + error row | Accepted; `.P/DOE/JOHN` silently becomes the footer |
 | Endpoint_returns_bad_request_for_degenerate_bodies | POST `{"message":null}`, `{}`, 9 spaces, `BSM-------` | 400 | 500 (exception middleware) |

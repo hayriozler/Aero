@@ -4,6 +4,7 @@ public static class ErrorCodes
 {
     public static readonly string MISSING_REQUIRED_ELEMENT          = "MSG_01";
     public static readonly string NO_MSG_REGISTERED_HANDLER         = "MSG_HND_01";
+    public static readonly string UNHANDLED_PROCESSING_ERROR        = "MSG_HND_02";
     public static readonly string ERROR_CODE_MSG_LEN_NOT_CORRECT    = "1001";
     public static readonly string ERROR_CODE_VALUE_NOT_CORRECT      = "1002";
     public static readonly string BAGGAGE_SOURCE_INDICATOR_NOT_CORRECT = "V_01";

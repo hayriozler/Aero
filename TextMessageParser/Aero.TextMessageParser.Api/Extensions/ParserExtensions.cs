@@ -11,7 +11,7 @@ public static class ParserExtensions
     {
         var span = text.AsMemory();
         List<ReadOnlyMemory<char>> result = [];
-        foreach (var part in span.Span.Split(seperator))
+        foreach (var part in span.Span.SplitAny(seperator))
         {
             var value = span[part.Start.Value..part.End.Value];
             if (!value.IsEmpty)
@@ -21,9 +21,22 @@ public static class ParserExtensions
         }
         return result;
     }
-    public static (MessageHeader messageHeader, MessageFooter endIdentifier) GetMessageIdentifier(this string text)
+    public static (MessageHeader messageHeader, MessageFooter endIdentifier) GetMessageIdentifier(this string? text)
     {
+        if (!text.TryGetMessageIdentifier(out var header, out var footer))
+            throw new FormatException("Text message must have a 3 character header, at least one element line and a footer line.");
+        return (header, footer);
+    }
+
+    public static bool TryGetMessageIdentifier(this string? text, out MessageHeader header, out MessageFooter footer)
+    {
+        header = default!;
+        footer = default!;
+        if (string.IsNullOrWhiteSpace(text)) return false;
+
         var splittedText = SplitText(text, Consts.NEW_LINE_SEPERATOR);
+        if (splittedText.Count < 3 || splittedText[0].Length != 3) return false;
+
         string identifier = splittedText[0].ToString();
         string? secondaryIdentifier = null;
         string? changeOfStatus = null;
@@ -42,7 +55,17 @@ public static class ParserExtensions
         }
         var len = splittedText.Count - 1;
         var endIdentifier = splittedText[len];
-        return (new MessageHeader(identifier, secondaryIdentifier, changeOfStatus), new(endIdentifier.ToString()));
+        header = new MessageHeader(identifier, secondaryIdentifier, changeOfStatus);
+        footer = new MessageFooter(endIdentifier.ToString());
+        return true;
+    }
+
+    private static ElementRequirement FindRequirement(IReadOnlyList<ElementSequence> elementSequences, ReadOnlySpan<char> identifier)
+    {
+        foreach (var sequence in elementSequences)
+            if (sequence.ElementName.AsSpan().SequenceEqual(identifier))
+                return sequence.Requirement;
+        return ElementRequirement.NotApplicable;
     }
     public static Message SplitSpanMessage(this TextMessage textMessage, IReadOnlyList<ElementSequence> elementSequences)
     {
@@ -57,7 +80,7 @@ public static class ParserExtensions
 
         var elements = new List<ElementDetail>(24);
 
-        foreach (var lineRange in mem.Span.Split(Consts.NEW_LINE_SEPERATOR))
+        foreach (var lineRange in mem.Span.SplitAny(Consts.NEW_LINE_SEPERATOR))
         {
             var lineMem = mem[lineRange];
             var lineSpan = lineMem.Span;
@@ -69,9 +92,9 @@ public static class ParserExtensions
             if (lineSpan.SequenceEqual(footerSpan)) continue;
 
             var identifier = lineMem[..Math.Min(3, lineMem.Length)];
-            var elementDetail = elementSequences.First(p => p.ElementName.AsSpan().SequenceEqual(identifier.Span));
+            var requirement = FindRequirement(elementSequences, identifier.Span);
             var fields = SplitOnSlash(lineMem);
-            elements.Add(new ElementDetail(identifier, lineMem, fields, 2 + lineMem.Length, elementDetail.Requirement));
+            elements.Add(new ElementDetail(identifier, lineMem, fields, 2 + lineMem.Length, requirement));
         }
 
         return new Message(textMessage.Header, elements.AsReadOnly(), textMessage.Footer);

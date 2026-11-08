@@ -26,12 +26,13 @@ public class EnvelopeTests
             $"Input <{text ?? "null"}> threw {ex?.GetType().Name}. {Why}");
     }
 
-    [Fact(DisplayName = "Bug 12 (current behavior): one-line message throws ArgumentOutOfRangeException from GetMessageIdentifier")]
+    [Fact(DisplayName = "Bug 12: degenerate text is reported through TryGetMessageIdentifier returning false and GetMessageIdentifier throwing FormatException")]
     [Trait("Bug", "12")]
-    public void GetMessageIdentifier_one_line_message_currently_throws()
+    public void Degenerate_text_is_rejected_in_a_controlled_way()
     {
+        Check.True(!"BSM".TryGetMessageIdentifier(out _, out _), "A one-line text has no elements and no footer, TryGetMessageIdentifier must return false.");
         var ex = Record.Exception(() => "BSM".GetMessageIdentifier());
-        Check.True(ex is ArgumentOutOfRangeException, $"Documents today's behavior; observed {ex?.GetType().Name ?? "no exception"}.");
+        Check.True(ex is FormatException, $"GetMessageIdentifier must throw FormatException for invalid text; observed {ex?.GetType().Name ?? "no exception"}.");
     }
 
     [Fact(DisplayName = "Bug 12: a BSM whose last line is END of a different message type (ENDBUM) must be rejected by the BSM handler")]

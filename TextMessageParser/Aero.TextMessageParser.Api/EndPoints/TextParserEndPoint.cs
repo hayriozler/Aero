@@ -1,4 +1,5 @@
 ﻿using Aero.Shared.Infrastructure.Services;
+using Aero.TextMessageParser.Api.Contracts;
 using Aero.TextMessageParser.Api.Entities;
 using Aero.TextMessageParser.Api.Extensions;
 using Aero.TextMessageParser.Api.Persistence;
@@ -14,12 +15,17 @@ public static class TextParserEndPoint
 
         group.MapPost("/", async (MessageRequest request, LoggerService<TextMessage> logger, TextMessageParserDbContext db) =>
         {
-            if (request.Message.Length < 9)
+            if (!request.Message.TryGetMessageIdentifier(out var messageHeader, out var messageFooter))
             {
-                logger.LogError("Message is not correct: {Message}", request.Message);
-                return Results.BadRequest("Message is not correct");
+                logger.LogWarning("Message header or footer could not be read");
+                return Results.BadRequest("Message must have a 3 character header, at least one element line and a footer line");
             }
-            var (messageHeader, messageFooter) = request.Message.GetMessageIdentifier();
+            var expectedFooter = Consts.END + messageHeader.Identifier;
+            if (!string.Equals(messageFooter.EndIdentifier, expectedFooter, StringComparison.Ordinal))
+            {
+                logger.LogWarning("Message {Header} does not end with {ExpectedFooter}", messageHeader.Identifier, expectedFooter);
+                return Results.BadRequest($"Message must end with {expectedFooter}");
+            }
 
             var message = TextMessage.Create(request.Message, messageHeader, messageFooter);
             db.TextMessagesSet.Add(message);

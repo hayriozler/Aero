@@ -33,7 +33,7 @@ public abstract class MessageBase<TResult>(
     private int[] MandatoryIndices => _mandatoryIndices  ??= BuildMandatoryIndices();
     private int[] SingleOnlyIndices => _singleOnlyIndices ??= BuildSingleOnlyIndices();
 
-    private static int ElementKey(ReadOnlySpan<char> id) => (id[0] * 65536) + (id[1] * 256) + id[2];
+    private static int ElementKey(ReadOnlySpan<char> id) => id.Length < 3 ? -1 : (id[0] * 65536) + (id[1] * 256) + id[2];
 
     private Dictionary<int, int> BuildSequenceIndexByKey()
     {
@@ -108,6 +108,15 @@ public abstract class MessageBase<TResult>(
     {
         var message = textMessage.SplitSpanMessage(ElementSequences);
         var result = new MessageValidationResult(message);
+
+        if (!string.Equals(message.Footer.EndIdentifier, EndIdentifier, StringComparison.Ordinal))
+        {
+            var actualFooter = message.Footer.EndIdentifier;
+            if (actualFooter.Length > 40) actualFooter = actualFooter[..40];
+            result.AddError($"MSG_{MessageName}_END_INVALID",
+                $"Message must end with '{EndIdentifier}' but the last line is '{actualFooter}'");
+            return result;
+        }
 
         if (message.Elements.Count == 0)
         {

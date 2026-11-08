@@ -16,18 +16,35 @@ public class ProcessingTests
     {
     }
 
-    [Fact(DisplayName = "Bug 8 (source guard): the catch block in ProcessBatchAsync must persist the failure (Completed and SaveChangesAsync)")]
+    [Fact(DisplayName = "Bug 8 (source guard): the per-message catch block must call RecordFailureAsync, which persists Status, Completed and an error row")]
     [Trait("Bug", "8")]
     [Trait("Kind", "SourceGuard")]
     public void Catch_block_persists_failure()
     {
+        const string Why = "If the catch block only changes the entity in memory, the row stays PROCESSING with Completed false, is recovered as stale and retried forever. The catch must call RecordFailureAsync and that helper must write Completed = true, an error row and call SaveChangesAsync. Static source guard because the claim query needs PostgreSQL.";
         var source = SourceLocator.ReadApiSource(ProcessingServicePath);
         var marker = source.IndexOf("Failed to process message", StringComparison.Ordinal);
         Check.True(marker > 0, "Log statement of the per-message catch block not found; update this guard.");
         var catchStart = source.LastIndexOf("catch (Exception ex)", marker, StringComparison.Ordinal);
-        var catchBody = source.Substring(catchStart, marker - catchStart + 200);
-        Check.True(catchBody.Contains("SaveChangesAsync") && catchBody.Contains("Completed"),
-            "The catch block only sets msg.Status = \"ERROR\" in memory. Without Completed = true and SaveChangesAsync the change is never written, so the row stays PROCESSING, is recovered as stale and retried forever. Static source guard because the claim query needs PostgreSQL.");
+        var catchBody = source.Substring(catchStart, marker - catchStart + 300);
+        Check.True(catchBody.Contains("RecordFailureAsync"), "The catch block does not call RecordFailureAsync. " + Why);
+        var helperStart = source.IndexOf("private async Task RecordFailureAsync", StringComparison.Ordinal);
+        Check.True(helperStart > 0, "RecordFailureAsync not found. " + Why);
+        var helperBody = source.Substring(helperStart);
+        Check.True(helperBody.Contains("Completed = true") && helperBody.Contains("TextMessageErrorSet.Add") && helperBody.Contains("SaveChangesAsync"),
+            "RecordFailureAsync must set Completed = true, add a TextMessageError and call SaveChangesAsync. " + Why);
+    }
+
+    [Fact(DisplayName = "Bug 8 (source guard): stale PROCESSING rows are recovered periodically inside the loop, not only once at startup")]
+    [Trait("Bug", "8")]
+    [Trait("Kind", "SourceGuard")]
+    public void Stale_recovery_runs_inside_the_loop()
+    {
+        var source = SourceLocator.ReadApiSource(ProcessingServicePath);
+        var loopStart = source.IndexOf("while (!stoppingToken.IsCancellationRequested)", StringComparison.Ordinal);
+        Check.True(loopStart > 0, "Main loop not found; update this guard.");
+        Check.True(source.Substring(loopStart).Contains("RecoverStaleRecordsAsync"),
+            "RecoverStaleRecordsAsync is only called before the loop, so rows left in PROCESSING by a crash or cancellation stay stuck until the next restart. Static source guard because the service needs PostgreSQL.");
     }
 
     [Fact(DisplayName = "Bug 8 (current behavior): Bum.Handle throws NotImplementedException, which is what reaches the catch block")]

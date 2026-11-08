@@ -227,16 +227,6 @@ public class MessageTests
         Check.True(db.TextMessageErrorSet.Local.Any(e => e.ErrorCode == "UNKNOWN_ELEMENT_FOUND"), $"No UNKNOWN_ELEMENT_FOUND error recorded for '{unknownLine}'. {Why}");
     }
 
-    [Fact(DisplayName = "Bug 7 (current behavior): SplitSpanMessage throws InvalidOperationException on an unknown element line")]
-    [Trait("Bug", "7")]
-    public void Split_unknown_currently_throws()
-    {
-        var bsm = new Bsm(ElementMapFactory.Create());
-        var message = TextMessages.From(BsmText(V, ".Z/XYZ", N1));
-        var ex = Record.Exception(() => message.SplitSpanMessage(bsm.ElementSequences));
-        Check.True(ex is InvalidOperationException, $"Documents today's behavior; observed {ex?.GetType().Name ?? "no exception"}.");
-    }
-
     [Theory(DisplayName = "Bug 11: BCM subtype is reported in the DTO (FOM->Fom, FCM->Fcm, DBM->Dbm)")]
     [Trait("Bug", "11")]
     [InlineData("FOM", "Fom")]

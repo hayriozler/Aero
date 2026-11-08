@@ -13,6 +13,7 @@ public class MessageProcessingService(
     private const int _batchSize = 20;
     private static readonly TimeSpan _interval = TimeSpan.FromSeconds(5);
     private static readonly TimeSpan _staleThreshold = TimeSpan.FromMinutes(2);
+    private static readonly TimeSpan _recoveryInterval = TimeSpan.FromMinutes(1);
 
     private async Task RecoverStaleRecordsAsync(CancellationToken cancellationToken)
     {
@@ -84,11 +85,42 @@ public class MessageProcessingService(
                 msg.ProcessDateTime = DateTime.UtcNow;
                 await textParserDataContext.SaveChangesAsync(cancellationToken);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not OperationCanceledException)
             {
-                msg.Status = "ERROR";
                 logger.LogError(ex, "Failed to process message {Id}", msg.Id);
+                DiscardPendingChanges(textParserDataContext, msg);
+                await RecordFailureAsync(msg.Id, ex, cancellationToken);
             }
+        }
+    }
+
+    private static void DiscardPendingChanges(TextMessageParserDbContext dbContext, TextMessage message)
+    {
+        foreach (var entry in dbContext.ChangeTracker.Entries().Where(e => e.State == EntityState.Added).ToList())
+            entry.State = EntityState.Detached;
+        dbContext.Entry(message).State = EntityState.Unchanged;
+    }
+
+    private async Task RecordFailureAsync(long messageId, Exception exception, CancellationToken cancellationToken)
+    {
+        try
+        {
+            using var scope = serviceFactory.CreateScope();
+            var dbContext = scope.ServiceProvider.GetRequiredService<TextMessageParserDbContext>();
+            var message = await dbContext.TextMessagesSet.FirstAsync(m => m.Id == messageId, cancellationToken);
+            message.Status = "ERROR";
+            message.Completed = true;
+            message.ProcessDateTime = DateTime.UtcNow;
+
+            var description = $"{exception.GetType().Name}: {exception.Message}";
+            if (description.Length > 250) description = description[..250];
+            dbContext.TextMessageErrorSet.Add(TextMessageError.Create(
+                messageId, ErrorCodes.UNHANDLED_PROCESSING_ERROR, description));
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (Exception recordingFailure) when (recordingFailure is not OperationCanceledException)
+        {
+            logger.LogError(recordingFailure, "Could not record the failure of message {Id}", messageId);
         }
     }
 
@@ -118,12 +150,17 @@ public class MessageProcessingService(
     {
         logger.LogInfo("MessageProcessingService started");
 
-        await RecoverStaleRecordsAsync(stoppingToken);
+        var nextRecoveryAt = DateTime.UtcNow;
 
         while (!stoppingToken.IsCancellationRequested)
         {
             try
             {
+                if (DateTime.UtcNow >= nextRecoveryAt)
+                {
+                    await RecoverStaleRecordsAsync(stoppingToken);
+                    nextRecoveryAt = DateTime.UtcNow + _recoveryInterval;
+                }
                 await ProcessBatchAsync(stoppingToken);
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
