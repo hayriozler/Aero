@@ -8,4 +8,8 @@ public abstract class Element(string name)
     public abstract ElementResult Parse(ElementDetail detail);
 
     protected static int GetAirlineLen(char c) => char.IsDigit(c) ? 2 : 3;
+
+    protected static char FirstCharOrDefault(ReadOnlyMemory<char> field) => field.IsEmpty ? default : field.Span[0];
+
+    protected static string? TextOrNull(ReadOnlyMemory<char> field) => field.IsEmpty ? null : field.ToString();
 }

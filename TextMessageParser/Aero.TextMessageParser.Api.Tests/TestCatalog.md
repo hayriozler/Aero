@@ -38,7 +38,7 @@ The service will no longer talk to the Scanner API, so these were dropped and ar
 | Host_starts_with_processing_service | Host with hosted service enabled | Host starts | SKIPPED: the service runs `ExecuteUpdateAsync` and PostgreSQL-only raw SQL, which InMemory cannot execute; needs PostgreSQL |
 | Install_extensions_resolve_bsm (Baseline) | `InstallElements().InstallMessages()` | Bsm resolves, 24 elements | Green |
 
-## Bug 3 - Stateful shared element instances (RED)
+## Bug 3 - Stateful shared element instances (fixed)
 | Test | Input | Expected | Actual | Why it matters |
 |---|---|---|---|---|
 | Three_n_lines_give_three_tags | BSM with `.N/0220123456001`, `.N/0220123457001`, `.N/0220123458001` | Tags 0220123456, 0220123457, 0220123458 | `[0220123458, 0220123458, 0220123458]` | One ElementN instance is reused; the DTO is built after all parsing, so every result shows the last line. Multi-bag passengers get the wrong tags. |
@@ -49,31 +49,32 @@ The service will no longer talk to the Scanner API, so these were dropped and ar
 | Element_w_state_does_not_leak | A: `.W/K/001/20/CM/55/40/20/XYZ`, B: `.W/K/001/20` | Unit and LengthOfBag empty | Unit `CM` leaked | Unit/dimensions are only assigned inside one branch. |
 | Concurrent_processing_does_not_mix_results | 32 threads x 20 rounds, unique serial and name each, one shared Bsm, Barrier-synchronised | Each DTO matches its own message | ~250-320 of 640 mixed (e.g. msg 28 got tag of msg 27) | Real concurrent processing corrupts data. (Count varies run to run.) |
 
-## Bug 4 - Validators skip non-Mandatory elements (RED)
+## Bug 4 - Validators skip non-Mandatory elements (fixed)
 | Test | Input | Expected | Actual |
 |---|---|---|---|
 | Malformed_element_is_rejected_when_mandatory (control, Baseline) | `.F/ .I/ .O/ .P/ .S/ .U/ .W/` as Mandatory | Rejected | Rejected (green); proves the samples are malformed |
-| Malformed_element_is_rejected_regardless_of_requirement | The same 7 lines with Conditional and with Optional (14 cases) | Rejected | All 14 accepted (red) because every validator starts with `if (Requirement != Mandatory) return valid` |
-| Malformed_conditional_f_gives_error_not_exception | BSM with `.F/`, `.F/LH400`, `.F/LH400/12NOV`, `.F/XX/YY/ZZ/Q` | `ProcessMessage` returns null and an error row is recorded | IndexOutOfRangeException from ElementF.Parse (4 cases red) |
+| Malformed_element_is_rejected_regardless_of_requirement | The same 7 lines with Conditional and with Optional (14 cases) | Rejected | Green after the fix: the `Requirement != Mandatory` guard was removed from all validators, including ElementSValidator |
+| Malformed_conditional_f_gives_error_not_exception | BSM with `.F/`, `.F/LH400`, `.F/LH400/12NOV`, `.F/XX/YY/ZZ/Q` | `ProcessMessage` returns null and an error row is recorded | Green after the fix |
 
-## Bug 5 - ElementSValidator (RED)
+## Bug 5 - ElementSValidator (fixed, follows IATA Passenger Services Conference Resolutions Manual 30th ed., section 2.3.22)
+The field layout of `.S/` is: 1 Authority to Load (Y/N, the only mandatory field), 2 Seat number `f(f)a`, 3 Passenger status B/C/N/S, 4 Sequence number `fff`, 5 Security number `fff`, 6 Passenger profile status Y/N, 7 Authority to Transport Y/N, 8 Baggage tag status I/A. All fields after the first may be empty or omitted. The element is 6 to 26 characters long, where the count includes the 2 character end delimiter (this is why `ElementDetail.Length` is `2 + Text.Length`). This layout matches `ElementS.Parse`; the old validator checked other positions.
 | Test | Input | Expected | Actual |
 |---|---|---|---|
-| ElementS_valid_values_pass | `.S/B`, `.S/Y/12A/C/Y`, `.S/Y/12A/C/001/I`, `.S/Y/12A/C/001/A` (Mandatory) | Valid | All rejected (S_01, S_02, S_03): `if (list.Contains(x)) AddError` is inverted |
-| ElementS_invalid_values_fail | `.S/Q`, `.S/Y/12A/C/Q`, `.S/Y/12A/C/001/Z` | Invalid | All accepted |
-| ElementS_unchecked_lengths_reject_invalid_values | 3 fields `.S/Q/12A`; 4 `.S/Y/12A/Q`; 7 `...SEC/Q`; 8 `...SEC/Y/Q`; 9 `...SEC/Y/N/Z` | Invalid | All accepted: switch only covers 2, 5, 6 parts |
-| ElementS_valid_lengths_pass (control, Baseline) | Valid S with 3, 4, 7, 8, 9 parts | Valid | Valid (green) |
+| ElementS_valid_lines_pass | `.S/Y`, `.S/N/4K`, `.S/Y//S/291` (specification example), full 8 field lines with I and A | Valid | Green |
+| ElementS_invalid_values_fail | One invalid value per field, e.g. `.S/B` (S_04), `.S/Y/123` (S_05), `.S/Y/23A/Q` (S_01), `.S/Y/23A/C/01` (S_06), `...016/67` (S_07), `...678/Q` (S_02), `...Y/Q` (S_08), `...Y/Y/Z` (S_03) | Rejected with the field's own error code | Green |
+| ElementS_length_is_enforced | `.S/`, a 28 character line | Rejected | Green |
 
-Additional observation: the validator's field positions for the 2/5/6-part branches (fields 1, 4, 5) disagree with `ElementS.Parse` (status at 3, profile at 6, bag tag status at 8). The tests for the 2/5/6 branches follow the validator's own indices; the 3/4/7/8/9 tests follow the parser layout. The field mapping needs a decision from the owner.
-
-## Bug 6 - Bsm/BsmChg mapping (RED)
+## Bug 6 - Bsm/BsmChg mapping (fixed)
 | Test | Input | Expected | Actual |
 |---|---|---|---|
-| Bsm_passenger_status_mapping | `.S/Y/12A/B/001/SEC123/Y/N/A` (status B, profile Y) | DTO.PassengerStatus = `B` | `Y` (profile status is passed) |
-| BsmChg_passenger_status_mapping | Same, in BSM CHG | `B` | `Y` |
-| Dto_exposes_weight (2 DTO types) | `.W/K/001/20` | A weight property exists on the DTO | No weight property; PiecesWeightIndicator/CheckedWeight go to unused locals, W data is lost |
+| Bsm_passenger_status_mapping | `.S/Y/12A/B/001/123/Y/N/A` (status B, profile Y) | DTO.PassengerStatus = `B` | Green after the fix (the DTO now gets the S passenger status) |
+| BsmChg_passenger_status_mapping | Same, in BSM CHG | `B` | Green |
+| Dto_exposes_weight (2 DTO types) | `.W/K/001/20` | A weight property exists on the DTO | Green: both DTOs have `BaggageWeight` (`BaggageWeightDto`) |
+| Weight_values_reach_the_dto | `.W/K/001/20` in BSM and BSM CHG | Indicator `K`, `001` bags, checked weight `20` | Green |
+| Absent_weight_is_null_and_profile_status_is_kept | BSM without `.W/`, S with profile Y | BaggageWeight null, PassengerStatus `B`, PassengerProfileStatus `Y` | Green (the DTOs gained an optional `PassengerProfileStatus`) |
+| Empty_optional_s_fields_do_not_crash_the_parser | `.S/Y//S/291` | Parses, SeatNumber null, status `S`, sequence `291` | Green (ElementS.Parse no longer indexes into empty fields) |
 
-## Bug 7 - Unknown element lines (RED)
+## Bug 7 - Unknown element lines (fixed)
 | Test | Input | Expected | Actual |
 |---|---|---|---|
 | Unknown_element_gives_validation_error | Extra line `.Z/XYZ`, `THIS IS FREE TEXT`, `AB`, `.U/CONT1/1/M/Y/FRA/N` (U is not in BSM) | null result and error code `UNKNOWN_ELEMENT_FOUND` | InvalidOperationException "Sequence contains no matching element" (4 red); the UNKNOWN_ELEMENT_FOUND branch is unreachable |
@@ -92,7 +93,7 @@ Additional observation: the validator's field positions for the 2/5/6-part branc
 | Raw_sql_returns_value_column | SKIPPED: needs PostgreSQL. Reason documents the expected EF error (column Value missing). |
 | Claim_sql_aliases_id_as_value (SourceGuard) | RED: SQL ends with `RETURNING "Id"` without `AS "Value"`. |
 
-## Bug 10 - JSON serialization of Onwards (RED)
+## Bug 10 - JSON serialization of Onwards (fixed)
 | Test | Input | Expected | Actual |
 |---|---|---|---|
 | Request_onwards_are_serialized (default and web options) | Two `OnwardFlightDto` records (LH401 13NOV MUC Y, EW9021 14NOV BER C) in TextMessageDepartureBagRequest | JSON contains airline, number, date, destination of each | Green after the fix. Before: onwards were ValueTuples, whose members are fields that System.Text.Json ignores, so each serialized as `{}` |
@@ -106,7 +107,7 @@ Additional observation: the validator's field positions for the 2/5/6-part branc
 | Bcm_subtype FCM | same with FCM | `Fcm` | `Fcm` (green) |
 | Bcm_subtype DBM | same with DBM | `Dbm` | `Fcm` (RED, hard-coded in BcmDbm) |
 
-## Bug 12 - Envelope handling (RED)
+## Bug 12 - Envelope handling (fixed)
 | Test | Input | Expected | Actual |
 |---|---|---|---|
 | GetMessageIdentifier_degenerate_input_does_not_throw_index_exceptions | `null`, `""`, `"BSM"`, 9 spaces, `"\r\n\r\n\r\n"` | No index exception | ArgumentOutOfRangeException for all 5 inputs (5 red) |
@@ -118,7 +119,7 @@ Additional observation: the validator's field positions for the 2/5/6-part branc
 | Endpoint_accepts_valid_bsm (Baseline) | Sample BSM | 200 and one row stored | Green |
 | GetMessageIdentifier_reads_header_and_footer (Baseline) | BSM, BSM CHG, BSM DEL | Header, secondary identifier, footer | Green |
 
-## Bug 13 - Newline handling (RED on Windows)
+## Bug 13 - Newline handling (fixed)
 | Test | Input | Expected | Actual (Windows) |
 |---|---|---|---|
 | GetMessageIdentifier_is_independent_of_line_ending LF | Sample BSM with `\n` | Header BSM, footer ENDBSM | ArgumentOutOfRangeException (`Span.Split(char[])` splits on the whole `\r\n` sequence, so LF-only text is one line) |
@@ -131,7 +132,7 @@ On Linux the separator is `['\n']`, so CRLF text would keep a trailing `\r` on e
 ## Bug 14 - Parsed result storage (RED)
 Model_contains_parsed_result_storage: expects at least one non-owned entity from the Api assembly besides TextMessage, TextMessageError, ElementError. Actual: none. The schema decision belongs to the owner.
 
-## Bug 15 - Additional finding: production DbContext model cannot be built (RED)
+## Bug 15 - Additional finding: production DbContext model cannot be built (fixed)
 Production_model_builds: `new TextMessageParserDbContext(options).Model` throws "The entity type 'Permission' requires a primary key". `DataStoreContext` has DbSets for User, Role, Permission and so on but applies configurations only from the Api assembly. Any real DbContext use (endpoint save, processing service) fails. Tests use `TestParserDbContext` to work around it.
 
 ## Baseline (Kind=Baseline, all green)

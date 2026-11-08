@@ -19,16 +19,15 @@ public sealed class BsmChg(IReadOnlyDictionary<string, Element> elementMap)
         string passengerName = string.Empty;
         string destination = string.Empty;
         string? passengerSecurityNumber = null;
-        char passengerProfileStatus = default;
+        char? passengerProfileStatus = null;
         string passengerSequenceNumber = string.Empty;
         char? passengerClass = default;
         string? seatNumber = null;
         bool authorityToLoad = false;
         bool authorityToTransport = false;
-        char passengerStatus;
+        char passengerStatus = default;
         bool bagTagStatus = false;
-        string? piecesWeightIndicator;
-        string? checkedWeight;
+        BaggageWeightDto? baggageWeight = null;
         List<OnwardFlightDto> Onwards = [];
         List<string> BagTags = [];
 
@@ -79,7 +78,7 @@ public sealed class BsmChg(IReadOnlyDictionary<string, Element> elementMap)
                     passengerStatus         = elementS.PassengerStatus;
                     passengerSecurityNumber = elementS.SecurityNumber;
                     passengerSequenceNumber = elementS.SequenceNumber;
-                    passengerProfileStatus  = elementS.PassengerProfileStatus;
+                    passengerProfileStatus  = elementS.PassengerProfileStatus == default(char) ? null : elementS.PassengerProfileStatus;
                     authorityToTransport    = elementS.AuthorityToTransport == 'Y';
                     bagTagStatus            = elementS.BaggageTagStatus == 'A';
                     break;
@@ -91,8 +90,10 @@ public sealed class BsmChg(IReadOnlyDictionary<string, Element> elementMap)
                     break;
                 case ElementW:
                     var elementW = (ElementW)element.Element;
-                    piecesWeightIndicator = elementW.PiecesWeightIndicator;
-                    checkedWeight = elementW.CheckedWeight;
+                    baggageWeight = new BaggageWeightDto(
+                        elementW.PiecesWeightIndicator, elementW.NumberOfCheckedBag, elementW.CheckedWeight,
+                        elementW.UncheckedWeight, elementW.Unit, elementW.LengthOfBag,
+                        elementW.WidthOfBag, elementW.HeightOfBag, elementW.BaggageTypeCode);
                     break;
             }
         }
@@ -107,8 +108,8 @@ public sealed class BsmChg(IReadOnlyDictionary<string, Element> elementMap)
             airlineCode, flightNumber, flightIataDate, destination,
             bagTagStatus, BagTags,
             Onwards,
-            passengerProfileStatus, passengerName, passengerSecurityNumber, passengerSequenceNumber, passengerClass,
-            seatNumber);
+            passengerStatus, passengerName, passengerSecurityNumber, passengerSequenceNumber, passengerClass,
+            seatNumber, baggageWeight, passengerProfileStatus);
     }
     protected override TextMessageDepartureBagChgDto Handle(long messageId, ElementResult[] elementResults)
          => ToChgDepartureBaggageDto(messageId, elementResults);

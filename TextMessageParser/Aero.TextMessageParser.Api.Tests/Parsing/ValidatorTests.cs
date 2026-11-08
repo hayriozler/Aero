@@ -58,56 +58,52 @@ public class ValidatorTests
         Check.True(!result.IsValid, $"Validator {id} accepted '{line}' with requirement {requirement}. {Why}");
     }
 
-    [Theory(DisplayName = "Bug 5: ElementS validator accepts valid values at the positions it checks (length 2, 5 and 6 branches)")]
+    [Theory(DisplayName = "Bug 5: ElementS accepts every well-formed .S/ line allowed by IATA Passenger Services Conference Resolutions Manual (30th ed.) section 2.3.22, including empty optional fields")]
     [Trait("Bug", "5")]
-    [InlineData(".S/B")]
-    [InlineData(".S/Y/12A/C/Y")]
-    [InlineData(".S/Y/12A/C/001/I")]
-    [InlineData(".S/Y/12A/C/001/A")]
-    public void ElementS_valid_values_pass(string line)
+    [InlineData(".S/Y")]
+    [InlineData(".S/N/4K")]
+    [InlineData(".S/Y//S/291")]
+    [InlineData(".S/Y/23A/C/016/678/Y/Y")]
+    [InlineData(".S/Y/23A/C/016/678/Y/Y/I")]
+    [InlineData(".S/Y/23A/C/016/678/N/N/A")]
+    [InlineData(".S/Y/23A/B")]
+    public void ElementS_valid_lines_pass(string line)
     {
-        const string Why = "The branches use 'if (array.ContainsSpan(value)) AddError(...)': the condition is inverted, so a value from the allowed list is reported as an error. Note the validator's field positions (1, 4, 5) also disagree with ElementS.Parse (status 3, profile 6, bag tag status 8).";
-        var result = new ElementSValidator().Validate(ElementDetails.Make(line, ElementRequirement.Mandatory));
+        const string Why = "Section 2.3.22: Authority to Load (Y/N) is the only mandatory field. Seat is f(f)a, passenger status B/C/N/S, sequence and security number are three digits, profile and transport authority Y/N, baggage tag status I/A. Every field after the first may be empty or omitted, as in the specification examples '.S/Y//S/291' and '.S/Y'.";
+        var result = new ElementSValidator().Validate(ElementDetails.Make(line, ElementRequirement.Conditional));
         Check.True(result.IsValid, $"'{line}' was rejected with {result.ErrorCode} ({result.Description}). {Why}");
     }
 
-    [Theory(DisplayName = "Bug 5: ElementS validator rejects invalid values at the positions it checks (length 2, 5 and 6 branches)")]
+    [Theory(DisplayName = "Bug 5: ElementS rejects a value that breaks the format of its field (position follows ElementS.Parse and the specification)")]
     [Trait("Bug", "5")]
-    [InlineData(".S/Q")]
-    [InlineData(".S/Y/12A/C/Q")]
-    [InlineData(".S/Y/12A/C/001/Z")]
-    public void ElementS_invalid_values_fail(string line)
+    [InlineData(".S/B", "S_04")]
+    [InlineData(".S/Q", "S_04")]
+    [InlineData(".S/Y/123", "S_05")]
+    [InlineData(".S/Y/A1", "S_05")]
+    [InlineData(".S/Y/1234A", "S_05")]
+    [InlineData(".S/Y/23A/Q", "S_01")]
+    [InlineData(".S/Y/23A/C/01", "S_06")]
+    [InlineData(".S/Y/23A/C/0AB", "S_06")]
+    [InlineData(".S/Y/23A/C/016/67", "S_07")]
+    [InlineData(".S/Y/23A/C/016/678/Q", "S_02")]
+    [InlineData(".S/Y/23A/C/016/678/Y/Q", "S_08")]
+    [InlineData(".S/Y/23A/C/016/678/Y/Y/Z", "S_03")]
+    public void ElementS_invalid_values_fail(string line, string expectedCode)
     {
-        const string Why = "Same inverted condition: values outside the allowed list sail through validation.";
-        var result = new ElementSValidator().Validate(ElementDetails.Make(line, ElementRequirement.Mandatory));
+        const string Why = "Each field has its own format in section 2.3.22. The old validator compared the wrong positions, used an inverted condition and only looked at lines with exactly 2, 5 or 6 fields.";
+        var result = new ElementSValidator().Validate(ElementDetails.Make(line, ElementRequirement.Conditional));
         Check.True(!result.IsValid, $"'{line}' was accepted. {Why}");
+        Check.Equal(expectedCode, result.ErrorCode, $"'{line}' was rejected with the wrong code. {Why}");
     }
 
-    [Theory(DisplayName = "Bug 5: ElementS validator rejects an invalid value in every field count that has no switch case (3, 4, 7, 8 and 9 fields)")]
+    [Theory(DisplayName = "Bug 5: ElementS rejects lines outside the 6 to 26 character range of the specification (the count includes the 2 character end delimiter)")]
     [Trait("Bug", "5")]
-    [InlineData(".S/Q/12A")]
-    [InlineData(".S/Y/12A/Q")]
-    [InlineData(".S/Y/12A/B/001/SEC/Q")]
-    [InlineData(".S/Y/12A/B/001/SEC/Y/Q")]
-    [InlineData(".S/Y/12A/B/001/SEC/Y/N/Z")]
-    public void ElementS_unchecked_lengths_reject_invalid_values(string line)
+    [InlineData(".S/")]
+    [InlineData(".S/Y/23A/C/016/678/Y/Y/A/X")]
+    public void ElementS_length_is_enforced(string line)
     {
-        const string Why = "The switch only handles ParsedText lengths 2, 5 and 6, so elements with 3, 4, 7, 8 or 9 slash-separated parts are never value-checked. Invalid authority-to-load, passenger status, profile, authority-to-transport or bag-tag status passes.";
-        var result = new ElementSValidator().Validate(ElementDetails.Make(line, ElementRequirement.Mandatory));
-        Check.True(!result.IsValid, $"'{line}' was accepted. {Why}");
-    }
-
-    [Theory(DisplayName = "Bug 5 (control): ElementS validator accepts fully valid elements of 3, 4, 7, 8 and 9 fields")]
-    [Trait("Kind", "Baseline")]
-    [InlineData(".S/Y/12A")]
-    [InlineData(".S/Y/12A/B")]
-    [InlineData(".S/Y/12A/B/001/SEC/Y")]
-    [InlineData(".S/Y/12A/B/001/SEC/Y/N")]
-    [InlineData(".S/Y/12A/B/001/SEC/Y/N/A")]
-    public void ElementS_valid_lengths_pass(string line)
-    {
-        var result = new ElementSValidator().Validate(ElementDetails.Make(line, ElementRequirement.Mandatory));
-        Check.True(result.IsValid, $"'{line}' must stay valid after the validator is fixed ({result.ErrorCode}).");
+        var result = new ElementSValidator().Validate(ElementDetails.Make(line, ElementRequirement.Conditional));
+        Check.True(!result.IsValid, $"'{line}' is outside the 6 to 26 character range of section 2.3.22 and must be rejected.");
     }
 
     [Theory(DisplayName = "Baseline: SplitOnSlash keeps empty fields and counts slashes + 1 fields")]

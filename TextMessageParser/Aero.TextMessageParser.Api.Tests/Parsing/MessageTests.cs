@@ -105,7 +105,7 @@ public class MessageTests
         const string Why = "ElementS.Parse assigns every property on every call (using default when a field is absent), so a leak is not expected here. Written as a probe; green means ElementS is NOT affected.";
         var bsm = new Bsm(ElementMapFactory.Create());
         using var db = TestDbContextFactory.Create();
-        bsm.ProcessMessage(TextMessages.From(BsmText(V, F, N1, ".S/Y/12A/B/001/SEC123/Y/N/A"), 1), db);
+        bsm.ProcessMessage(TextMessages.From(BsmText(V, F, N1, ".S/Y/12A/B/001/123/Y/N/A"), 1), db);
         var b = bsm.ProcessMessage(TextMessages.From(BsmText(V, F, N2, ".S/Y"), 2), db);
         Check.True(b is not null, "Message B must parse.");
         Check.True(b!.SeatNumber is null, $"Seat was '{b.SeatNumber}'. {Why}");
@@ -173,13 +173,13 @@ public class MessageTests
         Check.True(db.TextMessageElementErrorSet.Local.Count + db.TextMessageErrorSet.Local.Count > 0, $"No error recorded for '{fLine}'. {Why}");
     }
 
-    private const string StatusProfileS = ".S/Y/12A/B/001/SEC123/Y/N/A";
+    private const string StatusProfileS = ".S/Y/12A/B/001/123/Y/N/A";
 
     [Fact(DisplayName = "Bug 6: Bsm DTO PassengerStatus must be the S passenger status (B), not the profile status (Y)")]
     [Trait("Bug", "6")]
     public void Bsm_passenger_status_mapping()
     {
-        const string Why = "In .S/Y/12A/B/001/SEC123/Y/N/A field 3 is passenger status 'B' and field 6 is profile status 'Y'. Bsm assigns elementS.PassengerProfileStatus to the DTO's PassengerStatus argument and never uses passengerStatus.";
+        const string Why = "In .S/Y/12A/B/001/123/Y/N/A field 3 is passenger status 'B' and field 6 is profile status 'Y'. Bsm assigns elementS.PassengerProfileStatus to the DTO's PassengerStatus argument and never uses passengerStatus.";
         var bsm = new Bsm(ElementMapFactory.Create());
         using var db = TestDbContextFactory.Create();
         var dto = bsm.ProcessMessage(TextMessages.From(BsmText(V, F, N1, StatusProfileS, P)), db);
@@ -207,6 +207,47 @@ public class MessageTests
     {
         Check.True(dtoType.GetProperties().Any(p => p.Name.Contains("Weight", StringComparison.OrdinalIgnoreCase)),
             $"{dtoType.Name} has no weight property. Bsm/BsmChg read PiecesWeightIndicator and CheckedWeight from ElementW into locals that are never used, so .W/K/001/20 data is lost.");
+    }
+
+    [Fact(DisplayName = "Bug 6: the W element values of a BSM and a BSM CHG reach the DTO (.W/K/001/20 gives indicator K, 001 bags, 20 kg)")]
+    [Trait("Bug", "6")]
+    public void Weight_values_reach_the_dto()
+    {
+        const string W = ".W/K/001/20";
+        using var db = TestDbContextFactory.Create();
+        var create = new Bsm(ElementMapFactory.Create()).ProcessMessage(TextMessages.From(BsmText(V, F, N1, W, P)), db);
+        var change = new BsmChg(ElementMapFactory.Create()).ProcessMessage(TextMessages.From(ChgText(V, F, N1, W, P)), db);
+        foreach (var weight in new[] { create?.BaggageWeight, change?.BaggageWeight })
+        {
+            Check.True(weight is not null, "BaggageWeight must be filled when the message carries a .W/ element.");
+            Check.Equal("K", weight!.PiecesWeightIndicator, "Pieces/weight indicator.");
+            Check.Equal("001", weight.NumberOfCheckedBag, "Number of checked bags.");
+            Check.Equal("20", weight.CheckedWeight, "Checked weight.");
+        }
+    }
+
+    [Fact(DisplayName = "Bug 6: a BSM without a W element has no BaggageWeight, and the S profile status reaches the DTO separately from the passenger status")]
+    [Trait("Bug", "6")]
+    public void Absent_weight_is_null_and_profile_status_is_kept()
+    {
+        using var db = TestDbContextFactory.Create();
+        var dto = new Bsm(ElementMapFactory.Create()).ProcessMessage(TextMessages.From(BsmText(V, F, N1, StatusProfileS, P)), db);
+        Check.True(dto is not null, "Message must parse.");
+        Check.True(dto!.BaggageWeight is null, "No .W/ element was sent.");
+        Check.Equal('B', dto.PassengerStatus, "Passenger status is field 3.");
+        Check.Equal('Y', dto.PassengerProfileStatus, "Passenger profile status is field 6 and must not be lost.");
+    }
+
+    [Fact(DisplayName = "Bug 5/6: a .S/ line with empty optional fields (.S/Y//S/291) parses without exceptions and keeps the empty seat as null")]
+    [Trait("Bug", "6")]
+    public void Empty_optional_s_fields_do_not_crash_the_parser()
+    {
+        using var db = TestDbContextFactory.Create();
+        var dto = new Bsm(ElementMapFactory.Create()).ProcessMessage(TextMessages.From(BsmText(V, F, N1, ".S/Y//S/291", P)), db);
+        Check.True(dto is not null, "The specification's own example must parse.");
+        Check.True(dto!.SeatNumber is null, "An empty seat field must be null.");
+        Check.Equal('S', dto.PassengerStatus, "Passenger status S (stand-by).");
+        Check.Equal("291", dto.PassengerSequenceNumber, "Sequence number.");
     }
 
     [Theory(DisplayName = "Bug 7: BSM containing an unknown element line must yield UNKNOWN_ELEMENT_FOUND, not InvalidOperationException")]

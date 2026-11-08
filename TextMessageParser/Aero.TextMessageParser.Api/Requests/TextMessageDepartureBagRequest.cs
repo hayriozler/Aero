@@ -21,4 +21,6 @@ public sealed record TextMessageDepartureBagRequest(
     string? PassengerSecurityNumber,
     string PassengerSequenceNumber,
     char? PassengerClass,
-    string? SeatNumber);
+    string? SeatNumber,
+    BaggageWeightDto? BaggageWeight = null,
+    char? PassengerProfileStatus = null);

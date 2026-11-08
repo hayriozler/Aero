@@ -18,4 +18,6 @@ public sealed record TextMessageDepartureBagChgDto(long Id,
     string? PassengerSecurityNumber,
     string PassengerSequenceNumber,
     char? PassengerClass,
-    string? SeatNumber);
+    string? SeatNumber,
+    BaggageWeightDto? BaggageWeight = null,
+    char? PassengerProfileStatus = null);

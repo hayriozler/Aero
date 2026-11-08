@@ -13,5 +13,10 @@ public static class ErrorCodes
     public static readonly string PASSENGER_STATUS_VALUE_NOT_CORRECT = "S_01";
     public static readonly string PASSENGER_PROFIL_STATUS_VALUE_NOT_CORRECT = "S_02";
     public static readonly string BAGTAG_STATUS_VALUE_NOT_CORRECT = "S_03";
+    public static readonly string AUTHORITY_TO_LOAD_VALUE_NOT_CORRECT = "S_04";
+    public static readonly string SEAT_NUMBER_NOT_CORRECT           = "S_05";
+    public static readonly string SEQUENCE_NUMBER_NOT_CORRECT       = "S_06";
+    public static readonly string SECURITY_NUMBER_NOT_CORRECT       = "S_07";
+    public static readonly string AUTHORITY_TO_TRANSPORT_VALUE_NOT_CORRECT = "S_08";
     public static readonly string OUTBOUND_FLIGHT_NOT_CORRECT       = "F_01";
 }
