@@ -24,12 +24,11 @@ public class ElementIValidator : IElementValidator
             return validationResult;
         }
         int airlineLen = char.IsDigit(f1.Span[2]) ? 2 : 3;
-        for (int i = 0; i < airlineLen; i++)
-            if (!char.IsLetter(f1.Span[i]))
-            {
-                validationResult.AddError(ErrorCodes.ELEMENT_FORMAT_NOT_CORRECT, "ElementI airline wrong");
-                return validationResult;
-            }
+        if (!ValidationHelper.IsAirlineDesignator(f1.Span[..airlineLen]))
+        {
+            validationResult.AddError(ErrorCodes.ELEMENT_FORMAT_NOT_CORRECT, "ElementI airline wrong");
+            return validationResult;
+        }
         var flightNo = f1.Slice(airlineLen);
         int digits = 0;
         foreach (var c in flightNo.Span)

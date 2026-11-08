@@ -92,14 +92,14 @@ public class EnvelopeTests
         Check.Equal(HttpStatusCode.BadRequest, response.StatusCode, Why);
     }
 
-    [Fact(DisplayName = "Baseline: endpoint stores a valid BSM and answers 200")]
+    [Fact(DisplayName = "Baseline: endpoint stores a valid BSM and answers 202 Accepted")]
     [Trait("Kind", "Baseline")]
     public async Task Endpoint_accepts_valid_bsm()
     {
         using var factory = new ApiFactory(removeProcessingService: true);
         using var client = factory.CreateClient();
         var response = await client.PostAsJsonAsync("/api/textmessages", new { message = SampleMessages.SingleTagBsm() });
-        Check.Equal(HttpStatusCode.OK, response.StatusCode, "A well-formed BSM must be accepted.");
+        Check.Equal(HttpStatusCode.Accepted, response.StatusCode, "A well-formed BSM must be accepted for later processing.");
         using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<TextMessageParserDbContext>();
         Check.Equal(1, db.TextMessagesSet.Count(), "Exactly one TextMessage row must be stored.");

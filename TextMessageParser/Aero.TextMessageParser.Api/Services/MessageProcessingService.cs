@@ -58,7 +58,7 @@ public class MessageProcessingService(
 
         if (claimedIds.Count == 0)
         {
-            logger.LogInfo("No messages found for processing");
+            logger.LogDebug("No messages found for processing");
             return;
         }
 

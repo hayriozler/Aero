@@ -176,6 +176,21 @@ IATA table 2.2 names three header concepts: the Standard Message Identifier (BSM
 | Parsed_header_finds_its_handler (8 cases) | Every supported message type | Routing key from stored text exists in the handler map | Green |
 | Old_rows_still_route_and_parse | CHG stored in the secondary column | Same routing key, message parses | Green |
 
+## Intake endpoint, spaces, airline designators (medium items A4, A6, K6)
+The endpoint answers 202 Accepted with the id of the stored row, rejections use the standard problem details format (400, 413), a message is limited to `Consts.MaxMessageLength` (4000) characters, and the database call honours request cancellation. Authentication stays at the gateway (`SharedPolicy` on `/api/textmessages`). Spaces around header, END or element lines are not tolerated: the endpoint rejects a padded header or END line, the parser rejects padded CHG, END and element lines. Airline designators may contain a digit (`4U`, `9W`, `3K`): `ValidationHelper.IsAirlineDesignator` accepts two alphanumeric characters with at least one letter, or three letters; `ElementIValidator` uses the same helper.
+| Test | Input | Expected | Actual |
+|---|---|---|---|
+| Accepted_response_carries_the_stored_id | Valid BSM | 202 and `id` equal to the stored row id | Green |
+| Too_long_message_is_rejected | Message of 4000 + extra characters | 413, nothing stored | Green |
+| Message_at_the_limit_is_accepted | Exactly 4000 characters | 202 | Green |
+| Bad_request_is_a_problem_details_response | One line message | 400 with `application/problem+json` | Green |
+| Padded_envelope_lines_are_rejected (3 cases) | `BSM `, `ENDBSM `, ` BSM` | 400 | Green |
+| Padded_lines_are_rejected_by_the_parser (3 cases) | `CHG `, `ENDBSM `, element line with trailing space | Parse fails | Green |
+| Valid_flight_identifiers (7 cases) | LH400, EW9021, 9W123, 4U1234, 3K567, A1234, BAW123 | Valid | Green |
+| Invalid_flight_identifiers (4 cases) | 12345, L-400, LH40A, LH | Rejected | Green |
+| Element_f_splits_a_digit_airline | `.F/9W123/12NOV/JFK/Y` | Airline `9W`, flight `123` | Green |
+| Inbound_and_onward_accept_digit_airlines (2 cases) | `.I/9W123/...`, `.O/4U1234/...` | Valid | Green |
+
 ## Baseline (Kind=Baseline, all green)
 Single-tag BSM parse; BSM CHG and DEL parse; SplitOnSlash (4 cases); ValidationHelper flight number (5), IATA date (5), airport code (4); Install extensions; model builds with test context; endpoint accepts valid BSM; GetMessageIdentifier happy path; scalar JSON; ElementS valid lengths (5); malformed controls (7).
 
