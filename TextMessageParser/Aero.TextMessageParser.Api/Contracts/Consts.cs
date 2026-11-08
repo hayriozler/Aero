@@ -3,6 +3,7 @@
 public class Consts
 {
     public static readonly char[] NEW_LINE_SEPERATOR = ['\r', '\n'];
+    public const int MaxBagTagSerial = 999999;
     public const string BCM = "BCM"; // Baggage Control Message, it is the main message and other messages are related to it by using its identifier as secondary identifier
     public const string BAM = "BAM"; // Baggage Acknowledgement Message
     public const string END = "END"; // End of Message, it is used to identify the end of message and the type of message it is ending for is identified by using the secondary identifier

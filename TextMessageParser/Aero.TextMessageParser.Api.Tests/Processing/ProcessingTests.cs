@@ -1,3 +1,4 @@
+using Aero.TextMessageParser.Api.Services;
 using System.Text.RegularExpressions;
 using Aero.TextMessageParser.Api.Entities;
 using Aero.TextMessageParser.Api.Parsers.Messages;

@@ -2,7 +2,6 @@ using Aero.TextMessageParser.Api.Contracts;
 using Aero.TextMessageParser.Api.Entities;
 using Aero.TextMessageParser.Api.Extensions;
 using Aero.TextMessageParser.Api.Parsers.Elements;
-using Aero.TextMessageParser.Api.Persistence;
 using Aero.TextMessageParser.Api.ValueObjects;
 
 namespace Aero.TextMessageParser.Api.Parsers.Messages;
@@ -11,6 +10,7 @@ public abstract class MessageBase<TResult>(
     MessageHeader header,
     IReadOnlyDictionary<string, Element> elementMap)
     : IMessageHandler
+    where TResult : class
 {
     public string EndIdentifier => $"END{header.Identifier}";
     public string MessageName
@@ -73,34 +73,24 @@ public abstract class MessageBase<TResult>(
         return [.. result];
     }
 
-    private (bool IsValid, ElementResult[] ElementResults) ValidateAndCollectErrors(
-        TextMessage message, TextMessageParserDbContext dbContext)
+    public ParseResult<TResult> Parse(TextMessage message)
     {
         var validationResult = ValidateMessage(message);
         if (!validationResult.IsValid)
-        {
-            dbContext.TextMessageErrorSet.Add(
-                TextMessageError.Create(message.Id, validationResult.ErrorCode!, validationResult.Description));
-            return (false, []);
-        }
+            return ParseResult<TResult>.Failure(ParseError.ForMessage(validationResult.ErrorCode!, validationResult.Description));
 
         List<ElementResult> results = [];
-        var elementResults = ParseElements(validationResult.Msg.Elements);
-        foreach (var kv in elementResults)
+        foreach (var kv in ParseElements(validationResult.Msg.Elements))
         {
-            foreach (var er in kv.Value)
+            foreach (var elementResult in kv.Value)
             {
-                if (er.ValidationResult is { IsValid: false } vr)
-                {
-                    dbContext.TextMessageElementErrorSet.Add(
-                        ElementError.Create(message.Id, vr.ErrorCode, vr.Description));
-                    return (false, []);
-                }
+                if (elementResult.ValidationResult is { IsValid: false } vr)
+                    return ParseResult<TResult>.Failure(ParseError.ForElement(vr.ErrorCode, vr.Description));
             }
             results.AddRange(kv.Value);
         }
 
-        return (true, [.. results]);
+        return ParseResult<TResult>.Success(Handle(message.Id, [.. results]));
     }
     protected abstract TResult Handle(long messageId, ElementResult[] elementResults);
 
@@ -200,10 +190,4 @@ public abstract class MessageBase<TResult>(
         return parsed;
     }
     public abstract IReadOnlyList<ElementSequence> ElementSequences { get; }
-    public TResult? ProcessMessage(TextMessage message, TextMessageParserDbContext dbContext)
-    {
-        var (isValid, elementResults) = ValidateAndCollectErrors(message, dbContext);
-        if (!isValid) return default;
-        return Handle(message.Id, elementResults);
-    }
 }

@@ -7,6 +7,7 @@ namespace Aero.TextMessageParser.Api.Services;
 public sealed class MessageProcessor<TResult>(
     MessageBase<TResult> parser,
     TextMessageParserDbContext dbContext) : IMessageProcessor
+    where TResult : class
 {
     public Task<bool> ProcessAsync(TextMessage message, CancellationToken cancellationToken)
     {

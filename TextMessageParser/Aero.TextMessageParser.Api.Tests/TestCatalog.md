@@ -144,6 +144,18 @@ Production_model_builds: `new TextMessageParserDbContext(options).Model` throws 
 | Mark_failed_completes_a_claimed_message | Claimed message, `MarkFailed(at)` | ERROR, Completed, ProcessDateTime = at | Green |
 | Completing_requires_a_claimed_message | Unclaimed message, and an already completed one | InvalidOperationException | Green |
 
+## Parser without a database, shared mapping (clean architecture step)
+`MessageBase<TResult>.Parse(TextMessage)` returns a `ParseResult<TResult>` (a value or a list of `ParseError`s, each flagged as message level or element level) and no longer knows the DbContext. `MessageParserExtensions.ProcessMessage(parser, message, db)` in the Services namespace parses and writes the errors to `MessageErrors` / `ElementErrors`; `MessageProcessor` uses it. BSM, BSM CHG and BSM DEL share `BsmFields` (reads the elements once) and `BsmMapper` (builds the DTO). BCM FOM, FCM and DBM share one `Handle` in `BcmBase`; the sub type comes from the identifier.
+| Test | Input | Expected | Actual |
+|---|---|---|---|
+| Valid_message_succeeds_without_a_database (Baseline) | Single tag BSM | Success, no errors, one bag tag | Green |
+| Message_level_problem_is_a_message_error | BSM ending with ENDBUM | One message level error `MSG_BSM_END_INVALID`, no value | Green |
+| Element_level_problem_is_an_element_error | BSM with `.F/LH400` | One element level error, no value | Green |
+| Bsm_and_chg_share_the_same_mapping | Same elements (two tags, onward, S, W, P) as BSM and BSM CHG | Identical JSON for both DTOs | Green |
+| Delete_uses_the_shared_reader | BSM DEL with two tags | Both tags, airline, destination | Green |
+| Bcm_variants_share_the_handler (Baseline, 3 cases) | FOM, FCM, DBM | Own sub type, airline and flight number | Green |
+| Missing_source_indicator_names_the_message_type | BSM CHG without `.V/` | No value | Green |
+
 ## Baseline (Kind=Baseline, all green)
 Single-tag BSM parse; BSM CHG and DEL parse; SplitOnSlash (4 cases); ValidationHelper flight number (5), IATA date (5), airport code (4); Install extensions; model builds with test context; endpoint accepts valid BSM; GetMessageIdentifier happy path; scalar JSON; ElementS valid lengths (5); malformed controls (7).
 

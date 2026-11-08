@@ -85,6 +85,7 @@ public static class ServiceCollectionExtensions
 
     private static void AddProcessor<TParser, TResult>(this IServiceCollection services, string key)
         where TParser : MessageBase<TResult>
+        where TResult : class
         => services.AddKeyedScoped<IMessageProcessor>(key, (sp, _) =>
             new MessageProcessor<TResult>(
                 sp.GetRequiredService<TParser>(),

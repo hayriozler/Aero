@@ -8,6 +8,7 @@ public abstract class BsmBase<TResult>(
     string? changeOfStatus,
     IReadOnlyDictionary<string, Element> elementMap)
     : MessageBase<TResult>(new MessageHeader(Consts.BSM, null, changeOfStatus), elementMap)
+    where TResult : class
 {
     public override IReadOnlyList<ElementSequence> ElementSequences =>
     [
