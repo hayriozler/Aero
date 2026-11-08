@@ -7,7 +7,6 @@ public class ElementNValidator : IElementValidator
     public ElementValidationResult Validate(ElementDetail elementDetail)
     {
         var validationResult = new ElementValidationResult();
-        if (elementDetail.Requirement != ElementRequirement.Mandatory) return validationResult;
         if (elementDetail.Length != 18)
         {
             validationResult.AddError(ErrorCodes.ERROR_CODE_MSG_LEN_NOT_CORRECT, "ElementN length must be 18");

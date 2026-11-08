@@ -140,13 +140,14 @@ public class MessageTests
             using var barrier = new Barrier(Parallelism);
             var tasks = Enumerable.Range(0, Parallelism).Select(i => Task.Factory.StartNew(() =>
             {
-                var raw = BsmText(V, F, $".N/0220{i + 100:D6}001", $".P/DOE{i}/NAME{i}");
+                var suffix = string.Concat(i.ToString().Select(c => (char)('A' + (c - '0'))));
+                var raw = BsmText(V, F, $".N/0220{i + 100:D6}001", $".P/DOE{suffix}/NAME{suffix}");
                 var message = TextMessages.From(raw, i);
                 using var db = TestDbContextFactory.Create();
                 barrier.SignalAndWait();
                 var dto = bsm.ProcessMessage(message, db);
                 var expectedTag = $"0220{i + 100:D6}";
-                if (dto is null || !dto.BagTags.SequenceEqual(new[] { expectedTag }) || dto.PassengerName != $"NAME{i} DOE{i}")
+                if (dto is null || !dto.BagTags.SequenceEqual(new[] { expectedTag }) || dto.PassengerName != $"NAME{suffix} DOE{suffix}")
                     mismatches.Add($"msg {i}: tags=[{string.Join(",", dto?.BagTags ?? [])}] name={dto?.PassengerName}");
             }, TaskCreationOptions.LongRunning)).ToArray();
             await Task.WhenAll(tasks);
@@ -170,16 +171,6 @@ public class MessageTests
         Check.True(ex is null, $"'{fLine}' threw {ex?.GetType().Name}: {ex?.Message}. {Why}");
         Check.True(dto is null, $"'{fLine}' produced a DTO. {Why}");
         Check.True(db.TextMessageElementErrorSet.Local.Count + db.TextMessageErrorSet.Local.Count > 0, $"No error recorded for '{fLine}'. {Why}");
-    }
-
-    [Fact(DisplayName = "Bug 4 (current behavior): malformed Conditional .F line currently escapes as an index exception")]
-    [Trait("Bug", "4")]
-    public void Malformed_conditional_f_currently_throws()
-    {
-        var bsm = new Bsm(ElementMapFactory.Create());
-        using var db = TestDbContextFactory.Create();
-        var ex = Record.Exception(() => bsm.ProcessMessage(TextMessages.From(BsmText(V, ".F/", N1, P)), db));
-        Check.True(ex is IndexOutOfRangeException or ArgumentOutOfRangeException, $"Documents today's behavior; observed {ex?.GetType().Name ?? "no exception"}.");
     }
 
     private const string StatusProfileS = ".S/Y/12A/B/001/SEC123/Y/N/A";

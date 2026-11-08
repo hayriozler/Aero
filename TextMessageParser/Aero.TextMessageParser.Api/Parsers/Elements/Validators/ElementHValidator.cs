@@ -7,7 +7,6 @@ public class ElementHValidator : IElementValidator
     public ElementValidationResult Validate(ElementDetail elementDetail)
     {
         var validationResult = new ElementValidationResult();
-        if (elementDetail.Requirement != ElementRequirement.Mandatory) return validationResult;
         if (elementDetail.Length < 11 || elementDetail.Length > 28)
         {
             validationResult.AddError(ErrorCodes.ERROR_CODE_MSG_LEN_NOT_CORRECT, "ElementH length wrong");

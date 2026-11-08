@@ -9,7 +9,6 @@ public class ElementBValidator : IElementValidator
     public ElementValidationResult Validate(ElementDetail elementDetail)
     {
         var validationResult = new ElementValidationResult();
-        if (elementDetail.Requirement != ElementRequirement.Mandatory) return validationResult;
 
         if (elementDetail.Length < 18 || elementDetail.Length > 23)
         {

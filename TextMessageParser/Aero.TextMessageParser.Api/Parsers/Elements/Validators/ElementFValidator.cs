@@ -7,7 +7,6 @@ public class ElementFValidator : IElementValidator
     public ElementValidationResult Validate(ElementDetail elementDetail)
     {
         var validationResult = new ElementValidationResult();
-        if (elementDetail.Requirement != ElementRequirement.Mandatory) return validationResult;
         if (elementDetail.Length < 15 || elementDetail.Length > 25)
         {
             validationResult.AddError(ErrorCodes.ERROR_CODE_MSG_LEN_NOT_CORRECT, "ElementF length wrong");

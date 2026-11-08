@@ -55,7 +55,6 @@ The service will no longer talk to the Scanner API, so these were dropped and ar
 | Malformed_element_is_rejected_when_mandatory (control, Baseline) | `.F/ .I/ .O/ .P/ .S/ .U/ .W/` as Mandatory | Rejected | Rejected (green); proves the samples are malformed |
 | Malformed_element_is_rejected_regardless_of_requirement | The same 7 lines with Conditional and with Optional (14 cases) | Rejected | All 14 accepted (red) because every validator starts with `if (Requirement != Mandatory) return valid` |
 | Malformed_conditional_f_gives_error_not_exception | BSM with `.F/`, `.F/LH400`, `.F/LH400/12NOV`, `.F/XX/YY/ZZ/Q` | `ProcessMessage` returns null and an error row is recorded | IndexOutOfRangeException from ElementF.Parse (4 cases red) |
-| Malformed_conditional_f_currently_throws | BSM with `.F/` | Documents the exception type | IndexOutOfRangeException (green, documents current behavior) |
 
 ## Bug 5 - ElementSValidator (RED)
 | Test | Input | Expected | Actual |

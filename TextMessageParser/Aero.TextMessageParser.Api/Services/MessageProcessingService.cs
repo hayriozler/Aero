@@ -50,7 +50,7 @@ public class MessageProcessingService(
                     LIMIT {1}
                     FOR UPDATE SKIP LOCKED
                 )
-                RETURNING ""Id""", claimedAt, _batchSize)
+                RETURNING ""Id"" AS ""Value""", claimedAt, _batchSize)
             .ToListAsync(cancellationToken);
 
         if (claimedIds.Count == 0)
