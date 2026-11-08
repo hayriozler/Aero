@@ -59,7 +59,7 @@ public abstract class MessageParser<TResult>(
         var seqs = ElementSequences;
         var result = new List<int>(seqs.Count);
         for (int i = 0; i < seqs.Count; i++)
-            if (seqs[i].Requirement == ElementRequirement.Mandatory)
+            if (seqs[i].Requirement == ElementRequirement.Mandatory && Consts.EssentialElements.Contains(seqs[i].ElementName))
                 result.Add(i);
         return [.. result];
     }
@@ -69,7 +69,7 @@ public abstract class MessageParser<TResult>(
         var seqs = ElementSequences;
         var result = new List<int>(seqs.Count);
         for (int i = 0; i < seqs.Count; i++)
-            if (!seqs[i].IsMultiple)
+            if (!seqs[i].IsMultiple && Consts.EssentialElements.Contains(seqs[i].ElementName))
                 result.Add(i);
         return [.. result];
     }
@@ -80,8 +80,9 @@ public abstract class MessageParser<TResult>(
         if (!validationResult.IsValid)
             return ParseResult<TResult>.Failure(ParseError.ForMessage(validationResult.ErrorCode!, validationResult.Description));
 
+        List<ParseError> warnings = [];
         List<ElementResult> results = [];
-        foreach (var kv in ParseElements(validationResult.Msg.Elements))
+        foreach (var kv in ParseElements(validationResult.Msg.Elements, warnings))
         {
             foreach (var elementResult in kv.Value)
             {
@@ -91,8 +92,14 @@ public abstract class MessageParser<TResult>(
             results.AddRange(kv.Value);
         }
 
-        return ParseResult<TResult>.Success(Handle(message.Id, [.. results]));
+        var rule = ValidateResults(results);
+        if (rule is not null)
+            return ParseResult<TResult>.Failure(rule);
+
+        return ParseResult<TResult>.Success(Handle(message.Id, [.. results]), warnings);
     }
+    protected virtual ParseError? ValidateResults(IReadOnlyList<ElementResult> results) => null;
+
     protected abstract TResult Handle(long messageId, ElementResult[] elementResults);
 
     protected MessageValidationResult ValidateMessage(TextMessage textMessage)
@@ -161,7 +168,7 @@ public abstract class MessageParser<TResult>(
     }
 
     protected Dictionary<string, List<ElementResult>> ParseElements(
-        IReadOnlyList<ElementDetail> elementDetails)
+        IReadOnlyList<ElementDetail> elementDetails, List<ParseError> warnings)
     {
         var parsed = new Dictionary<string, List<ElementResult>>(ElementSequences.Count, StringComparer.Ordinal);
         var seqs = ElementSequences;
@@ -181,6 +188,12 @@ public abstract class MessageParser<TResult>(
             if (!parsed.TryGetValue(seq.ElementName, out var list))
                 parsed[seq.ElementName] = list = [];
             var elementResult = el.Parse(detail);
+            if (elementResult.ValidationResult is { IsValid: false } failed
+                && !Consts.EssentialElements.Contains(seq.ElementName))
+            {
+                warnings.Add(ParseError.ForElement(failed.ErrorCode, failed.Description, failed.Line));
+                continue;
+            }
             if (elementResult.ValidationResult is { IsValid: false })
             {
                 parsed[seq.ElementName] = [elementResult];

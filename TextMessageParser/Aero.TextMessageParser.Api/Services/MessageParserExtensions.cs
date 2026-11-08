@@ -23,6 +23,8 @@ public static class MessageParserExtensions
             else
                 dbContext.MessageErrors.Add(TextMessageError.Create(message.Id, error.ErrorCode, error.Description));
         }
+        foreach (var warning in result.Warnings)
+            dbContext.ElementErrors.Add(ElementError.Create(message.Id, warning.ErrorCode, Describe(warning)));
         return result.Value;
     }
 

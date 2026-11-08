@@ -13,62 +13,64 @@ public class ElementXValidator : IElementValidator
             validationResult.AddError(ErrorCodes.ELEMENT_LENGTH_NOT_CORRECT, "ElementX length wrong");
             return validationResult;
         }
-        if (elementDetail.ParsedText.Length < 2 || elementDetail.ParsedText[1].IsEmpty)
+        var fields = elementDetail.ParsedText;
+
+        if (Has(fields, 1))
         {
-            validationResult.AddError(ErrorCodes.ELEMENT_FIELD_MISSING, "ElementX instruction missing");
-            return validationResult;
+            if (fields[1].Length != 3)
+            {
+                validationResult.AddError(ErrorCodes.ELEMENT_LENGTH_NOT_CORRECT, "ElementX instruction must be 3");
+                return validationResult;
+            }
+            if (!Consts.SCREEN_INSTRUCTION_ARRAY.ContainsSpan(fields[1].Span))
+            {
+                validationResult.AddError(ErrorCodes.ELEMENT_VALUE_NOT_CORRECT, "ElementX instruction invalid");
+                return validationResult;
+            }
         }
-        if (elementDetail.ParsedText[1].Length != 3)
+        if (Has(fields, 2))
         {
-            validationResult.AddError(ErrorCodes.ELEMENT_LENGTH_NOT_CORRECT, "ElementX instruction must be 3");
-            return validationResult;
-        }
-        if (!Consts.SCREEN_INSTRUCTION_ARRAY.ContainsSpan(elementDetail.ParsedText[1].Span))
-        {
-            validationResult.AddError(ErrorCodes.ELEMENT_VALUE_NOT_CORRECT, "ElementX instruction invalid");
-            return validationResult;
-        }
-        if (elementDetail.ParsedText.Length > 2)
-        {
-            if (elementDetail.ParsedText[2].Length != 3)
+            if (fields[2].Length != 3)
             {
                 validationResult.AddError(ErrorCodes.ELEMENT_LENGTH_NOT_CORRECT, "ElementX result must be 3");
                 return validationResult;
             }
-            if (!Consts.SCREEN_RESULT_ARRAY.ContainsSpan(elementDetail.ParsedText[2].Span))
+            if (!Consts.SCREEN_RESULT_ARRAY.ContainsSpan(fields[2].Span))
             {
                 validationResult.AddError(ErrorCodes.ELEMENT_VALUE_NOT_CORRECT, "ElementX result invalid");
                 return validationResult;
             }
         }
-        if (elementDetail.ParsedText.Length > 3)
+        if (Has(fields, 3))
         {
-            if (elementDetail.ParsedText[3].Length != 1)
+            if (fields[3].Length != 1)
             {
                 validationResult.AddError(ErrorCodes.ELEMENT_LENGTH_NOT_CORRECT, "ElementX reason must be 1");
                 return validationResult;
             }
-            if (!Consts.SCREEN_RESULT_REASON_ARRAY.ContainsSpan(elementDetail.ParsedText[3].Span))
+            if (!Consts.SCREEN_RESULT_REASON_ARRAY.ContainsSpan(fields[3].Span))
             {
                 validationResult.AddError(ErrorCodes.ELEMENT_VALUE_NOT_CORRECT, "ElementX reason invalid");
                 return validationResult;
             }
         }
-        if (elementDetail.ParsedText.Length > 4 && (elementDetail.ParsedText[4].Length < 2 || elementDetail.ParsedText[4].Length > 4))
+        if (Has(fields, 4) && (fields[4].Length < 2 || fields[4].Length > 4))
         {
             validationResult.AddError(ErrorCodes.ELEMENT_LENGTH_NOT_CORRECT, "ElementX method len wrong");
             return validationResult;
         }
-        if (elementDetail.ParsedText.Length > 5 && elementDetail.ParsedText[5].Length > 8)
+        if (Has(fields, 5) && fields[5].Length > 8)
         {
             validationResult.AddError(ErrorCodes.ELEMENT_LENGTH_NOT_CORRECT, "ElementX autograph too long");
             return validationResult;
         }
-        if (elementDetail.ParsedText.Length > 6 && elementDetail.ParsedText[6].Length > 38)
+        if (Has(fields, 6) && fields[6].Length > 38)
         {
             validationResult.AddError(ErrorCodes.ELEMENT_LENGTH_NOT_CORRECT, "ElementX free text too long");
             return validationResult;
         }
         return validationResult;
     }
+
+    private static bool Has(ReadOnlyMemory<char>[] fields, int index) => fields.Length > index && !fields[index].IsEmpty;
 }

@@ -1,0 +1,552 @@
+@host = http://localhost:5112
+
+### ============ BSM ============
+
+### BSM: full message with outbound, onward, bag tag, reconciliation, weight and passenger
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BSM\n.V/1LZRH////123ABC456Z\n.F/LH400/12NOV/JFK/Y\n.O/LH401/13NOV/MUC/Y\n.N/0220123456001\n.S/Y/12A/B/001/123/Y/N/A\n.W/K/001/20/CM/55/40/20/XYZ\n.P/DOE/JOHN\nENDBSM"}
+
+### BSM: minimum for sortation (V, F, N)
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BSM\n.V/1LZRH\n.F/SR101/18APR/JFK/F\n.N/0085123456003\nENDBSM"}
+
+### BSM: three consecutive bag tags (0220123456, 0220123457, 0220123458)
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BSM\n.V/1LFRA\n.F/LH400/12NOV/JFK/Y\n.N/0220123456003\n.P/DOE/JOHN\nENDBSM"}
+
+### BSM: serial wraps from 999999 to 000000 (0220999998, 0220999999, 0220000000, 0220000001)
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BSM\n.V/1LFRA\n.F/LH400/12NOV/JFK/Y\n.N/0220999998004\n.P/DOE/JOHN\nENDBSM"}
+
+### BSM: flight lines without a class
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BSM\n.V/1LZRH\n.F/LH400/12NOV/JFK\n.I/AZ318/11NOV/FCO\n.O/SR1234/18APR/ATL\n.N/0220123456001\n.P/DOE/JOHN\nENDBSM"}
+
+### BSM: flight number with a trailing letter (LH400A)
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BSM\n.V/1LZRH\n.F/LH400A/12NOV/JFK/Y\n.N/0220123456001\nENDBSM"}
+
+### BSM: digit airline code (4U)
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BSM\n.V/1LZRH\n.F/4U1234/12NOV/JFK/Y\n.N/0220123456001\nENDBSM"}
+
+### BSM: repeated .E, .R, .G and .Y that BRS does not use (processed, not rejected)
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BSM\n.V/1LZRH////123ABC456Z\n.F/SR101/18APR/JFK/F\n.N/0085123456001\n.P/SMITH/TOM\n.G/25NOV1600/25NOV2200/Willem de Zwijger laan 234\n.G/Zuid Holland/Nederland\n.Y/KL662503/GOLD\n.Y/AB123\n.E/IROP\n.E/UNAC\n.E/RRTE\n.E/STCK\n.R/VIP\n.R/DELAYED INBOUND\n.X//CLR//AT/TSA123\nENDBSM"}
+
+### BSM: invalid .E (processed with a warning in ElementErrors, because BRS does not use .E)
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BSM\n.V/1LZRH\n.F/LH400/12NOV/JFK/Y\n.N/0220123456001\n.E/R1\n.P/DOE/JOHN\nENDBSM"}
+
+### ============ BSM CHG and DEL ============
+
+### BSM CHG
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BSM\nCHG\n.V/1LZRH\n.F/LH400/12NOV/JFK/Y\n.N/0220123456001\n.S/Y/12A/B/001/123/Y/N/A\n.P/DOE/JOHN\nENDBSM"}
+
+### BSM DEL
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BSM\nDEL\n.V/1LZRH////123ABC456Z\n.F/SR101/18APR/JFK/C\n.N/0085123457001\n.S/N\nENDBSM"}
+
+### ============ BUM ============
+
+### BUM: one bag
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BUM\n.V/1LPIT////123ABC456Z\n.F/US14/01MAY/MUC/J\n.U/AVE0321US/0012/T/J/MUC\n.N/0037336127001\n.Q/026\n.P/1BROWNE/L\nENDBUM"}
+
+### BUM: two bags in two containers (repeated .U .N .Q .P)
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BUM\n.V/1LPIT////123ABC456Z\n.F/US816/01MAY/FRA/Y\n.U/AVE0321US/0012/T/Y/FRA\n.N/0037336127001\n.Q/026\n.P/WILSON/SARA\n.U/AKV9876US//T/Y/FRA\n.N/0125886172001\n.Q/012\n.P/BROWN/LEE\nENDBUM"}
+
+### BUM: two bags, no container information
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BUM\n.V/1LFRA////123ABC456Z\n.F/UA941/27MAY/ORD/J\n.N/0016170357001\n.N/0016170421001\nENDBUM"}
+
+### ============ BCM ============
+
+### BCM FOM: flight open, repeated .R
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BCM\nFOM\n.V/1TFRA\n.F/LH3348/20MAR/GVA/J\n.H/T4/GREEN/D46\n.R/FIRST\n.R/SECOND\nENDBCM"}
+
+### BCM FCM: flight closed
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BCM\nFCM\n.V/1TFRA\n.F/LH3348/20MAR/GVA\nENDBCM"}
+
+### BCM DBM: delete baggage data, flight line without destination
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BCM\nDBM\n.V/1LFRA//LH3348007/A/123ABC456Z\n.F/LH3348/20MAR\nENDBCM"}
+
+### ============ Messages that must end as ERROR (accepted with 202, rejected while parsing) ============
+
+### Bad outbound flight line (element error 1001/F_01 with the line)
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BSM\n.V/1LZRH\n.F/LH400\n.N/0220123456001\nENDBSM"}
+
+### Bag tag with the wrong length
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BSM\n.V/1LZRH\n.F/LH400/12NOV/JFK/Y\n.N/022012345\nENDBSM"}
+
+### Bag tag with consecutive count 000
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BSM\n.V/1LZRH\n.F/LH400/12NOV/JFK/Y\n.N/0220123456000\nENDBSM"}
+
+### BSM without the mandatory .V
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BSM\n.F/LH400/12NOV/JFK/Y\n.N/0220123456001\nENDBSM"}
+
+### BUM without the mandatory .F
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BUM\n.V/1LPIT\n.N/0037336127001\nENDBUM"}
+
+### BSM with an element that is not part of the BSM (.A)
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BSM\n.V/1LZRH\n.F/LH400/12NOV/JFK/Y\n.N/0220123456001\n.A/QF006201/BSM/ACK\nENDBSM"}
+
+### Unknown element line
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BSM\n.V/1LZRH\n.F/LH400/12NOV/JFK/Y\n.Z/XYZ\n.N/0220123456001\nENDBSM"}
+
+### Message type without a handler
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"XYZ\n.V/1LZRH\nENDXYZ"}
+
+### ============ Messages rejected at intake (HTTP 400 or 413, nothing is stored) ============
+
+### Wrong END line
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BSM\n.V/1LZRH\n.F/LH400/12NOV/JFK/Y\n.N/0220123456001\nENDBUM"}
+
+### Header with a space
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BSM DEL\n.V/1LZRH\n.N/0220123456001\nENDBSM"}
+
+### Too short
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BSM"}
+
+
+### ============ Element variants: each of these is processed (PROCESSED) ============
+
+### .V with a message reference and an acknowledgement request
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BSM\n.V/1TLHR//BA21900123/A\n.F/LH400/12NOV/JFK/Y\n.N/0220123456001\nENDBSM"}
+
+### .V with a part number, a reference and an acknowledgement request
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BSM\n.V/1TDFW/PART1/BA21900123/A\n.F/LH400/12NOV/JFK/Y\n.N/0220123456001\nENDBSM"}
+
+### .V with only encryption
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BSM\n.V/1TCDG////123ABC456Z\n.F/LH400/12NOV/JFK/Y\n.N/0220123456001\nENDBSM"}
+
+### Terminating baggage (source X): .I and no .F
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BSM\n.V/1XFRA\n.I/KL067/02APR/AMS/F\n.N/0074123456005\nENDBSM"}
+
+### Remote baggage (source R)
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BSM\n.V/1RFRA\n.F/LH400/12NOV/JFK/Y\n.D/HOTC/MARRIOTT/07MAY/084512L/HV/VANE79HJT\n.N/0220123456001\nENDBSM"}
+
+### .S: authority to load only
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BSM\n.V/1LZRH\n.F/LH400/12NOV/JFK/Y\n.N/0220123456001\n.S/Y\nENDBSM"}
+
+### .S: authority, seat and status
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BSM\n.V/1LZRH\n.F/LH400/12NOV/JFK/Y\n.N/0220123456001\n.S/Y/23A/C\nENDBSM"}
+
+### .S: empty seat, stand-by status and sequence number
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BSM\n.V/1LZRH\n.F/LH400/12NOV/JFK/Y\n.N/0220123456001\n.S/N//S/177\nENDBSM"}
+
+### .S: all eight fields
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BSM\n.V/1LZRH\n.F/LH400/12NOV/JFK/Y\n.N/0220123456001\n.S/Y/23A/C/234/333/Y/Y/A\nENDBSM"}
+
+### .P: surname and given name
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BSM\n.V/1LZRH\n.F/LH400/12NOV/JFK/Y\n.N/0220123456001\n.P/CLOVER/LEN\nENDBSM"}
+
+### .P: number of passengers, given name and additional given name
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BSM\n.V/1LZRH\n.F/LH400/12NOV/JFK/Y\n.N/0220123456001\n.P/2SMITH/JOHNMR/ALICEMRS\nENDBSM"}
+
+### .P: several additional given names
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BSM\n.V/1LZRH\n.F/LH400/12NOV/JFK/Y\n.N/0220123456001\n.P/4GIFFORD/GDR/LMRS/GJR/GORDAN\nENDBSM"}
+
+### .P: expedited bag without a passenger name
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BSM\n.V/1LZRH\n.F/LH400/12NOV/JFK/Y\n.N/0220123456001\n.P/RUSH\nENDBSM"}
+
+### .W: pieces only
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BSM\n.V/1LZRH\n.F/LH400/12NOV/JFK/Y\n.N/0220123456001\n.W/P/3\nENDBSM"}
+
+### .W: pieces and checked weight
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BSM\n.V/1LZRH\n.F/LH400/12NOV/JFK/Y\n.N/0220123456001\n.W/K/2/20\nENDBSM"}
+
+### .W: pieces, checked and unchecked weight
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BSM\n.V/1LZRH\n.F/LH400/12NOV/JFK/Y\n.N/0220123456001\n.W/K/2/20/8\nENDBSM"}
+
+### .W: pounds of unchecked baggage only
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BSM\n.V/1LZRH\n.F/LH400/12NOV/JFK/Y\n.N/0220123456001\n.W/L///8\nENDBSM"}
+
+### .W: dimensions and bag type
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BSM\n.V/1LZRH\n.F/LH400/12NOV/JFK/Y\n.N/0220123456001\n.W/K/1/14//CM/68/54/26/02HWX\nENDBSM"}
+
+### Two passengers, each with their own bags (.N .N .P .N .P)
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BSM\n.V/1LZRH\n.F/LH400/12NOV/JFK/Y\n.N/0220123456001\n.N/0220123457001\n.P/DOE/JOHN\n.N/0220123458001\n.P/ROE/JANE\nENDBSM"}
+
+### Several onward flights
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BSM\n.V/1TJFK\n.F/SR101/18APR/JFK/C\n.O/SR1234/18APR/ATL/C\n.O/SR5678/19APR/MIA/C\n.N/0085123457001\nENDBSM"}
+
+### Windows line endings (CRLF)
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BSM\r\n.V/1LZRH\r\n.F/LH400/12NOV/JFK/Y\r\n.N/0220123456001\r\n.P/DOE/JOHN\r\nENDBSM"}
+
+### Optional elements BRS does not use: .D .H .K .L .T .C .Y .G .X
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BSM\n.V/1LZRH\n.F/LH400/12NOV/JFK/Y\n.N/0220123456001\n.D/HOTC/MARRIOT/07MAY/084502L/HV/VANE79HJT\n.H/T4//16\n.P/DOE/JOHN\n.Y/BXJ2238/GOLD\n.C/CRICKET CLUB\n.L/6Y21AS\n.T/380232\n.K/4F0C03\n.X/SEL\nENDBSM"}
+
+### Invalid optional elements BRS does not use (processed with warnings): bad .X result, bad .L, bad .T
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BSM\n.V/1LZRH\n.F/LH400/12NOV/JFK/Y\n.N/0220123456001\n.X/SEL/ZZZ\n.L/AB\n.T/!!\nENDBSM"}
+
+### ============ Examples taken from the IATA text (PROCESSED) ============
+
+### IATA 4.9.2: full BSM with acknowledgement request and encryption (the .X line has a value we do not know, only a warning)
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BSM\n.V/1TZRH//6543210014/A/123ABC456Z\n.F/SR101/18APR/JFK/F\n.I/AZ318/18APR/FCO/J\n.N/0085123456003\n.S/Y/3A/C\n.P/SMITH/TOM\n.L/XY1C3P\n.T/321A4C\n.E/RUSH\n.R/VIP\n.X/XRAY\nENDBSM"}
+
+### IATA 4.9.3: delete a record at the local station
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BSM\nDEL\n.V/1LZRH////123ABC456Z\n.F/SR101/18APR/JFK/C\n.N/0085123457001\n.S/N\nENDBSM"}
+
+### IATA 4.9.4: delete a record at the transfer station, with an onward flight
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BSM\nDEL\n.V/1TJFK////123ABC456Z\n.F/SR101/18APR/JFK/C\n.O/SR1234/18APR/ATL/C\n.N/0085123457001\n.S/N\nENDBSM"}
+
+### IATA 4.9.5: change with exception indicators
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BSM\nCHG\n.V/1LZRH////123ABC456Z\n.F/SR101/18APR/JFK/C\n.N/0085123457001\n.S/N\n.E/IROP\n.E/UNAC\n.E/RRTE\n.E/STCK\nENDBSM"}
+
+### IATA 6.9.1: standard offload with acknowledgement request
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BUM\n.V/1TLAX//1234567890/A/123ABC456Z\n.F/CX881/15JUN/HKG/Y\n.U/AVE4321SQ/024L/T/Y/HKG\n.N/0131123456001\n.Q/006\n.S/N//N\n.P/WONG/V\n.L/SBJ14X\n.R/CUSTOMS REQUEST\n.X/SEL/XRAY/SECURITY/TRANSFER\nENDBUM"}
+
+### IATA 6.9.4: multiple use of elements (the first bag tag of the printed example has only 12 digits, it is corrected here)
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BUM\n.V/1LBBK////123ABC456Z\n.F/QF006/01MAY/SYD/J\n.U/AVE4591QF//M/J/SYD\n.N/0120201610001\n.Q/136\n.P/SAMPRAS/P\n.N/0125020244001\n.N/0125020318001\n.U/AKV2479BA//T/J/SYD\n.N/0125020398001\n.I/JL173/01MAY/NRT\n.Q/009\n.S/N/25A/C/010\n.N/0125020577001\n.O/QF322/02MAY/BRI\n.Q/088\n.S/N/31K/C/101\nENDBUM"}
+
+### IATA 8.7.5.9: delete baggage messages for a flight
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BCM\nDBM\n.V/1LFRA//LH3348007/A/123ABC456Z\n.F/LH3348/20MAR/GVA\nENDBCM"}
+
+### ============ Element errors: each of these ends as ERROR ============
+
+### .V with an unknown source indicator
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BSM\n.V/1QZRH\n.F/LH400/12NOV/JFK/Y\n.N/0220123456001\nENDBSM"}
+
+### .V with an airport code that has digits
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BSM\n.V/1L1RH\n.F/LH400/12NOV/JFK/Y\n.N/0220123456001\nENDBSM"}
+
+### .V with a wrong acknowledgement request letter
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BSM\n.V/1LZRH//REF123/B\n.F/LH400/12NOV/JFK/Y\n.N/0220123456001\nENDBSM"}
+
+### .F with an impossible date
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BSM\n.V/1LZRH\n.F/LH400/32NOV/JFK/Y\n.N/0220123456001\nENDBSM"}
+
+### .F with a bad airport code
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BSM\n.V/1LZRH\n.F/LH400/12NOV/J1K/Y\n.N/0220123456001\nENDBSM"}
+
+### .F with a bad airline designator
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BSM\n.V/1LZRH\n.F/11400/12NOV/JFK/Y\n.N/0220123456001\nENDBSM"}
+
+### .F without a destination in a BSM (the destination is mandatory there)
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BSM\n.V/1LZRH\n.F/LH400/12NOV\n.N/0220123456001\nENDBSM"}
+
+### .I with a bad origin
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BSM\n.V/1LZRH\n.F/LH400/12NOV/JFK/Y\n.I/AZ318/11NOV/F1O\n.N/0220123456001\nENDBSM"}
+
+### .O with a bad date
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BSM\n.V/1LZRH\n.F/LH400/12NOV/JFK/Y\n.O/SR1234/99XXX/ATL\n.N/0220123456001\nENDBSM"}
+
+### .N with a letter inside the tag
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BSM\n.V/1LZRH\n.F/LH400/12NOV/JFK/Y\n.N/02201234A6001\nENDBSM"}
+
+### .P without a surname
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BSM\n.V/1LZRH\n.F/LH400/12NOV/JFK/Y\n.N/0220123456001\n.P/\nENDBSM"}
+
+### .S with an invalid authority to load
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BSM\n.V/1LZRH\n.F/LH400/12NOV/JFK/Y\n.N/0220123456001\n.S/X\nENDBSM"}
+
+### .W with an invalid pieces and weight indicator
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BSM\n.V/1LZRH\n.F/LH400/12NOV/JFK/Y\n.N/0220123456001\n.W/X/001/20\nENDBSM"}
+
+### Two .V lines
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BSM\n.V/1LZRH\n.V/1LZRH\n.F/LH400/12NOV/JFK/Y\n.N/0220123456001\nENDBSM"}
+
+### Two .F lines
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BSM\n.V/1LZRH\n.F/LH400/12NOV/JFK/Y\n.F/LH401/12NOV/MUC/Y\n.N/0220123456001\nENDBSM"}
+
+### BSM without any .N
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BSM\n.V/1LZRH\n.F/LH400/12NOV/JFK/Y\nENDBSM"}
+
+### BSM CHG without .V
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BSM\nCHG\n.F/LH400/12NOV/JFK/Y\n.N/0220123456001\nENDBSM"}
+
+### BSM DEL with an unknown element
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BSM\nDEL\n.V/1LZRH\n.F/LH400/12NOV/JFK/Y\n.N/0220123456001\n.J/R/43S/120D32/02APR/1545L/B2\nENDBSM"}
+
+### Free text line inside the message
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BSM\n.V/1LZRH\nTHIS IS FREE TEXT\n.F/LH400/12NOV/JFK/Y\n.N/0220123456001\nENDBSM"}
+
+### BUM without .N
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BUM\n.V/1LPIT\n.F/US14/01MAY/MUC/J\nENDBUM"}
+
+### BCM FOM without .F
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BCM\nFOM\n.V/1TFRA\nENDBCM"}
+
+### BCM FCM with an element that does not belong to the FCM (.H)
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BCM\nFCM\n.V/1TFRA\n.F/LH3348/20MAR/GVA\n.H/T4//16\nENDBCM"}
+
+### BCM with a secondary identifier that has no handler
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BCM\nXXX\n.V/1TFRA\n.F/LH3348/20MAR/GVA\nENDBCM"}
+
+### ============ More intake rejections (HTTP 400, nothing is stored) ============
+
+### Lower case header
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"bsm\n.V/1LZRH\n.N/0220123456001\nENDBSM"}
+
+### END line with a trailing space
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BSM\n.V/1LZRH\n.N/0220123456001\nENDBSM "}
+
+### BCM with the wrong END line
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":"BCM\nFOM\n.V/1TFRA\n.F/LH3348/20MAR/GVA\nENDBSM"}
+
+### Empty message
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{"message":""}
+
+### Body without a message
+POST {{host}}/api/textmessages
+Content-Type: application/json
+
+{}
+
+### ============ Reading the parsed results ============
+
+### Parsed messages nobody has acknowledged yet
+GET {{host}}/api/parsedmessages
+
+### Same, limited to 5 records after id 3
+GET {{host}}/api/parsedmessages?limit=5&afterId=3
+
+### Mark parsed messages as consumed
+POST {{host}}/api/parsedmessages/consumed
+Content-Type: application/json
+
+{"ids":[1,2,3]}

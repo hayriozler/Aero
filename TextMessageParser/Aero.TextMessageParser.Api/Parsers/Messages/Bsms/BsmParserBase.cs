@@ -18,19 +18,21 @@ public abstract class BsmParserBase<TResult>(
         new(Consts.O, ElementRequirement.Conditional, IsMultiple: true),
         new(Consts.N, ElementRequirement.Mandatory,   IsMultiple: true),
         new(Consts.D, ElementRequirement.Optional,    IsMultiple: false),
-        new(Consts.A, ElementRequirement.Optional,    IsMultiple: true),
         new(Consts.S, ElementRequirement.Conditional, IsMultiple: false),
         new(Consts.H, ElementRequirement.Optional,    IsMultiple: false),
         new(Consts.W, ElementRequirement.Optional,    IsMultiple: false),
         new(Consts.P, ElementRequirement.Conditional, IsMultiple: true),
-        new(Consts.G, ElementRequirement.Optional,    IsMultiple: false),
+        new(Consts.G, ElementRequirement.Optional,    IsMultiple: true),
         new(Consts.Y, ElementRequirement.Optional,    IsMultiple: false),
         new(Consts.C, ElementRequirement.Optional,    IsMultiple: false),
         new(Consts.L, ElementRequirement.Optional,    IsMultiple: false),
         new(Consts.T, ElementRequirement.Optional,    IsMultiple: false),
         new(Consts.K, ElementRequirement.Optional,    IsMultiple: false),
-        new(Consts.E, ElementRequirement.Optional,    IsMultiple: false),
-        new(Consts.R, ElementRequirement.Optional,    IsMultiple: false),
+        new(Consts.E, ElementRequirement.Optional,    IsMultiple: true),
+        new(Consts.R, ElementRequirement.Optional,    IsMultiple: true),
         new(Consts.X, ElementRequirement.Optional,    IsMultiple: false),
     ];
+
+    protected override ParseError? ValidateResults(IReadOnlyList<ElementResult> results)
+        => FlightRules.RequireOutboundDestination(results);
 }

@@ -12,7 +12,7 @@ public class OutboundFlightElementValidator : IElementValidator
             validationResult.AddError(ErrorCodes.ELEMENT_LENGTH_NOT_CORRECT, "OutboundFlightElement length wrong");
             return validationResult;
         }
-        if (elementDetail.ParsedText.Length < 4)
+        if (elementDetail.ParsedText.Length < 3)
         {
             validationResult.AddError(ErrorCodes.OUTBOUND_FLIGHT_NOT_CORRECT, "OutboundFlightElement fields missing");
             return validationResult;
@@ -27,7 +27,8 @@ public class OutboundFlightElementValidator : IElementValidator
             validationResult.AddError(ErrorCodes.OUTBOUND_FLIGHT_NOT_CORRECT, "OutboundFlightElement date wrong");
             return validationResult;
         }
-        if (!ValidationHelper.ValidateAirportCode(elementDetail.ParsedText[3]))
+        if (elementDetail.ParsedText.Length > 3 && !elementDetail.ParsedText[3].IsEmpty &&
+            !ValidationHelper.ValidateAirportCode(elementDetail.ParsedText[3]))
         {
             validationResult.AddError(ErrorCodes.OUTBOUND_FLIGHT_NOT_CORRECT, "OutboundFlightElement dest wrong");
             return validationResult;

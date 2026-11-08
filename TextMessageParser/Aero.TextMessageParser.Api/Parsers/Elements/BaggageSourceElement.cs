@@ -23,7 +23,7 @@ public class BaggageSourceElement(IElementValidator validator) : Element(Consts.
         result.AirportCode            = f1.Slice(2, 3).ToString();
         result.PartNumber = parsedText.Length > 2 ? parsedText[2].ToString() : string.Empty;
         result.MessageRefNumber = parsedText.Length > 3 ? parsedText[3].ToString() : string.Empty;
-        result.AckRequest = parsedText.Length > 4 ? parsedText[4].ToString()[0] : null;
+        result.AckRequest = parsedText.Length > 4 ? FirstCharOrNull(parsedText[4]) : null;
         result.EncryptionKey   = parsedText.Length > 5 ? parsedText[5].ToString() : string.Empty;
         return new(result, v);
     }

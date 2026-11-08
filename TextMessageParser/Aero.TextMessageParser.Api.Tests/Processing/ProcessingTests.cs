@@ -52,7 +52,7 @@ public class ProcessingTests
     [Trait("Kind", "Baseline")]
     public void Bum_is_mapped_to_a_bag_removal()
     {
-        var raw = SampleMessages.Build("BUM", null, SampleMessages.NativeNewLine, SampleMessages.V, SampleMessages.N1);
+        var raw = SampleMessages.Build("BUM", null, SampleMessages.NativeNewLine, SampleMessages.V, SampleMessages.F, SampleMessages.N1);
         var bum = new BumParser(ElementMapFactory.Create());
         using var db = TestDbContextFactory.Create();
         var dto = bum.ProcessMessage(TextMessages.From(raw), db);

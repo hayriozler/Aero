@@ -11,5 +11,7 @@ public abstract class Element(string name)
 
     protected static char FirstCharOrDefault(ReadOnlyMemory<char> field) => field.IsEmpty ? default : field.Span[0];
 
+    protected static char? FirstCharOrNull(ReadOnlyMemory<char> field) => field.IsEmpty ? null : field.Span[0];
+
     protected static string? TextOrNull(ReadOnlyMemory<char> field) => field.IsEmpty ? null : field.ToString();
 }

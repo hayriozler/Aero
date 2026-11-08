@@ -19,8 +19,8 @@ public class OutboundFlightElement(IElementValidator validator) : Element(Consts
         result.AirlineCode  = elementDetail.ParsedText[1][..airlineLen].ToString();
         result.FlightNumber = elementDetail.ParsedText[1][airlineLen..].ToString();
         result.FlightDate  = elementDetail.ParsedText[2].ToString();
-        result.Destination = elementDetail.ParsedText[3].ToString();
-        result.Class = parsedText.Length > 4 ? parsedText[4].Span[0] : default;
+        result.Destination = parsedText.Length > 3 ? parsedText[3].ToString() : string.Empty;
+        result.Class = parsedText.Length > 4 ? FirstCharOrNull(parsedText[4]) : null;
         return new(result, validationResult);
     }
 }

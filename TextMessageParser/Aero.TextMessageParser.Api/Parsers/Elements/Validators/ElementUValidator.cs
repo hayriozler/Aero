@@ -16,10 +16,11 @@ public class ElementUValidator : IElementValidator
         for (int i = 1; i < elementDetail.ParsedText.Length; i++)
         {
             var f = elementDetail.ParsedText[i];
+            if (f.IsEmpty) continue;
             switch (i)
             {
                 case 1:
-                    if (f.Length > 10)
+                    if (f.Length > 11)
                     {
                         validationResult.AddError(ErrorCodes.ELEMENT_LENGTH_NOT_CORRECT, "ElementU stowage ID too long");
                         return validationResult;

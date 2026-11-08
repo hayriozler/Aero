@@ -17,7 +17,7 @@ public abstract class BcmParserBase(
         new(Consts.V, ElementRequirement.Mandatory, IsMultiple: false),
         new(Consts.F, ElementRequirement.Mandatory, IsMultiple: false),
         new(Consts.H, ElementRequirement.Optional,  IsMultiple: false),
-        new(Consts.R, ElementRequirement.Optional,  IsMultiple: false),
+        new(Consts.R, ElementRequirement.Optional,  IsMultiple: true),
     ];
 
     protected override BcmDto Handle(long messageId, ElementResult[] elementResults)

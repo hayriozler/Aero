@@ -58,9 +58,9 @@ public class ErrorCodeTests
     public void Element_error_description_is_truncated()
     {
         using var db = TestDbContextFactory.Create();
-        var longLine = ".R/" + new string('X', 400);
-        var dto = new BsmParser(ElementMapFactory.Create()).ProcessMessage(TextMessages.From(BsmText(V, F, N1, longLine, P)), db);
-        Check.True(dto is null, "An over-long .R/ free text must be rejected.");
+        var longLine = ".F/" + new string('X', 400);
+        var dto = new BsmParser(ElementMapFactory.Create()).ProcessMessage(TextMessages.From(BsmText(V, longLine, N1, P)), db);
+        Check.True(dto is null, "An over-long .F/ line must be rejected.");
         var error = db.ElementErrors.Local.Single();
         Check.True(error.ErrorDescription is { Length: <= 250 }, $"Description length was {error.ErrorDescription?.Length}.");
     }

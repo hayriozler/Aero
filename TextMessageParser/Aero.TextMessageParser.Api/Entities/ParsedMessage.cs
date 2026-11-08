@@ -53,7 +53,7 @@ public sealed class ParsedMessage
             AirlineCode = airlineCode,
             FlightNumber = flightNumber,
             FlightDate = flightDate,
-            Destination = destination,
+            Destination = string.IsNullOrEmpty(destination) ? null : destination,
             CreatedAtUtc = DateTime.UtcNow,
             BagTags = bagTags.Select(ParsedBagTag.Create).ToList()
         };

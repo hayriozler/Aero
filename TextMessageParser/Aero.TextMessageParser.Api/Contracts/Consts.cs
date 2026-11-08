@@ -48,10 +48,12 @@ public class Consts
     public static readonly string[] BAG_STATUS_CODE_ARRAY = ["NAL", "OFF", "UNS", "OND", "ONA"];
     public static readonly string[] AUTHORITY_LOAD_ARRAY = ["Y", "N"];
     public static readonly string[] PASSENGER_STATUS_ARRAY = ["B", "C", "N", "S"];
+    public static readonly HashSet<string> EssentialElements = [V, F, I, O, N, P, S, W];
+
     public static readonly char[] BAG_SOURCE_INDICATOR_ARRAY = ['L', 'T', 'X', 'R'];
     public static readonly string[] PIECE_WEIGHT_ARRAY = ["P", "L", "K"];
     public static readonly string[] SCREEN_INSTRUCTION_ARRAY = ["SEL", "NON"];
-    public static readonly string[] SCREEN_RESULT_ARRAY = ["CLR", "REF", "UCL"];
+    public static readonly string[] SCREEN_RESULT_ARRAY = ["CLR", "REJ", "UCL"];
     public static readonly string[] SCREEN_RESULT_REASON_ARRAY = ["D", "E", "C", "N", "T"];
     public static readonly string[] SECONDARY_CODE_ARRAY = ["G", "R", "S", "H"];
     public static readonly string[] TYPE_OF_BAGGAGE_ARRAY = ["M", "T", "S", "X"];

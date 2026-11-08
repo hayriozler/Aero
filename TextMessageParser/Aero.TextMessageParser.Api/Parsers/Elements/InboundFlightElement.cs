@@ -20,7 +20,7 @@ public class InboundFlightElement(IElementValidator validator) : Element(Consts.
         result.FlightNumber = elementDetail.ParsedText[1][airlineLen..].ToString();
         result.FlightDate  = elementDetail.ParsedText[2].ToString();
         result.Destination = elementDetail.ParsedText[3].ToString();
-        result.Class = parsedText.Length > 4 ? parsedText[4].Span[0] : default;
+        result.Class = parsedText.Length > 4 ? FirstCharOrNull(parsedText[4]) : null;
         return new(result, validationResult);
     }
 }

@@ -7,7 +7,7 @@ public class InboundFlightElementValidator : IElementValidator
     public ElementValidationResult Validate(ElementDetail elementDetail)
     {
         var validationResult = new ElementValidationResult(elementDetail);
-        if (elementDetail.Length < 22 || elementDetail.Length > 25)
+        if (elementDetail.Length < 20 || elementDetail.Length > 25)
         {
             validationResult.AddError(ErrorCodes.ELEMENT_LENGTH_NOT_CORRECT, "InboundFlightElement length wrong");
             return validationResult;
@@ -18,31 +18,9 @@ public class InboundFlightElementValidator : IElementValidator
             return validationResult;
         }
         var f1 = elementDetail.ParsedText[1];
-        if (f1.Length < 5 || f1.Length > 8)
+        if (!ValidationHelper.ValidateAirlineFlightNumber(f1, out _))
         {
-            validationResult.AddError(ErrorCodes.ELEMENT_LENGTH_NOT_CORRECT, "InboundFlightElement flight len wrong");
-            return validationResult;
-        }
-        int airlineLen = char.IsDigit(f1.Span[2]) ? 2 : 3;
-        if (!ValidationHelper.IsAirlineDesignator(f1.Span[..airlineLen]))
-        {
-            validationResult.AddError(ErrorCodes.ELEMENT_FORMAT_NOT_CORRECT, "InboundFlightElement airline wrong");
-            return validationResult;
-        }
-        var flightNo = f1.Slice(airlineLen);
-        int digits = 0;
-        foreach (var c in flightNo.Span)
-        {
-            if (!char.IsDigit(c))
-            {
-                validationResult.AddError(ErrorCodes.ELEMENT_FORMAT_NOT_CORRECT, "InboundFlightElement flight digits wrong");
-                return validationResult;
-            }
-            digits++;
-        }
-        if (digits < 1 || digits > 4)
-        {
-            validationResult.AddError(ErrorCodes.ELEMENT_LENGTH_NOT_CORRECT, "InboundFlightElement flight digit count wrong");
+            validationResult.AddError(ErrorCodes.ELEMENT_FORMAT_NOT_CORRECT, "InboundFlightElement flight wrong");
             return validationResult;
         }
         if (!ValidationHelper.ValidateIataDate(elementDetail.ParsedText[2]))

@@ -243,3 +243,31 @@ Not an automated test. On a temporary `postgres:17-alpine` container five migrat
 
 ## Renames (D16)
 Columns: `TextMessages.RecordDateTime` is `ReceivedAtUtc`, `ProcessDateTime` is `ProcessedAtUtc`, and `RecordDateTime` on `ParsedMessages`, `MessageErrors` and `ElementErrors` is `CreatedAtUtc` (migration `RenameTimestampColumns`, plain column renames, data is kept). The JSON field of `GET /api/parsedmessages` changed from `recordDateTime` to `createdAtUtc`. Element classes: V `BaggageSourceElement`, F `OutboundFlightElement`, I `InboundFlightElement`, O `OnwardFlightElement`, N `BagTagElement`, P `PassengerNameElement`, S `PassengerStatusElement`, W `BaggageWeightElement`, each with a matching `...ElementValidator`. Checked manually on PostgreSQL: one BSM posted, PROCESSED, both timestamps filled, the read endpoint returns `createdAtUtc`.
+
+## SpecAlignmentTests (checked against Recommended Practice 1745, pages 1130 to 1225 of the Passenger Services Conference Resolutions Manual, 30th edition)
+Policy: BRS uses the elements V, F, I, O, N, P, S and W (`Consts.EssentialElements`). For every other element a wrong value, a missing mandatory line or a repeated line does not reject the message: the bad element is skipped and recorded in ElementErrors as a warning. Unknown element lines, a wrong END line and a bad essential element still reject the message.
+
+| Test | Scenario | Expected |
+|---|---|---|
+| X_accepts_spec_examples | `.X/SEL`, `.X//CLR//AT/TSA123`, `.X//REJ/D/XRAY/...` | Valid (empty fields are allowed) |
+| X_rejects_ref | `.X/SEL/REF` | Invalid, the result code is REJ |
+| U_accepts_spec_examples | `.U//AFTRT/X/F/DEN`, `.U///T//MIA//AA614`, ... | Valid |
+| H_accepts_spec_examples | `.H/T4//16`, `.H///D46`, ... | Valid |
+| E_and_Q_follow_the_standard | `.E` 3 or 4 letters, `.Q` exactly 3 digits | As listed |
+| Bsm_repeats_e_r_g | Four `.E`, two `.R`, two `.G` | Parses without error rows |
+| Bsm_does_not_accept_a | `.A` inside a BSM | UNKNOWN_ELEMENT_FOUND |
+| Bum_with_two_bags_parses | Example 6.9.2 | Both bag tags |
+| Bum_single_bag_example | Example 6.9.3 (flight `US14`) | Parses |
+| Bum_requires_f | BUM without `.F` | Rejected |
+| Fom_repeats_r | FOM with two `.R` | Parses |
+| Bcm_flight_without_destination | `.F/LH3348/20MAR` in a FOM | Parses, the destination is optional in a BCM |
+| Bcm_is_stored_in_parsed_messages | FOM, FCM, DBM | Stored in ParsedMessages with message type BCMFOM, BCMFCM, BCMDBM |
+| Date_day_range | Day 00 and 32 | Rejected |
+| Flight_number_format | `LH400`, `LH4000`, `LH400A`, `LH40` valid, `LH40000` invalid | As listed |
+| Classless_flights_have_null_class | `.F`, `.I`, `.O` without class | Class is null, not the default char |
+| Invalid_non_essential_element_does_not_reject | Bad `.E` and `.L` | Processed, warning rows |
+| Invalid_essential_element_rejects | Bad `.N` | Rejected |
+| Duplicate_non_essential_element_does_not_reject | Two `.Y` | Processed |
+
+## HTTP file and manual check (2026-11-08)
+`TextMessageParser.http` (next to `Program.cs`) holds 86 POST requests grouped by expected result plus the GET and consumed calls. Every request was sent to the API on a temporary PostgreSQL container: all processed groups ended PROCESSED, all error groups ended ERROR, and the intake rejections returned 400.

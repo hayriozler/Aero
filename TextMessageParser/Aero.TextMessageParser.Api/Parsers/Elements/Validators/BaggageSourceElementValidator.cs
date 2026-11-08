@@ -39,7 +39,7 @@ public class BaggageSourceElementValidator : IElementValidator
             validationResult.AddError(ErrorCodes.ELEMENT_FORMAT_NOT_CORRECT, "BaggageSourceElement airport wrong");
             return validationResult;
         }
-        if (elementDetail.ParsedText.Length > 2 && elementDetail.ParsedText[2].Length > 5)
+        if (elementDetail.ParsedText.Length > 2 && elementDetail.ParsedText[2].Length > 6)
         {
             validationResult.AddError(ErrorCodes.ELEMENT_LENGTH_NOT_CORRECT, "BaggageSourceElement partNo too long");
             return validationResult;
@@ -49,7 +49,7 @@ public class BaggageSourceElementValidator : IElementValidator
             validationResult.AddError(ErrorCodes.ELEMENT_LENGTH_NOT_CORRECT, "BaggageSourceElement msgRef too long");
             return validationResult;
         }
-        if (elementDetail.ParsedText.Length > 4 && (elementDetail.ParsedText[4].Length != 1 || elementDetail.ParsedText[4].Span[0] != 'A'))
+        if (elementDetail.ParsedText.Length > 4 && !elementDetail.ParsedText[4].IsEmpty && (elementDetail.ParsedText[4].Length != 1 || elementDetail.ParsedText[4].Span[0] != 'A'))
         {
             validationResult.AddError(ErrorCodes.ELEMENT_VALUE_NOT_CORRECT, "BaggageSourceElement ackReq must be A");
             return validationResult;

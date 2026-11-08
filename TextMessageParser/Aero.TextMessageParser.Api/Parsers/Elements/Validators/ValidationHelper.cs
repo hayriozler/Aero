@@ -11,25 +11,20 @@ public static class ValidationHelper
     public static bool ValidateAirlineFlightNumber(ReadOnlyMemory<char> airlineFlightNumberValue, out int airlineLength)
     {
         airlineLength = 0;
-        if (airlineFlightNumberValue.Length < 5 || airlineFlightNumberValue.Length > 8) return false;
+        if (airlineFlightNumberValue.Length < 3 || airlineFlightNumberValue.Length > 8) return false;
 
         var span = airlineFlightNumberValue.Span;
         airlineLength = char.IsDigit(span[2]) ? 2 : 3;
 
         if (!IsAirlineDesignator(span[..airlineLength])) return false;
 
-        var flightNo = airlineFlightNumberValue[airlineLength..];
-        var flightSpan = flightNo.Span;
-        int digitCount = 0;
-        for (int i = 0; i < flightSpan.Length; i++)
-        {
-            var c = flightSpan[i];
-            if (char.IsDigit(c))
-                digitCount++;
-            else
-                return false;
-        }
-        return digitCount >= 1 && digitCount <= 4;
+        var flightSpan = airlineFlightNumberValue[airlineLength..].Span;
+        if (!flightSpan.IsEmpty && char.IsLetter(flightSpan[^1]))
+            flightSpan = flightSpan[..^1];
+        if (flightSpan.Length < 1 || flightSpan.Length > 4) return false;
+        foreach (var c in flightSpan)
+            if (!char.IsDigit(c)) return false;
+        return true;
     }
 
     public static bool IsAirlineDesignator(ReadOnlySpan<char> airline)
@@ -46,6 +41,8 @@ public static class ValidationHelper
         if (iataDateValue.Length != 5) return false;
         var span = iataDateValue.Span;
         if (!char.IsDigit(span[0]) || !char.IsDigit(span[1])) return false;
+        var day = (span[0] - '0') * 10 + (span[1] - '0');
+        if (day < 1 || day > 31) return false;
         return Consts.ValidMonths.ContainsSpan(span.Slice(2, 3));
     }
 
