@@ -31,13 +31,13 @@ public class AirlineCodeTests
         Check.True(!ValidationHelper.ValidateAirlineFlightNumber(value.AsMemory(), out _), $"'{value}' must be rejected.");
     }
 
-    [Fact(DisplayName = "Airline code: ElementF parses 9W123 into airline 9W and flight number 123")]
+    [Fact(DisplayName = "Airline code: OutboundFlightElement parses 9W123 into airline 9W and flight number 123")]
     public void Element_f_splits_a_digit_airline()
     {
         var detail = ElementDetails.Make(".F/9W123/12NOV/JFK/Y", ElementRequirement.Conditional);
-        var result = new ElementF(new ElementFValidator()).Parse(detail);
+        var result = new OutboundFlightElement(new OutboundFlightElementValidator()).Parse(detail);
         Check.True(result.ValidationResult is { IsValid: true }, $"Rejected: {result.ValidationResult?.Description}");
-        var element = (ElementF)result.Element;
+        var element = (OutboundFlightElement)result.Element;
         Check.Equal("9W", element.AirlineCode, "Airline code.");
         Check.Equal("123", element.FlightNumber, "Flight number.");
     }
@@ -47,7 +47,7 @@ public class AirlineCodeTests
     [InlineData(".O/4U1234/13NOV/MUC/Y")]
     public void Inbound_and_onward_accept_digit_airlines(string line)
     {
-        IElementValidator validator = line.StartsWith(".I") ? new ElementIValidator() : new ElementOValidator();
+        IElementValidator validator = line.StartsWith(".I") ? new InboundFlightElementValidator() : new OnwardFlightElementValidator();
         var result = validator.Validate(ElementDetails.Make(line, ElementRequirement.Conditional));
         Check.True(result.IsValid, $"'{line}' was rejected: {result.ErrorCode} {result.Description}");
     }

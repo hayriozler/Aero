@@ -10,13 +10,13 @@ public class ValidatorTests
 {
     private static IElementValidator ValidatorFor(char id) => id switch
     {
-        'F' => new ElementFValidator(),
-        'I' => new ElementIValidator(),
-        'O' => new ElementOValidator(),
-        'P' => new ElementPValidator(),
-        'S' => new ElementSValidator(),
+        'F' => new OutboundFlightElementValidator(),
+        'I' => new InboundFlightElementValidator(),
+        'O' => new OnwardFlightElementValidator(),
+        'P' => new PassengerNameElementValidator(),
+        'S' => new PassengerStatusElementValidator(),
         'U' => new ElementUValidator(),
-        'W' => new ElementWValidator(),
+        'W' => new BaggageWeightElementValidator(),
         _ => throw new ArgumentOutOfRangeException(nameof(id))
     };
 
@@ -58,7 +58,7 @@ public class ValidatorTests
         Check.True(!result.IsValid, $"Validator {id} accepted '{line}' with requirement {requirement}. {Why}");
     }
 
-    [Theory(DisplayName = "Bug 5: ElementS accepts every well-formed .S/ line allowed by IATA Passenger Services Conference Resolutions Manual (30th ed.) section 2.3.22, including empty optional fields")]
+    [Theory(DisplayName = "Bug 5: PassengerStatusElement accepts every well-formed .S/ line allowed by IATA Passenger Services Conference Resolutions Manual (30th ed.) section 2.3.22, including empty optional fields")]
     [Trait("Bug", "5")]
     [InlineData(".S/Y")]
     [InlineData(".S/N/4K")]
@@ -70,11 +70,11 @@ public class ValidatorTests
     public void ElementS_valid_lines_pass(string line)
     {
         const string Why = "Section 2.3.22: Authority to Load (Y/N) is the only mandatory field. Seat is f(f)a, passenger status B/C/N/S, sequence and security number are three digits, profile and transport authority Y/N, baggage tag status I/A. Every field after the first may be empty or omitted, as in the specification examples '.S/Y//S/291' and '.S/Y'.";
-        var result = new ElementSValidator().Validate(ElementDetails.Make(line, ElementRequirement.Conditional));
+        var result = new PassengerStatusElementValidator().Validate(ElementDetails.Make(line, ElementRequirement.Conditional));
         Check.True(result.IsValid, $"'{line}' was rejected with {result.ErrorCode} ({result.Description}). {Why}");
     }
 
-    [Theory(DisplayName = "Bug 5: ElementS rejects a value that breaks the format of its field (position follows ElementS.Parse and the specification)")]
+    [Theory(DisplayName = "Bug 5: PassengerStatusElement rejects a value that breaks the format of its field (position follows PassengerStatusElement.Parse and the specification)")]
     [Trait("Bug", "5")]
     [InlineData(".S/B", "S_04")]
     [InlineData(".S/Q", "S_04")]
@@ -91,18 +91,18 @@ public class ValidatorTests
     public void ElementS_invalid_values_fail(string line, string expectedCode)
     {
         const string Why = "Each field has its own format in section 2.3.22. The old validator compared the wrong positions, used an inverted condition and only looked at lines with exactly 2, 5 or 6 fields.";
-        var result = new ElementSValidator().Validate(ElementDetails.Make(line, ElementRequirement.Conditional));
+        var result = new PassengerStatusElementValidator().Validate(ElementDetails.Make(line, ElementRequirement.Conditional));
         Check.True(!result.IsValid, $"'{line}' was accepted. {Why}");
         Check.Equal(expectedCode, result.ErrorCode, $"'{line}' was rejected with the wrong code. {Why}");
     }
 
-    [Theory(DisplayName = "Bug 5: ElementS rejects lines outside the 6 to 26 character range of the specification (the count includes the 2 character end delimiter)")]
+    [Theory(DisplayName = "Bug 5: PassengerStatusElement rejects lines outside the 6 to 26 character range of the specification (the count includes the 2 character end delimiter)")]
     [Trait("Bug", "5")]
     [InlineData(".S/")]
     [InlineData(".S/Y/23A/C/016/678/Y/Y/A/X")]
     public void ElementS_length_is_enforced(string line)
     {
-        var result = new ElementSValidator().Validate(ElementDetails.Make(line, ElementRequirement.Conditional));
+        var result = new PassengerStatusElementValidator().Validate(ElementDetails.Make(line, ElementRequirement.Conditional));
         Check.True(!result.IsValid, $"'{line}' is outside the 6 to 26 character range of section 2.3.22 and must be rejected.");
     }
 

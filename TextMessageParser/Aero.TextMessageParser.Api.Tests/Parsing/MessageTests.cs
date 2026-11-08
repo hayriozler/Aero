@@ -61,7 +61,7 @@ public class MessageTests
     [Trait("Bug", "3")]
     public void Three_n_lines_give_three_tags()
     {
-        const string Why = "All three .N lines are parsed by the same shared ElementN instance and the DTO is built only after all parsing is done, so every ElementResult points to the same object holding the LAST serial. Expected 0220123456, 0220123457, 0220123458.";
+        const string Why = "All three .N lines are parsed by the same shared BagTagElement instance and the DTO is built only after all parsing is done, so every ElementResult points to the same object holding the LAST serial. Expected 0220123456, 0220123457, 0220123458.";
         var bsm = new BsmParser(ElementMapFactory.Create());
         using var db = TestDbContextFactory.Create();
         var dto = bsm.ProcessMessage(TextMessages.From(BsmText(V, F, N1, N2, N3, P)), db);
@@ -73,7 +73,7 @@ public class MessageTests
     [Trait("Bug", "3")]
     public void Two_o_lines_give_two_distinct_onwards()
     {
-        const string Why = "Same shared-instance problem for ElementO: both onward entries end up equal to the last .O line.";
+        const string Why = "Same shared-instance problem for OnwardFlightElement: both onward entries end up equal to the last .O line.";
         var bsm = new BsmParser(ElementMapFactory.Create());
         using var db = TestDbContextFactory.Create();
         var dto = bsm.ProcessMessage(TextMessages.From(BsmText(V, F, ".O/LH401/13NOV/MUC/Y", ".O/LH402/14NOV/BER/Y", N1, P)), db);
@@ -81,17 +81,17 @@ public class MessageTests
         Check.SequenceEqual(new[] { "MUC", "BER" }, dto!.Onwards.Select(o => o.Destination), Why);
     }
 
-    [Fact(DisplayName = "Bug 3: ElementP.AdditionalGivenNames, passenger count and given name must not leak from message A into message B")]
+    [Fact(DisplayName = "Bug 3: PassengerNameElement.AdditionalGivenNames, passenger count and given name must not leak from message A into message B")]
     [Trait("Bug", "3")]
     public void Element_p_state_does_not_leak_between_messages()
     {
-        const string Why = "ElementP is shared and stateful: AdditionalGivenNames is only ever appended to, NumberOfPassengersWithSurname and PassengerGivenName are only overwritten when present. Message B (.P/ROE only) must not see MIDDLE1/MIDDLE2, '2' or JOHN from message A.";
+        const string Why = "PassengerNameElement is shared and stateful: AdditionalGivenNames is only ever appended to, NumberOfPassengersWithSurname and PassengerGivenName are only overwritten when present. Message B (.P/ROE only) must not see MIDDLE1/MIDDLE2, '2' or JOHN from message A.";
         var map = ElementMapFactory.Create();
         var bsm = new BsmParser(map);
         using var db = TestDbContextFactory.Create();
         bsm.ProcessMessage(TextMessages.From(BsmText(V, F, N1, ".P/2DOE/JOHN/MIDDLE1/MIDDLE2"), 1), db);
         bsm.ProcessMessage(TextMessages.From(BsmText(V, F, N2, ".P/ROE"), 2), db);
-        var p = ElementMapFactory.Get<ElementP>(map);
+        var p = ElementMapFactory.Get<PassengerNameElement>(map);
         Check.Equal(0, p.AdditionalGivenNames.Count, "AdditionalGivenNames leaked: " + string.Join(",", p.AdditionalGivenNames) + ". " + Why);
         Check.Equal(string.Empty, p.NumberOfPassengersWithSurname, "NumberOfPassengersWithSurname leaked. " + Why);
         Check.Equal(string.Empty, p.PassengerGivenName, "PassengerGivenName leaked. " + Why);
@@ -114,7 +114,7 @@ public class MessageTests
     [Trait("Bug", "3")]
     public void Element_s_seat_does_not_leak()
     {
-        const string Why = "ElementS.Parse assigns every property on every call (using default when a field is absent), so a leak is not expected here. Written as a probe; green means ElementS is NOT affected.";
+        const string Why = "PassengerStatusElement.Parse assigns every property on every call (using default when a field is absent), so a leak is not expected here. Written as a probe; green means PassengerStatusElement is NOT affected.";
         var bsm = new BsmParser(ElementMapFactory.Create());
         using var db = TestDbContextFactory.Create();
         bsm.ProcessMessage(TextMessages.From(BsmText(V, F, N1, ".S/Y/12A/B/001/123/Y/N/A"), 1), db);
@@ -123,17 +123,17 @@ public class MessageTests
         Check.True(b!.SeatNumber is null, $"Seat was '{b.SeatNumber}'. {Why}");
     }
 
-    [Fact(DisplayName = "Bug 3: ElementW unit and dimensions from message A must not remain after message B that carries only weight")]
+    [Fact(DisplayName = "Bug 3: BaggageWeightElement unit and dimensions from message A must not remain after message B that carries only weight")]
     [Trait("Bug", "3")]
     public void Element_w_state_does_not_leak()
     {
-        const string Why = "ElementW.Parse only assigns Unit/Length/Width/Height/BaggageTypeCode inside the 'is unit' branch and UncheckedWeight in the else branch; fields of the previous message survive.";
+        const string Why = "BaggageWeightElement.Parse only assigns Unit/Length/Width/Height/BaggageTypeCode inside the 'is unit' branch and UncheckedWeight in the else branch; fields of the previous message survive.";
         var map = ElementMapFactory.Create();
         var bsm = new BsmParser(map);
         using var db = TestDbContextFactory.Create();
         bsm.ProcessMessage(TextMessages.From(BsmText(V, F, N1, ".W/K/001/20/CM/55/40/20/XYZ"), 1), db);
         bsm.ProcessMessage(TextMessages.From(BsmText(V, F, N2, ".W/K/001/20"), 2), db);
-        var w = ElementMapFactory.Get<ElementW>(map);
+        var w = ElementMapFactory.Get<BaggageWeightElement>(map);
         Check.Equal(string.Empty, w.Unit, "Unit leaked. " + Why);
         Check.Equal(string.Empty, w.LengthOfBag, "LengthOfBag leaked. " + Why);
     }
@@ -175,7 +175,7 @@ public class MessageTests
     [InlineData(".F/XX/YY/ZZ/Q")]
     public void Malformed_conditional_f_gives_error_not_exception(string fLine)
     {
-        const string Why = "In a BSM, F is Conditional so ElementFValidator skips all checks, then ElementF.Parse indexes ParsedText[1].Span[2] / ParsedText[2] / [3] and throws. Expected: ProcessMessage returns null and an error row is recorded.";
+        const string Why = "In a BSM, F is Conditional so OutboundFlightElementValidator skips all checks, then OutboundFlightElement.Parse indexes ParsedText[1].Span[2] / ParsedText[2] / [3] and throws. Expected: ProcessMessage returns null and an error row is recorded.";
         var bsm = new BsmParser(ElementMapFactory.Create());
         using var db = TestDbContextFactory.Create();
         Dtos.DepartureBagDto? dto = null;
@@ -217,7 +217,7 @@ public class MessageTests
     public void Dto_exposes_weight(Type dtoType)
     {
         Check.True(dtoType.GetProperties().Any(p => p.Name.Contains("Weight", StringComparison.OrdinalIgnoreCase)),
-            $"{dtoType.Name} has no weight property. BsmParser/BsmChgParser read PiecesWeightIndicator and CheckedWeight from ElementW into locals that are never used, so .W/K/001/20 data is lost.");
+            $"{dtoType.Name} has no weight property. BsmParser/BsmChgParser read PiecesWeightIndicator and CheckedWeight from BaggageWeightElement into locals that are never used, so .W/K/001/20 data is lost.");
     }
 
     [Fact(DisplayName = "Bug 6: the W element values of a BSM and a BSM CHG reach the DTO (.W/K/001/20 gives indicator K, 001 bags, 20 kg)")]

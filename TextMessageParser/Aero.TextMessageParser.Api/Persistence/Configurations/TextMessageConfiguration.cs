@@ -67,17 +67,17 @@ internal sealed class TextMessageConfiguration : IEntityTypeConfiguration<TextMe
 
         builder.Ignore(e => e.Completed);
 
-        builder.Property(e => e.ProcessDateTime)
+        builder.Property(e => e.ProcessedAtUtc)
            .HasColumnType("TIMESTAMPTZ")
            .IsRequired(false)
            .HasColumnOrder(9);
 
-        builder.Property(e => e.RecordDateTime)
+        builder.Property(e => e.ReceivedAtUtc)
           .HasColumnType("TIMESTAMPTZ")
           .IsRequired()
           .HasColumnOrder(10);
 
-        builder.HasIndex(x => x.RecordDateTime)
+        builder.HasIndex(x => x.ReceivedAtUtc)
             .HasDatabaseName("IX_TextMessages_Pending")
             .HasFilter("\"Status\" = '" + TextMessageStatusStore.NotProcessed + "'");
 

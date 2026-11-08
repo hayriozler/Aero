@@ -3,7 +3,7 @@ using Aero.TextMessageParser.Api.Extensions;
 
 namespace Aero.TextMessageParser.Api.Parsers.Elements.Validators;
 
-public class ElementSValidator : IElementValidator
+public class PassengerStatusElementValidator : IElementValidator
 {
     private const int MaxFieldCount = 9;
 
@@ -12,13 +12,13 @@ public class ElementSValidator : IElementValidator
         var validationResult = new ElementValidationResult(elementDetail);
         if (elementDetail.Length < 6 || elementDetail.Length > 26)
         {
-            validationResult.AddError(ErrorCodes.ELEMENT_LENGTH_NOT_CORRECT, "ElementS length wrong");
+            validationResult.AddError(ErrorCodes.ELEMENT_LENGTH_NOT_CORRECT, "PassengerStatusElement length wrong");
             return validationResult;
         }
         var fields = elementDetail.ParsedText;
         if (fields.Length < 2 || fields.Length > MaxFieldCount)
         {
-            validationResult.AddError(ErrorCodes.ELEMENT_LENGTH_NOT_CORRECT, "ElementS field count wrong");
+            validationResult.AddError(ErrorCodes.ELEMENT_LENGTH_NOT_CORRECT, "PassengerStatusElement field count wrong");
             return validationResult;
         }
         if (!Consts.AUTHORITY_LOAD_ARRAY.ContainsSpan(fields[1].Span))

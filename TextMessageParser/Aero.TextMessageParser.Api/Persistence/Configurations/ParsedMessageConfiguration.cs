@@ -31,7 +31,7 @@ internal sealed class ParsedMessageConfiguration : IEntityTypeConfiguration<Pars
         builder.Property(e => e.BagWidth).HasMaxLength(10);
         builder.Property(e => e.BagHeight).HasMaxLength(10);
         builder.Property(e => e.BaggageTypeCode).HasMaxLength(10);
-        builder.Property(e => e.RecordDateTime).HasColumnType("TIMESTAMPTZ").IsRequired();
+        builder.Property(e => e.CreatedAtUtc).HasColumnType("TIMESTAMPTZ").IsRequired();
         builder.Property(e => e.ConsumedAt).HasColumnType("TIMESTAMPTZ");
         builder.HasIndex(e => e.Id).HasDatabaseName("IX_ParsedMessages_Unconsumed").HasFilter("\"IsConsumed\" = false");
 

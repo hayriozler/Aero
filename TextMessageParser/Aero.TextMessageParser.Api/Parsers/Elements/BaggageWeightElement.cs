@@ -2,7 +2,7 @@
 
 namespace Aero.TextMessageParser.Api.Parsers.Elements;
 
-public class ElementW(IElementValidator validator) : Element(Consts.W)
+public class BaggageWeightElement(IElementValidator validator) : Element(Consts.W)
 {
     public string PiecesWeightIndicator { get; private set; } = string.Empty;
     public string NumberOfCheckedBag { get; private set; } = string.Empty;
@@ -17,7 +17,7 @@ public class ElementW(IElementValidator validator) : Element(Consts.W)
     {
         var validationResult = validator.Validate(elementDetail);
         if (!validationResult.IsValid) return new(this, validationResult);
-        var result = new ElementW(validator);
+        var result = new BaggageWeightElement(validator);
         var parsedText = elementDetail.ParsedText;
         result.PiecesWeightIndicator =  parsedText.Length > 1 ? parsedText[1].ToString() : string.Empty;
         result.NumberOfCheckedBag    = parsedText.Length > 2 ? parsedText[2].ToString() : string.Empty;

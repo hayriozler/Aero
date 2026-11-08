@@ -18,7 +18,7 @@ public class MessageProcessingService(
                 WHERE ""Id"" IN (
                     SELECT ""Id"" FROM ""messages"".""TextMessages""
                     WHERE ""Status"" = '" + TextMessageStatusStore.NotProcessed + @"'
-                    ORDER BY ""RecordDateTime""
+                    ORDER BY ""ReceivedAtUtc""
                     LIMIT {1}
                     FOR UPDATE SKIP LOCKED
                 )
@@ -39,7 +39,7 @@ public class MessageProcessingService(
                      && m.AttemptCount >= maxAttempts)
             .ExecuteUpdateAsync(s => s
                 .SetProperty(m => m.Status, TextMessageStatus.Error)
-                .SetProperty(m => m.ProcessDateTime, (DateTime?)DateTime.UtcNow),
+                .SetProperty(m => m.ProcessedAtUtc, (DateTime?)DateTime.UtcNow),
                 cancellationToken);
 
         var recovered = await dbContext.TextMessages

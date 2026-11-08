@@ -2,7 +2,7 @@
 
 namespace Aero.TextMessageParser.Api.Parsers.Elements;
 
-public class ElementF(IElementValidator validator) : Element(Consts.F)
+public class InboundFlightElement(IElementValidator validator) : Element(Consts.I)
 {
     public string AirlineCode { get; private set; } = string.Empty;
     public string FlightNumber { get; private set; } = string.Empty;
@@ -13,7 +13,7 @@ public class ElementF(IElementValidator validator) : Element(Consts.F)
     {
         var validationResult = validator.Validate(elementDetail);
         if (!validationResult.IsValid) return new(this, validationResult);
-        var result = new ElementF(validator);
+        var result = new InboundFlightElement(validator);
         var parsedText = elementDetail.ParsedText;
         int airlineLen = GetAirlineLen(elementDetail.ParsedText[1].Span[2]);
         result.AirlineCode  = elementDetail.ParsedText[1][..airlineLen].ToString();

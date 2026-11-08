@@ -18,7 +18,7 @@ public sealed record ParsedMessageResponse(
     List<ParsedOnwardFlightResponse> Onwards,
     ParsedPassengerResponse? Passenger,
     ParsedBaggageWeightResponse? Weight,
-    DateTime RecordDateTime);
+    DateTime CreatedAtUtc);
 
 public sealed record ParsedOnwardFlightResponse(
     string AirlineCode,

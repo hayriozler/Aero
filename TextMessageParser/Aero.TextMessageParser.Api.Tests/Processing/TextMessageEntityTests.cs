@@ -22,8 +22,8 @@ public class TextMessageEntityTests
         var message = NewMessage();
         Check.Equal(TextMessageStatus.NotProcessed, message.Status, "Initial status.");
         Check.True(!message.Completed, "A new message is not completed.");
-        Check.True(message.ProcessDateTime is null, "A new message has no process time.");
-        Check.True(message.RecordDateTime >= before && message.RecordDateTime <= DateTime.UtcNow, "RecordDateTime is set by Create.");
+        Check.True(message.ProcessedAtUtc is null, "A new message has no process time.");
+        Check.True(message.ReceivedAtUtc >= before && message.ReceivedAtUtc <= DateTime.UtcNow, "ReceivedAtUtc is set by Create.");
     }
 
     [Fact(DisplayName = "Entity: MarkProcessed on a claimed message sets PROCESSED, Completed and the process time")]
@@ -35,7 +35,7 @@ public class TextMessageEntityTests
         message.MarkProcessed(at);
         Check.Equal(TextMessageStatus.Processed, message.Status, "Status.");
         Check.True(message.Completed, "Completed.");
-        Check.True(message.ProcessDateTime == at, "ProcessDateTime.");
+        Check.True(message.ProcessedAtUtc == at, "ProcessedAtUtc.");
     }
 
     [Fact(DisplayName = "Entity: MarkFailed on a claimed message sets ERROR, Completed and the process time")]
@@ -47,7 +47,7 @@ public class TextMessageEntityTests
         message.MarkFailed(at);
         Check.Equal(TextMessageStatus.Error, message.Status, "Status.");
         Check.True(message.Completed, "Completed.");
-        Check.True(message.ProcessDateTime == at, "ProcessDateTime.");
+        Check.True(message.ProcessedAtUtc == at, "ProcessedAtUtc.");
     }
 
     [Fact(DisplayName = "Entity: a message that was never claimed (or was already completed) cannot be completed again")]

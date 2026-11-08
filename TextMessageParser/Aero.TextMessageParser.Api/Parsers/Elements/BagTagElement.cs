@@ -2,7 +2,7 @@
 
 namespace Aero.TextMessageParser.Api.Parsers.Elements;
 
-public class ElementN(IElementValidator validator) : Element(Consts.N)
+public class BagTagElement(IElementValidator validator) : Element(Consts.N)
 {
     public string AirlinePrefix { get; private set; } = string.Empty;
     public string TagSerial { get; private set; } = string.Empty;
@@ -11,7 +11,7 @@ public class ElementN(IElementValidator validator) : Element(Consts.N)
     {
         var validationResult = validator.Validate(elementDetail);
         if (!validationResult.IsValid) return new(this, validationResult);
-        var result = new ElementN(validator);
+        var result = new BagTagElement(validator);
         var parsedText = elementDetail.ParsedText;
         var tag = parsedText[1];
         result.AirlinePrefix   = tag[..4].ToString();

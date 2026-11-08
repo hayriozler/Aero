@@ -33,12 +33,12 @@ public abstract class BcmParserBase(
         {
             switch (result.Element)
             {
-                case ElementF f:
+                case OutboundFlightElement f:
                     airlineCode = f.AirlineCode;
                     flightNumber = f.FlightNumber;
                     flightIataDate = f.FlightDate;
                     break;
-                case ElementV v:
+                case BaggageSourceElement v:
                     ackRequest = v.AckRequest;
                     sourceIndicator = v.BaggageSourceIndicator;
                     sourceAirport = v.AirportCode;

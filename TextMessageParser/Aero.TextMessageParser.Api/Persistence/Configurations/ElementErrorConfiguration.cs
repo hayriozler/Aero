@@ -31,7 +31,7 @@ internal sealed class ElementErrorConfiguration : IEntityTypeConfiguration<Eleme
             .IsRequired(false)
             .HasColumnOrder(3);
 
-        builder.Property(e => e.RecordDateTime)
+        builder.Property(e => e.CreatedAtUtc)
             .HasColumnType("TIMESTAMPTZ")
             .IsRequired()
             .HasColumnOrder(4);

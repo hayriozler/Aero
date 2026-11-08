@@ -3,60 +3,60 @@ using Aero.TextMessageParser.Api.Extensions;
 
 namespace Aero.TextMessageParser.Api.Parsers.Elements.Validators;
 
-public class ElementVValidator : IElementValidator
+public class BaggageSourceElementValidator : IElementValidator
 {
     public ElementValidationResult Validate(ElementDetail elementDetail)
     {
         var validationResult = new ElementValidationResult(elementDetail);
         if (elementDetail.Length < 10 || elementDetail.Length > 41)
         {
-            validationResult.AddError(ErrorCodes.ELEMENT_LENGTH_NOT_CORRECT, "ElementV length wrong");
+            validationResult.AddError(ErrorCodes.ELEMENT_LENGTH_NOT_CORRECT, "BaggageSourceElement length wrong");
             return validationResult;
         }
         if (elementDetail.ParsedText.Length < 2)
         {
-            validationResult.AddError(ErrorCodes.ELEMENT_FIELD_MISSING, "ElementV fields missing");
+            validationResult.AddError(ErrorCodes.ELEMENT_FIELD_MISSING, "BaggageSourceElement fields missing");
             return validationResult;
         }
         var f1 = elementDetail.ParsedText[1];
         if (f1.Length != 5)
         {
-            validationResult.AddError(ErrorCodes.ELEMENT_LENGTH_NOT_CORRECT, "ElementV combined field must be 5");
+            validationResult.AddError(ErrorCodes.ELEMENT_LENGTH_NOT_CORRECT, "BaggageSourceElement combined field must be 5");
             return validationResult;
         }
         if (!char.IsDigit(f1.Span[0]))
         {
-            validationResult.AddError(ErrorCodes.ELEMENT_FORMAT_NOT_CORRECT, "ElementV version must be digit");
+            validationResult.AddError(ErrorCodes.ELEMENT_FORMAT_NOT_CORRECT, "BaggageSourceElement version must be digit");
             return validationResult;
         }
         if (!Consts.BAG_SOURCE_INDICATOR_ARRAY.ContainsChar(f1.Span[1]))
         {
-            validationResult.AddError(ErrorCodes.BAGGAGE_SOURCE_INDICATOR_NOT_CORRECT, "ElementV indicator invalid");
+            validationResult.AddError(ErrorCodes.BAGGAGE_SOURCE_INDICATOR_NOT_CORRECT, "BaggageSourceElement indicator invalid");
             return validationResult;
         }
         if (!ValidationHelper.ValidateAirportCode(f1.Slice(2, 3)))
         {
-            validationResult.AddError(ErrorCodes.ELEMENT_FORMAT_NOT_CORRECT, "ElementV airport wrong");
+            validationResult.AddError(ErrorCodes.ELEMENT_FORMAT_NOT_CORRECT, "BaggageSourceElement airport wrong");
             return validationResult;
         }
         if (elementDetail.ParsedText.Length > 2 && elementDetail.ParsedText[2].Length > 5)
         {
-            validationResult.AddError(ErrorCodes.ELEMENT_LENGTH_NOT_CORRECT, "ElementV partNo too long");
+            validationResult.AddError(ErrorCodes.ELEMENT_LENGTH_NOT_CORRECT, "BaggageSourceElement partNo too long");
             return validationResult;
         }
         if (elementDetail.ParsedText.Length > 3 && elementDetail.ParsedText[3].Length > 10)
         {
-            validationResult.AddError(ErrorCodes.ELEMENT_LENGTH_NOT_CORRECT, "ElementV msgRef too long");
+            validationResult.AddError(ErrorCodes.ELEMENT_LENGTH_NOT_CORRECT, "BaggageSourceElement msgRef too long");
             return validationResult;
         }
         if (elementDetail.ParsedText.Length > 4 && (elementDetail.ParsedText[4].Length != 1 || elementDetail.ParsedText[4].Span[0] != 'A'))
         {
-            validationResult.AddError(ErrorCodes.ELEMENT_VALUE_NOT_CORRECT, "ElementV ackReq must be A");
+            validationResult.AddError(ErrorCodes.ELEMENT_VALUE_NOT_CORRECT, "BaggageSourceElement ackReq must be A");
             return validationResult;
         }
         if (elementDetail.ParsedText.Length > 5 && elementDetail.ParsedText[5].Length > 10)
         {
-            validationResult.AddError(ErrorCodes.ELEMENT_LENGTH_NOT_CORRECT, "ElementV encrypt too long");
+            validationResult.AddError(ErrorCodes.ELEMENT_LENGTH_NOT_CORRECT, "BaggageSourceElement encrypt too long");
             return validationResult;
         }
         return validationResult;

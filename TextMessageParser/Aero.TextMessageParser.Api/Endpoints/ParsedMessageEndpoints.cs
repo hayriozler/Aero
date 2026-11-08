@@ -83,5 +83,5 @@ public static class ParsedMessageEndpoints
             ? null
             : new ParsedBaggageWeightResponse(m.WeightIndicator, m.CheckedBagCount, m.CheckedWeight,
                 m.UncheckedWeight, m.WeightUnit, m.BagLength, m.BagWidth, m.BagHeight, m.BaggageTypeCode),
-        m.RecordDateTime);
+        m.CreatedAtUtc);
 }

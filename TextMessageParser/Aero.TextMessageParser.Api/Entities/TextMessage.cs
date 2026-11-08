@@ -43,8 +43,8 @@ public sealed class TextMessage
     public MessageHeader Header { get; private set; } = default!;
     public MessageFooter Footer { get; private set; } = default!;
     public string Message { get; private set; } = string.Empty;
-    public DateTime RecordDateTime { get; private set; }
-    public DateTime? ProcessDateTime { get; private set; }
+    public DateTime ReceivedAtUtc { get; private set; }
+    public DateTime? ProcessedAtUtc { get; private set; }
     public bool Completed => Status is TextMessageStatus.Processed or TextMessageStatus.Error;
     public TextMessageStatus Status { get; private set; } = TextMessageStatus.NotProcessed;
     public DateTime? ProcessingStartedAt { get; private set; }
@@ -56,7 +56,7 @@ public sealed class TextMessage
         Message = textMessage,
         Header = header,
         Footer = footer,
-        RecordDateTime = DateTime.UtcNow
+        ReceivedAtUtc = DateTime.UtcNow
     };
 
     public void MarkProcessed(DateTime processedAtUtc) => Complete(TextMessageStatus.Processed, processedAtUtc);
@@ -81,6 +81,6 @@ public sealed class TextMessage
             throw new InvalidOperationException(
                 $"Text message {Id} is {Status}; only a claimed ({TextMessageStatus.Processing}) message can be completed.");
         Status = status;
-        ProcessDateTime = processedAtUtc;
+        ProcessedAtUtc = processedAtUtc;
     }
 }

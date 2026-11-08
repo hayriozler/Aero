@@ -31,7 +31,7 @@ internal sealed class TextMessageErrorConfiguration : IEntityTypeConfiguration<T
       .HasColumnOrder(3)
       .IsRequired(false);
 
-        builder.Property(e => e.RecordDateTime)
+        builder.Property(e => e.CreatedAtUtc)
        .HasColumnType("TIMESTAMPTZ")
        .IsRequired()
        .HasColumnOrder(4);

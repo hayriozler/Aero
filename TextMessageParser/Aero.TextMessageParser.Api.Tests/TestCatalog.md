@@ -41,11 +41,11 @@ The service will no longer talk to the Scanner API, so these were dropped and ar
 ## Bug 3 - Stateful shared element instances (fixed)
 | Test | Input | Expected | Actual | Why it matters |
 |---|---|---|---|---|
-| Three_n_lines_give_three_tags | BSM with `.N/0220123456001`, `.N/0220123457001`, `.N/0220123458001` | Tags 0220123456, 0220123457, 0220123458 | `[0220123458, 0220123458, 0220123458]` | One ElementN instance is reused; the DTO is built after all parsing, so every result shows the last line. Multi-bag passengers get the wrong tags. |
-| Two_o_lines_give_two_distinct_onwards | `.O/LH401/13NOV/MUC/Y`, `.O/LH402/14NOV/BER/Y` | Destinations MUC, BER | `[BER, BER]` | Same shared-instance problem for ElementO. |
+| Three_n_lines_give_three_tags | BSM with `.N/0220123456001`, `.N/0220123457001`, `.N/0220123458001` | Tags 0220123456, 0220123457, 0220123458 | `[0220123458, 0220123458, 0220123458]` | One BagTagElement instance is reused; the DTO is built after all parsing, so every result shows the last line. Multi-bag passengers get the wrong tags. |
+| Two_o_lines_give_two_distinct_onwards | `.O/LH401/13NOV/MUC/Y`, `.O/LH402/14NOV/BER/Y` | Destinations MUC, BER | `[BER, BER]` | Same shared-instance problem for OnwardFlightElement. |
 | Element_p_state_does_not_leak_between_messages | A: `.P/2DOE/JOHN/MIDDLE1/MIDDLE2`, then B: `.P/ROE` | B state: no additional names, no count, no given name | AdditionalGivenNames still has MIDDLE1, MIDDLE2 (list only appended) | Data of one passenger leaks into the next message. |
 | Passenger_name_does_not_leak_into_dto | A: `.P/DOE/JOHN`, B: `.P/ROE` | B name without JOHN | `JOHN ROE` | Leak visible in the DTO. |
-| Element_s_seat_does_not_leak (probe) | A: `.S/Y/12A/B/001/SEC123/Y/N/A`, B: `.S/Y` | B seat is null | null (green) | NOT a bug: ElementS assigns every property on each Parse. |
+| Element_s_seat_does_not_leak (probe) | A: `.S/Y/12A/B/001/SEC123/Y/N/A`, B: `.S/Y` | B seat is null | null (green) | NOT a bug: PassengerStatusElement assigns every property on each Parse. |
 | Element_w_state_does_not_leak | A: `.W/K/001/20/CM/55/40/20/XYZ`, B: `.W/K/001/20` | Unit and LengthOfBag empty | Unit `CM` leaked | Unit/dimensions are only assigned inside one branch. |
 | Concurrent_processing_does_not_mix_results | 32 threads x 20 rounds, unique serial and name each, one shared BsmParser, Barrier-synchronised | Each DTO matches its own message | ~250-320 of 640 mixed (e.g. msg 28 got tag of msg 27) | Real concurrent processing corrupts data. (Count varies run to run.) |
 
@@ -53,11 +53,11 @@ The service will no longer talk to the Scanner API, so these were dropped and ar
 | Test | Input | Expected | Actual |
 |---|---|---|---|
 | Malformed_element_is_rejected_when_mandatory (control, Baseline) | `.F/ .I/ .O/ .P/ .S/ .U/ .W/` as Mandatory | Rejected | Rejected (green); proves the samples are malformed |
-| Malformed_element_is_rejected_regardless_of_requirement | The same 7 lines with Conditional and with Optional (14 cases) | Rejected | Green after the fix: the `Requirement != Mandatory` guard was removed from all validators, including ElementSValidator |
+| Malformed_element_is_rejected_regardless_of_requirement | The same 7 lines with Conditional and with Optional (14 cases) | Rejected | Green after the fix: the `Requirement != Mandatory` guard was removed from all validators, including PassengerStatusElementValidator |
 | Malformed_conditional_f_gives_error_not_exception | BSM with `.F/`, `.F/LH400`, `.F/LH400/12NOV`, `.F/XX/YY/ZZ/Q` | `ProcessMessage` returns null and an error row is recorded | Green after the fix |
 
-## Bug 5 - ElementSValidator (fixed, follows IATA Passenger Services Conference Resolutions Manual 30th ed., section 2.3.22)
-The field layout of `.S/` is: 1 Authority to Load (Y/N, the only mandatory field), 2 Seat number `f(f)a`, 3 Passenger status B/C/N/S, 4 Sequence number `fff`, 5 Security number `fff`, 6 Passenger profile status Y/N, 7 Authority to Transport Y/N, 8 Baggage tag status I/A. All fields after the first may be empty or omitted. The element is 6 to 26 characters long, where the count includes the 2 character end delimiter (this is why `ElementDetail.Length` is `2 + Text.Length`). This layout matches `ElementS.Parse`; the old validator checked other positions.
+## Bug 5 - PassengerStatusElementValidator (fixed, follows IATA Passenger Services Conference Resolutions Manual 30th ed., section 2.3.22)
+The field layout of `.S/` is: 1 Authority to Load (Y/N, the only mandatory field), 2 Seat number `f(f)a`, 3 Passenger status B/C/N/S, 4 Sequence number `fff`, 5 Security number `fff`, 6 Passenger profile status Y/N, 7 Authority to Transport Y/N, 8 Baggage tag status I/A. All fields after the first may be empty or omitted. The element is 6 to 26 characters long, where the count includes the 2 character end delimiter (this is why `ElementDetail.Length` is `2 + Text.Length`). This layout matches `PassengerStatusElement.Parse`; the old validator checked other positions.
 | Test | Input | Expected | Actual |
 |---|---|---|---|
 | ElementS_valid_lines_pass | `.S/Y`, `.S/N/4K`, `.S/Y//S/291` (specification example), full 8 field lines with I and A | Valid | Green |
@@ -72,7 +72,7 @@ The field layout of `.S/` is: 1 Authority to Load (Y/N, the only mandatory field
 | Dto_exposes_weight (2 DTO types) | `.W/K/001/20` | A weight property exists on the DTO | Green: both DTOs have `BaggageWeight` (`BaggageWeightDto`) |
 | Weight_values_reach_the_dto | `.W/K/001/20` in BSM and BSM CHG | Indicator `K`, `001` bags, checked weight `20` | Green |
 | Absent_weight_is_null_and_profile_status_is_kept | BSM without `.W/`, S with profile Y | BaggageWeight null, PassengerStatus `B`, PassengerProfileStatus `Y` | Green (the DTOs gained an optional `PassengerProfileStatus`) |
-| Empty_optional_s_fields_do_not_crash_the_parser | `.S/Y//S/291` | Parses, SeatNumber null, status `S`, sequence `291` | Green (ElementS.Parse no longer indexes into empty fields) |
+| Empty_optional_s_fields_do_not_crash_the_parser | `.S/Y//S/291` | Parses, SeatNumber null, status `S`, sequence `291` | Green (PassengerStatusElement.Parse no longer indexes into empty fields) |
 
 ## Bug 7 - Unknown element lines (fixed)
 | Test | Input | Expected | Actual |
@@ -83,7 +83,7 @@ The field layout of `.S/` is: 1 Authority to Load (Y/N, the only mandatory field
 | Test | Result |
 |---|---|
 | Failed_message_is_persisted_as_terminal | SKIPPED: needs PostgreSQL (raw claim SQL, private method). Skip reason holds the reproduction: BUM message, observe Status stays PROCESSING, Completed false. |
-| Catch_block_persists_failure (SourceGuard) | Green after the fix: the catch block calls `RecordFailureAsync`, which opens a fresh scope and writes Status ERROR, ProcessDateTime and a `MSG_HND_02` error row. |
+| Catch_block_persists_failure (SourceGuard) | Green after the fix: the catch block calls `RecordFailureAsync`, which opens a fresh scope and writes Status ERROR, ProcessedAtUtc and a `MSG_HND_02` error row. |
 | Stale_recovery_runs_inside_the_loop (SourceGuard) | Green after the fix: `RecoverStaleRecordsAsync` runs every minute inside the loop, not only at startup. |
 | Bum_handler_throws_not_implemented | Green, documents that `BumParser.Handle` throws NotImplementedException (what reaches the catch block). |
 
@@ -139,9 +139,9 @@ Production_model_builds: `new TextMessageParserDbContext(options).Model` throws 
 `TextMessage` now owns its state transitions: `MarkProcessed` and `MarkFailed` complete a claimed (PROCESSING) message and throw `InvalidOperationException` otherwise. Setters are private; status values live in `TextMessageStatus`. The claim itself stays a set-based SQL statement (`FOR UPDATE SKIP LOCKED`), so there is deliberately no `MarkProcessing` method.
 | Test | Input | Expected | Actual |
 |---|---|---|---|
-| New_message_state (Baseline) | `TextMessage.Create` | NOT_PROCESSED, not completed, RecordDateTime set | Green |
-| Mark_processed_completes_a_claimed_message | Claimed message, `MarkProcessed(at)` | PROCESSED, Completed, ProcessDateTime = at | Green |
-| Mark_failed_completes_a_claimed_message | Claimed message, `MarkFailed(at)` | ERROR, Completed, ProcessDateTime = at | Green |
+| New_message_state (Baseline) | `TextMessage.Create` | NOT_PROCESSED, not completed, ReceivedAtUtc set | Green |
+| Mark_processed_completes_a_claimed_message | Claimed message, `MarkProcessed(at)` | PROCESSED, Completed, ProcessedAtUtc = at | Green |
+| Mark_failed_completes_a_claimed_message | Claimed message, `MarkFailed(at)` | ERROR, Completed, ProcessedAtUtc = at | Green |
 | Completing_requires_a_claimed_message | Unclaimed message, and an already completed one | InvalidOperationException | Green |
 
 ## Parser without a database, shared mapping (clean architecture step)
@@ -177,7 +177,7 @@ IATA table 2.2 names three header concepts: the Standard Message Identifier (BSM
 | Old_rows_still_route_and_parse | CHG stored in the secondary column | Same routing key, message parses | Green |
 
 ## Intake endpoint, spaces, airline designators (medium items A4, A6, K6)
-The endpoint answers 202 Accepted with the id of the stored row, rejections use the standard problem details format (400, 413), a message is limited to `Consts.MaxMessageLength` (4000) characters, and the database call honours request cancellation. Authentication stays at the gateway (`SharedPolicy` on `/api/textmessages`). Spaces around header, END or element lines are not tolerated: the endpoint rejects a padded header or END line, the parser rejects padded CHG, END and element lines. Airline designators may contain a digit (`4U`, `9W`, `3K`): `ValidationHelper.IsAirlineDesignator` accepts two alphanumeric characters with at least one letter, or three letters; `ElementIValidator` uses the same helper.
+The endpoint answers 202 Accepted with the id of the stored row, rejections use the standard problem details format (400, 413), a message is limited to `Consts.MaxMessageLength` (4000) characters, and the database call honours request cancellation. Authentication stays at the gateway (`SharedPolicy` on `/api/textmessages`). Spaces around header, END or element lines are not tolerated: the endpoint rejects a padded header or END line, the parser rejects padded CHG, END and element lines. Airline designators may contain a digit (`4U`, `9W`, `3K`): `ValidationHelper.IsAirlineDesignator` accepts two alphanumeric characters with at least one letter, or three letters; `InboundFlightElementValidator` uses the same helper.
 | Test | Input | Expected | Actual |
 |---|---|---|---|
 | Accepted_response_carries_the_stored_id | Valid BSM | 202 and `id` equal to the stored row id | Green |
@@ -206,7 +206,7 @@ Not an automated test. A temporary `postgres:17-alpine` container was started, `
 What this confirms: the claim query with the `"Value"` alias works (Bug 9), a failing message ends in a persisted terminal state (Bug 8), the hosted service starts and resolves its dependencies (Bug 1), CHG and DEL are stored as change of status (A3), element errors carry the failing line (A2), the generated migration creates a model the service can use.
 
 ## Baseline (Kind=Baseline, all green)
-Single-tag BSM parse; BSM CHG and DEL parse; SplitOnSlash (4 cases); ValidationHelper flight number (5), IATA date (5), airport code (4); Install extensions; model builds with test context; endpoint accepts valid BSM; GetMessageIdentifier happy path; scalar JSON; ElementS valid lengths (5); malformed controls (7).
+Single-tag BSM parse; BSM CHG and DEL parse; SplitOnSlash (4 cases); ValidationHelper flight number (5), IATA date (5), airport code (4); Install extensions; model builds with test context; endpoint accepts valid BSM; GetMessageIdentifier happy path; scalar JSON; PassengerStatusElement valid lengths (5); malformed controls (7).
 
 ## Side observation, not tested
 `ValidationHelper.ValidateAirlineFlightNumber` requires letters for the first 2 characters when the third is a digit, so airline codes like `4U` (digit + letter) are rejected.
@@ -240,3 +240,6 @@ Not an automated test. On a temporary `postgres:17-alpine` container five migrat
 | Test | Scenario | Expected | State |
 |---|---|---|---|
 | Serial_wraps_to_zero | `.N/0220999998004` | Tags 0220999998, 0220999999, 0220000000, 0220000001 (999999 is followed by 000000) | Green |
+
+## Renames (D16)
+Columns: `TextMessages.RecordDateTime` is `ReceivedAtUtc`, `ProcessDateTime` is `ProcessedAtUtc`, and `RecordDateTime` on `ParsedMessages`, `MessageErrors` and `ElementErrors` is `CreatedAtUtc` (migration `RenameTimestampColumns`, plain column renames, data is kept). The JSON field of `GET /api/parsedmessages` changed from `recordDateTime` to `createdAtUtc`. Element classes: V `BaggageSourceElement`, F `OutboundFlightElement`, I `InboundFlightElement`, O `OnwardFlightElement`, N `BagTagElement`, P `PassengerNameElement`, S `PassengerStatusElement`, W `BaggageWeightElement`, each with a matching `...ElementValidator`. Checked manually on PostgreSQL: one BSM posted, PROCESSED, both timestamps filled, the read endpoint returns `createdAtUtc`.

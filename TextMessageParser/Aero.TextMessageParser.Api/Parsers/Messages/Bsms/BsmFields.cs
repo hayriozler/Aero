@@ -34,23 +34,23 @@ internal sealed class BsmFields
         {
             switch (result.Element)
             {
-                case ElementF f:
+                case OutboundFlightElement f:
                     fields.AirlineCode = f.AirlineCode;
                     fields.FlightNumber = f.FlightNumber;
                     fields.FlightIataDate = f.FlightDate;
                     fields.PassengerClass = f.Class;
                     fields.Destination = f.Destination;
                     break;
-                case ElementN n:
+                case BagTagElement n:
                     AddBagTags(fields.BagTags, n);
                     break;
-                case ElementO o:
+                case OnwardFlightElement o:
                     fields.Onwards.Add(new OnwardFlightDto(o.AirlineCode, o.FlightNumber, o.FlightDate, o.Destination, o.Class));
                     break;
-                case ElementP p:
+                case PassengerNameElement p:
                     fields.PassengerName = $"{p.PassengerGivenName} {p.PassengerSurname}";
                     break;
-                case ElementS s:
+                case PassengerStatusElement s:
                     fields.AuthorityToLoad = s.AuthorityToLoad == 'Y';
                     fields.SeatNumber = s.SeatNumber;
                     fields.PassengerStatus = s.PassengerStatus;
@@ -60,12 +60,12 @@ internal sealed class BsmFields
                     fields.AuthorityToTransport = s.AuthorityToTransport == 'Y';
                     fields.BagTagStatus = s.BaggageTagStatus == 'A';
                     break;
-                case ElementV v:
+                case BaggageSourceElement v:
                     fields.AckRequest = v.AckRequest;
                     fields.SourceIndicator = v.BaggageSourceIndicator;
                     fields.SourceAirport = v.AirportCode;
                     break;
-                case ElementW w:
+                case BaggageWeightElement w:
                     fields.BaggageWeight = new BaggageWeightDto(
                         w.PiecesWeightIndicator, w.NumberOfCheckedBag, w.CheckedWeight,
                         w.UncheckedWeight, w.Unit, w.LengthOfBag,
@@ -76,7 +76,7 @@ internal sealed class BsmFields
         return fields;
     }
 
-    private static void AddBagTags(List<string> bagTags, ElementN element)
+    private static void AddBagTags(List<string> bagTags, BagTagElement element)
     {
         var count = int.TryParse(element.ConsecutiveTags, out var consecutive) ? consecutive : 0;
         var firstSerial = int.Parse(element.TagSerial);

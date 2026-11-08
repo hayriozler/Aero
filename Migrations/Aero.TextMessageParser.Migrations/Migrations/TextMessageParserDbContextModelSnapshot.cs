@@ -31,6 +31,10 @@ namespace Aero.TextMessageParser.Migrations.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TIMESTAMPTZ")
+                        .HasColumnOrder(4);
+
                     b.Property<string>("ErrorCode")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -45,10 +49,6 @@ namespace Aero.TextMessageParser.Migrations.Migrations
                     b.Property<long>("MessageId")
                         .HasColumnType("BIGINT")
                         .HasColumnOrder(1);
-
-                    b.Property<DateTime>("RecordDateTime")
-                        .HasColumnType("TIMESTAMPTZ")
-                        .HasColumnOrder(4);
 
                     b.HasKey("Id")
                         .HasName("PK_ElementErrorId");
@@ -136,6 +136,9 @@ namespace Aero.TextMessageParser.Migrations.Migrations
                     b.Property<DateTime?>("ConsumedAt")
                         .HasColumnType("TIMESTAMPTZ");
 
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TIMESTAMPTZ");
+
                     b.Property<string>("Destination")
                         .HasMaxLength(3)
                         .HasColumnType("character varying(3)");
@@ -178,9 +181,6 @@ namespace Aero.TextMessageParser.Migrations.Migrations
 
                     b.Property<char?>("PassengerStatus")
                         .HasColumnType("character(1)");
-
-                    b.Property<DateTime>("RecordDateTime")
-                        .HasColumnType("TIMESTAMPTZ");
 
                     b.Property<string>("SeatNumber")
                         .HasMaxLength(5)
@@ -287,7 +287,7 @@ namespace Aero.TextMessageParser.Migrations.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnOrder(6);
 
-                    b.Property<DateTime?>("ProcessDateTime")
+                    b.Property<DateTime?>("ProcessedAtUtc")
                         .HasColumnType("TIMESTAMPTZ")
                         .HasColumnOrder(9);
 
@@ -295,7 +295,7 @@ namespace Aero.TextMessageParser.Migrations.Migrations
                         .HasColumnType("TIMESTAMPTZ")
                         .HasColumnOrder(8);
 
-                    b.Property<DateTime>("RecordDateTime")
+                    b.Property<DateTime>("ReceivedAtUtc")
                         .HasColumnType("TIMESTAMPTZ")
                         .HasColumnOrder(10);
 
@@ -312,7 +312,7 @@ namespace Aero.TextMessageParser.Migrations.Migrations
                         .HasDatabaseName("IX_TextMessages_Processing")
                         .HasFilter("\"Status\" = 'PROCESSING'");
 
-                    b.HasIndex("RecordDateTime")
+                    b.HasIndex("ReceivedAtUtc")
                         .HasDatabaseName("IX_TextMessages_Pending")
                         .HasFilter("\"Status\" = 'NOT_PROCESSED'");
 
@@ -328,6 +328,10 @@ namespace Aero.TextMessageParser.Migrations.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TIMESTAMPTZ")
+                        .HasColumnOrder(4);
+
                     b.Property<string>("ErrorCode")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -342,10 +346,6 @@ namespace Aero.TextMessageParser.Migrations.Migrations
                     b.Property<long>("MessageId")
                         .HasColumnType("BIGINT")
                         .HasColumnOrder(1);
-
-                    b.Property<DateTime>("RecordDateTime")
-                        .HasColumnType("TIMESTAMPTZ")
-                        .HasColumnOrder(4);
 
                     b.HasKey("Id")
                         .HasName("PK_MessageErrorId");

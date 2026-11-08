@@ -6,7 +6,7 @@ public sealed class ElementError
     public long MessageId { get; private set; }
     public string ErrorCode { get; private set; } = null!;
     public string? ErrorDescription { get; private set; } = null!;
-    public DateTime RecordDateTime { get; private set; }
+    public DateTime CreatedAtUtc { get; private set; }
     private ElementError() { }
     public static ElementError Create(long messageId, string errorCode, string? errorDescription) =>
     new()
@@ -14,6 +14,6 @@ public sealed class ElementError
         MessageId = messageId,
         ErrorCode = errorCode,
         ErrorDescription = errorDescription,
-        RecordDateTime = DateTime.UtcNow
+        CreatedAtUtc = DateTime.UtcNow
     };
 }

@@ -2,7 +2,7 @@
 
 namespace Aero.TextMessageParser.Api.Parsers.Elements;
 
-public class ElementP(IElementValidator validator) : Element(Consts.P)
+public class PassengerNameElement(IElementValidator validator) : Element(Consts.P)
 {
     public string NumberOfPassengersWithSurname { get; private set; } = string.Empty;
     public string PassengerSurname { get; private set; } = string.Empty;
@@ -12,7 +12,7 @@ public class ElementP(IElementValidator validator) : Element(Consts.P)
     {
         var validationResult = validator.Validate(elementDetail);
         if (!validationResult.IsValid) return new(this, validationResult);
-        var result = new ElementP(validator);
+        var result = new PassengerNameElement(validator);
         if (elementDetail.ParsedText.Length < 2) return new(this, validationResult);
         int digits = 0;
         while (digits < elementDetail.ParsedText[1].Length && char.IsDigit(elementDetail.ParsedText[1].Span[digits]))

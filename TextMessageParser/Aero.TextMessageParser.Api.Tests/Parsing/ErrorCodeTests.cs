@@ -24,9 +24,9 @@ public class ErrorCodeTests
         const string Why = "Before the fix every length, digit, letter and allowed-value check used the same code 1001 (named length-not-correct), so an error row could not tell what was wrong.";
         IElementValidator validator = element switch
         {
-            "N" => new ElementNValidator(),
-            "W" => new ElementWValidator(),
-            _ => new ElementPValidator()
+            "N" => new BagTagElementValidator(),
+            "W" => new BaggageWeightElementValidator(),
+            _ => new PassengerNameElementValidator()
         };
         var result = Validate(validator, line);
         Check.True(!result.IsValid, $"'{line}' must be rejected.");
@@ -36,9 +36,9 @@ public class ErrorCodeTests
     [Fact(DisplayName = "ElementValidationResult: the validated element line is kept on the result, for invalid and valid elements")]
     public void Result_carries_the_element_line()
     {
-        var bad = Validate(new ElementNValidator(), ".N/022012345600A");
+        var bad = Validate(new BagTagElementValidator(), ".N/022012345600A");
         Check.Equal(".N/022012345600A", bad.Line, "The result must carry the line that failed.");
-        var good = Validate(new ElementNValidator(), ".N/0220123456001");
+        var good = Validate(new BagTagElementValidator(), ".N/0220123456001");
         Check.True(good.IsValid, "A well-formed .N/ line is valid.");
         Check.Equal(".N/0220123456001", good.Line, "The line is available for valid results as well.");
     }

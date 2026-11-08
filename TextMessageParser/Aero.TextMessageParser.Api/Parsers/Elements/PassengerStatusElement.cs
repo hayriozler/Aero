@@ -2,7 +2,7 @@ using Aero.TextMessageParser.Api.Contracts;
 
 namespace Aero.TextMessageParser.Api.Parsers.Elements;
 
-public class ElementS(IElementValidator validator) : Element(Consts.S)
+public class PassengerStatusElement(IElementValidator validator) : Element(Consts.S)
 {
     public char AuthorityToLoad { get; private set; }
     public string? SeatNumber { get; private set; }
@@ -17,7 +17,7 @@ public class ElementS(IElementValidator validator) : Element(Consts.S)
     {
         var validationResult = validator.Validate(elementDetail);
         if (!validationResult.IsValid) return new(this, validationResult);
-        var result = new ElementS(validator);
+        var result = new PassengerStatusElement(validator);
         var parsedText = elementDetail.ParsedText;
         result.AuthorityToLoad = parsedText.Length > 1 ? FirstCharOrDefault(parsedText[1]) : default;
         result.SeatNumber = parsedText.Length > 2 ? TextOrNull(parsedText[2]) : default;

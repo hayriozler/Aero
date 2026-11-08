@@ -33,7 +33,7 @@ public sealed class ParsedMessage
     public string? BagWidth { get; private set; }
     public string? BagHeight { get; private set; }
     public string? BaggageTypeCode { get; private set; }
-    public DateTime RecordDateTime { get; private set; }
+    public DateTime CreatedAtUtc { get; private set; }
     public bool IsConsumed { get; private set; }
     public DateTime? ConsumedAt { get; private set; }
     public List<ParsedBagTag> BagTags { get; private set; } = [];
@@ -54,7 +54,7 @@ public sealed class ParsedMessage
             FlightNumber = flightNumber,
             FlightDate = flightDate,
             Destination = destination,
-            RecordDateTime = DateTime.UtcNow,
+            CreatedAtUtc = DateTime.UtcNow,
             BagTags = bagTags.Select(ParsedBagTag.Create).ToList()
         };
 

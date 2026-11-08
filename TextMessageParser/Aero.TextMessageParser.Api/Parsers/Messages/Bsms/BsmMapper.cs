@@ -35,5 +35,5 @@ internal static class BsmMapper
 
     private static char RequireSourceIndicator(BsmFields fields, string messageName, long messageId)
         => fields.SourceIndicator
-           ?? throw new InvalidOperationException($"{messageName} {messageId}: ElementV (SourceIndicator) is required but missing");
+           ?? throw new InvalidOperationException($"{messageName} {messageId}: BaggageSourceElement (SourceIndicator) is required but missing");
 }

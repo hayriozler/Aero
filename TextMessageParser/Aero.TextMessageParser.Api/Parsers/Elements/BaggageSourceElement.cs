@@ -2,7 +2,7 @@
 
 namespace Aero.TextMessageParser.Api.Parsers.Elements;
 
-public class ElementV(IElementValidator validator) : Element(Consts.V)
+public class BaggageSourceElement(IElementValidator validator) : Element(Consts.V)
 {
     public char DataDictionaryVersion { get; private set; }
     public char BaggageSourceIndicator { get; private set; }
@@ -15,7 +15,7 @@ public class ElementV(IElementValidator validator) : Element(Consts.V)
     {
         var v = validator.Validate(elementDetail);
         if (!v.IsValid) return new(this, v);
-        var result = new ElementV(validator);
+        var result = new BaggageSourceElement(validator);
         var parsedText = elementDetail.ParsedText;
         var f1 = parsedText.Length > 1 ? parsedText[1] : default;
         result.DataDictionaryVersion  = f1[..1].Span[0];
