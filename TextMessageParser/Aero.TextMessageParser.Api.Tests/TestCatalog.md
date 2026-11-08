@@ -191,6 +191,20 @@ The endpoint answers 202 Accepted with the id of the stored row, rejections use 
 | Element_f_splits_a_digit_airline | `.F/9W123/12NOV/JFK/Y` | Airline `9W`, flight `123` | Green |
 | Inbound_and_onward_accept_digit_airlines (2 cases) | `.I/9W123/...`, `.O/4U1234/...` | Valid | Green |
 
+## Manual end-to-end check against a real PostgreSQL (2026-11-08)
+Not an automated test. A temporary `postgres:17-alpine` container was started, `Aero.TextMessageParser.Migrations` applied `InitialCreate`, the API was started against it and seven messages were posted with `POST /api/textmessages`. Container and process were removed afterwards. This replaces the skipped reproductions for Bug 8 and Bug 9 as evidence; the skipped tests stay skipped because the automated suite has no PostgreSQL.
+| Message sent | HTTP | Stored header (identifier / secondary / change of status) | Final status | Error rows |
+|---|---|---|---|---|
+| BSM with .V .F .N .P | 202 | BSM / - / - | PROCESSED | none |
+| BSM CHG, same elements | 202 | BSM / - / CHG | PROCESSED | none |
+| BSM DEL with .V .F .N | 202 | BSM / - / DEL | PROCESSED | none |
+| BUM with .V .N (handler not implemented) | 202 | BUM / - / - | ERROR, Completed | `MSG_HND_02` NotImplementedException |
+| BSM with `.F/LH400` | 202 | BSM / - / - | ERROR, Completed | element error `1001` with the line `.F/LH400` |
+| Unknown type XYZ | 202 | XYZ / - / - | ERROR, Completed | `MSG_HND_01` no handler registered |
+| BSM ending with ENDBUM | 400 problem details | not stored | - | - |
+
+What this confirms: the claim query with the `"Value"` alias works (Bug 9), a failing message ends in a persisted terminal state (Bug 8), the hosted service starts and resolves its dependencies (Bug 1), CHG and DEL are stored as change of status (A3), element errors carry the failing line (A2), the generated migration creates a model the service can use.
+
 ## Baseline (Kind=Baseline, all green)
 Single-tag BSM parse; BSM CHG and DEL parse; SplitOnSlash (4 cases); ValidationHelper flight number (5), IATA date (5), airport code (4); Install extensions; model builds with test context; endpoint accepts valid BSM; GetMessageIdentifier happy path; scalar JSON; ElementS valid lengths (5); malformed controls (7).
 

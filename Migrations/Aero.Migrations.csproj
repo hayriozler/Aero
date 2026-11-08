@@ -16,5 +16,8 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Seeds\*.csv" />
+    <Compile Remove="Aero.TextMessageParser.Migrations\**" />
+    <EmbeddedResource Remove="Aero.TextMessageParser.Migrations\**" />
+    <None Remove="Aero.TextMessageParser.Migrations\**" />
   </ItemGroup>
 </Project>
