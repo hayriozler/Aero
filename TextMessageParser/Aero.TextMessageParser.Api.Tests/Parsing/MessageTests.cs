@@ -13,6 +13,17 @@ namespace Aero.TextMessageParser.Api.Tests.Parsing;
 
 public class MessageTests
 {
+    [Fact(DisplayName = "Bag tags: the serial wraps from 999999 to 000000 when consecutive tags cross the limit")]
+    [Trait("Bug", "A5")]
+    public void Serial_wraps_to_zero()
+    {
+        var bsm = new BsmParser(ElementMapFactory.Create());
+        using var db = TestDbContextFactory.Create();
+        var dto = bsm.ProcessMessage(TextMessages.From(BsmText(V, F, ".N/0220999998004", P)), db);
+        Check.True(dto is not null, "Message must parse.");
+        Check.SequenceEqual(new[] { "0220999998", "0220999999", "0220000000", "0220000001" }, dto!.BagTags, "999999 is followed by 000000.");
+    }
+
     [Fact(DisplayName = "Baseline: single-tag BSM is parsed into the expected request DTO")]
     [Trait("Kind", "Baseline")]
     public void Single_tag_bsm_parses()

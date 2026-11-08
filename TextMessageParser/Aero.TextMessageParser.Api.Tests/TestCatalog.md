@@ -235,3 +235,8 @@ Not an automated test. On a temporary `postgres:17-alpine` container all four mi
 
 ## Manual check of the reworked processing service (2026-11-08)
 Not an automated test. On a temporary `postgres:17-alpine` container five migrations were applied and nine messages were posted: six BSM, one BUM, one BSM with a bad `.F` line and one unknown type. Result: seven PROCESSED with a parsed row each (BUM stored as `BUM`), `AttemptCount` 1 on every row, the bad `.F` ended ERROR with element error `1001`, the unknown type ended ERROR with `MSG_HND_01`, and no unexpected failure was logged. Retry after a transient failure is covered by unit tests only, it was not provoked on the database.
+
+## Bag tag serial wrap (A5)
+| Test | Scenario | Expected | State |
+|---|---|---|---|
+| Serial_wraps_to_zero | `.N/0220999998004` | Tags 0220999998, 0220999999, 0220000000, 0220000001 (999999 is followed by 000000) | Green |

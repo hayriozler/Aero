@@ -82,8 +82,7 @@ internal sealed class BsmFields
         var firstSerial = int.Parse(element.TagSerial);
         for (var i = 0; i < count; i++)
         {
-            var serial = firstSerial + i;
-            if (serial > Consts.MaxBagTagSerial) serial -= Consts.MaxBagTagSerial;
+            var serial = (firstSerial + i) % Consts.BagTagSerialModulus;
             bagTags.Add($"{element.AirlinePrefix}{serial:D6}");
         }
     }
