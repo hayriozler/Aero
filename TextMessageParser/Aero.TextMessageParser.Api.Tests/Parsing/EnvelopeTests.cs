@@ -42,10 +42,10 @@ public class EnvelopeTests
     {
         const string Why = "The footer is taken blindly from the last line of the text, then skipped by SplitSpanMessage, so a BSM terminated with ENDBUM is processed as if valid. Expected: null result plus a recorded message error.";
         var raw = string.Join(SampleMessages.NativeNewLine, "BSM", SampleMessages.V, SampleMessages.F, SampleMessages.N1, SampleMessages.P, "ENDBUM");
-        var bsm = new Bsm(ElementMapFactory.Create());
+        var bsm = new BsmParser(ElementMapFactory.Create());
         using var db = TestDbContextFactory.Create();
         var dto = bsm.ProcessMessage(TextMessages.From(raw), db);
-        Check.True(dto is null && db.TextMessageErrorSet.Local.Count > 0, Why);
+        Check.True(dto is null && db.MessageErrors.Local.Count > 0, Why);
     }
 
     [Fact(DisplayName = "Bug 12: a BSM with no END line at all must be rejected, not silently lose its last element")]
@@ -54,10 +54,10 @@ public class EnvelopeTests
     {
         const string Why = "Without END, the last real element (.P/DOE/JOHN) is taken as the footer and silently dropped; the BSM is accepted. Expected: null result plus a recorded message error.";
         var raw = string.Join(SampleMessages.NativeNewLine, "BSM", SampleMessages.V, SampleMessages.F, SampleMessages.N1, SampleMessages.P);
-        var bsm = new Bsm(ElementMapFactory.Create());
+        var bsm = new BsmParser(ElementMapFactory.Create());
         using var db = TestDbContextFactory.Create();
         var dto = bsm.ProcessMessage(TextMessages.From(raw), db);
-        Check.True(dto is null && db.TextMessageErrorSet.Local.Count > 0, Why);
+        Check.True(dto is null && db.MessageErrors.Local.Count > 0, Why);
     }
 
     [Theory(DisplayName = "Bug 12 (endpoint): POST /api/textmessages answers 400 for null, missing, whitespace-only and one-line messages")]
@@ -102,7 +102,7 @@ public class EnvelopeTests
         Check.Equal(HttpStatusCode.Accepted, response.StatusCode, "A well-formed BSM must be accepted for later processing.");
         using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<TextMessageParserDbContext>();
-        Check.Equal(1, db.TextMessagesSet.Count(), "Exactly one TextMessage row must be stored.");
+        Check.Equal(1, db.TextMessages.Count(), "Exactly one TextMessage row must be stored.");
     }
 
     [Fact(DisplayName = "Baseline: GetMessageIdentifier reads BSM header, CHG secondary identifier and ENDBSM footer")]
@@ -127,7 +127,7 @@ public class EnvelopeTests
     [InlineData("\r\n")]
     public void GetMessageIdentifier_is_independent_of_line_ending(string newLine)
     {
-        const string Why = "Consts.NEW_LINE_SEPERATOR depends on Environment.NewLine and Span.Split(char[]) splits on the whole sequence. On Windows an LF-only message is not split at all; on Linux CRLF messages keep a trailing CR on each line. Expected: both line endings parse the same everywhere.";
+        const string Why = "Consts.LineSeparators depends on Environment.NewLine and Span.Split(char[]) splits on the whole sequence. On Windows an LF-only message is not split at all; on Linux CRLF messages keep a trailing CR on each line. Expected: both line endings parse the same everywhere.";
         var raw = SampleMessages.Build("BSM", null, newLine, SampleMessages.V, SampleMessages.F, SampleMessages.N1, SampleMessages.P);
         var ex = Record.Exception(() =>
         {
@@ -138,7 +138,7 @@ public class EnvelopeTests
         Check.True(ex is null, $"Line ending {(newLine == "\n" ? "LF" : "CRLF")} threw {ex?.GetType().Name}: {ex?.Message}. {Why}");
     }
 
-    [Theory(DisplayName = "Bug 13: the same BSM using LF only and CRLF must produce the same DTO from Bsm.ProcessMessage")]
+    [Theory(DisplayName = "Bug 13: the same BSM using LF only and CRLF must produce the same DTO from BsmParser.ProcessMessage")]
     [Trait("Bug", "13")]
     [InlineData("\n")]
     [InlineData("\r\n")]
@@ -146,9 +146,9 @@ public class EnvelopeTests
     {
         const string Why = "Same message, different line ending, must give the same DTO (one tag 0220123456, passenger JOHN DOE).";
         var raw = SampleMessages.Build("BSM", null, newLine, SampleMessages.V, SampleMessages.F, SampleMessages.N1, SampleMessages.P);
-        var bsm = new Bsm(ElementMapFactory.Create());
+        var bsm = new BsmParser(ElementMapFactory.Create());
         using var db = TestDbContextFactory.Create();
-        Requests.TextMessageDepartureBagRequest? dto = null;
+        Dtos.DepartureBagDto? dto = null;
         var ex = Record.Exception(() => dto = bsm.ProcessMessage(TextMessages.From(raw), db));
         Check.True(ex is null, $"Threw {ex?.GetType().Name}: {ex?.Message}. {Why}");
         Check.True(dto is not null, "Result was null. " + Why);
@@ -156,12 +156,12 @@ public class EnvelopeTests
         Check.Equal("JOHN DOE", dto.PassengerName, Why);
     }
 
-    [Fact(DisplayName = "Bug 13 (low priority): Consts.NEW_LINE_SEPERATOR must not allocate a new array on every access")]
+    [Fact(DisplayName = "Bug 13 (low priority): Consts.LineSeparators must not allocate a new array on every access")]
     [Trait("Bug", "13")]
     [Trait("Priority", "Low")]
     public void NewLineSeparator_is_cached()
     {
-        Check.True(ReferenceEquals(Consts.NEW_LINE_SEPERATOR, Consts.NEW_LINE_SEPERATOR),
+        Check.True(ReferenceEquals(Consts.LineSeparators, Consts.LineSeparators),
             "The property is an expression-bodied getter that builds a new char[] on every call, which the parser does per message and per line.");
     }
 }

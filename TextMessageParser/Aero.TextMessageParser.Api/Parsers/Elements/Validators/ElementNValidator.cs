@@ -28,6 +28,11 @@ public class ElementNValidator : IElementValidator
                 validationResult.AddError(ErrorCodes.ELEMENT_FORMAT_NOT_CORRECT, "ElementN tag must be digits");
                 return validationResult;
             }
+        if (elementDetail.ParsedText[1].Span[10..].SequenceEqual("000"))
+        {
+            validationResult.AddError(ErrorCodes.ELEMENT_VALUE_NOT_CORRECT, "ElementN number of consecutive tags must be at least 001");
+            return validationResult;
+        }
         return validationResult;
     }
 }

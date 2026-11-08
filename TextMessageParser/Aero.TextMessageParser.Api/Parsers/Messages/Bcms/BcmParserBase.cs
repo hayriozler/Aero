@@ -5,10 +5,10 @@ using Aero.TextMessageParser.Api.ValueObjects;
 
 namespace Aero.TextMessageParser.Api.Parsers.Messages.Bcms;
 
-public abstract class BcmBase(
+public abstract class BcmParserBase(
     string secondaryIdentifier,
     IReadOnlyDictionary<string, Element> elementMap)
-    : MessageBase<TextMessageBcmDto>(new MessageHeader(Consts.BCM, secondaryIdentifier, null), elementMap)
+    : MessageParser<BcmDto>(new MessageHeader(Consts.BCM, secondaryIdentifier, null), elementMap)
 {
     private readonly string _subType = char.ToUpperInvariant(secondaryIdentifier[0]) + secondaryIdentifier[1..].ToLowerInvariant();
 
@@ -20,7 +20,7 @@ public abstract class BcmBase(
         new(Consts.R, ElementRequirement.Optional,  IsMultiple: false),
     ];
 
-    protected override TextMessageBcmDto Handle(long messageId, ElementResult[] elementResults)
+    protected override BcmDto Handle(long messageId, ElementResult[] elementResults)
     {
         char? ackRequest = null;
         char? sourceIndicator = null;
@@ -46,7 +46,7 @@ public abstract class BcmBase(
             }
         }
 
-        return new TextMessageBcmDto(
+        return new BcmDto(
             messageId, _subType, ackRequest, sourceIndicator, sourceAirport,
             airlineCode, flightNumber, flightIataDate);
     }

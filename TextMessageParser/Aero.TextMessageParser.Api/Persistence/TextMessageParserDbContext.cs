@@ -9,9 +9,9 @@ namespace Aero.TextMessageParser.Api.Persistence;
 public class TextMessageParserDbContext(DbContextOptions<TextMessageParserDbContext> options)
     : DataStoreContext(options), IDataStoreContext
 {
-    public DbSet<TextMessage> TextMessagesSet => Set<TextMessage>();
-    public DbSet<TextMessageError> TextMessageErrorSet => Set<TextMessageError>();
-    public DbSet<ElementError> TextMessageElementErrorSet => Set<ElementError>();
+    public DbSet<TextMessage> TextMessages => Set<TextMessage>();
+    public DbSet<TextMessageError> MessageErrors => Set<TextMessageError>();
+    public DbSet<ElementError> ElementErrors => Set<ElementError>();
     public DbSet<ParsedMessage> ParsedMessages => Set<ParsedMessage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

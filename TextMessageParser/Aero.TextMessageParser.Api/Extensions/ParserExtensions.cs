@@ -34,7 +34,7 @@ public static class ParserExtensions
         footer = default!;
         if (string.IsNullOrWhiteSpace(text)) return false;
 
-        var splittedText = SplitText(text, Consts.NEW_LINE_SEPERATOR);
+        var splittedText = SplitText(text, Consts.LineSeparators);
         if (splittedText.Count < 3 || splittedText[0].Length != 3) return false;
 
         string identifier = splittedText[0].ToString();
@@ -80,7 +80,7 @@ public static class ParserExtensions
 
         var elements = new List<ElementDetail>(24);
 
-        foreach (var lineRange in mem.Span.SplitAny(Consts.NEW_LINE_SEPERATOR))
+        foreach (var lineRange in mem.Span.SplitAny(Consts.LineSeparators))
         {
             var lineMem = mem[lineRange];
             var lineSpan = lineMem.Span;

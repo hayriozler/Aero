@@ -3,9 +3,9 @@ using Aero.TextMessageParser.Api.Persistence;
 using Aero.TextMessageParser.Api.Responses;
 using Microsoft.EntityFrameworkCore;
 
-namespace Aero.TextMessageParser.Api.EndPoints;
+namespace Aero.TextMessageParser.Api.Endpoints;
 
-public static class ParsedMessageEndPoint
+public static class ParsedMessageEndpoints
 {
     private const int _defaultLimit = 100;
     private const int _maxLimit = 500;

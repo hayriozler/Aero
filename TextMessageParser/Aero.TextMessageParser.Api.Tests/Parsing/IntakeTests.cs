@@ -22,7 +22,7 @@ public class IntakeTests
         Check.Equal(HttpStatusCode.Accepted, response.StatusCode, "The message is stored for later processing, not processed yet.");
         var body = await response.Content.ReadFromJsonAsync<JsonElement>();
         using var scope = factory.Services.CreateScope();
-        var stored = scope.ServiceProvider.GetRequiredService<TextMessageParserDbContext>().TextMessagesSet.Single();
+        var stored = scope.ServiceProvider.GetRequiredService<TextMessageParserDbContext>().TextMessages.Single();
         Check.True(body.GetProperty("id").GetInt64() == stored.Id, "The response must carry the id of the stored row so the sender can refer to it.");
     }
 
@@ -35,7 +35,7 @@ public class IntakeTests
         var response = await client.PostAsJsonAsync("/api/textmessages", new { message = raw });
         Check.Equal(HttpStatusCode.RequestEntityTooLarge, response.StatusCode, "Message longer than the limit.");
         using var scope = factory.Services.CreateScope();
-        Check.True(!scope.ServiceProvider.GetRequiredService<TextMessageParserDbContext>().TextMessagesSet.Any(), "A rejected message must not be stored.");
+        Check.True(!scope.ServiceProvider.GetRequiredService<TextMessageParserDbContext>().TextMessages.Any(), "A rejected message must not be stored.");
     }
 
     [Fact(DisplayName = "Endpoint: a message of exactly the maximum length is accepted")]
@@ -79,7 +79,7 @@ public class IntakeTests
     [InlineData("BSM\nCHG\n.V/7LFRA\n.F/LH400/12NOV/JFK/Y\n.N/0220123456001 \nENDBSM")]
     public void Padded_lines_are_rejected_by_the_parser(string raw)
     {
-        var result = new BsmChg(ElementMapFactory.Create()).Parse(TextMessages.From(raw));
+        var result = new BsmChgParser(ElementMapFactory.Create()).Parse(TextMessages.From(raw));
         Check.True(!result.IsSuccess, "A line with a trailing space must not be accepted silently.");
     }
 }

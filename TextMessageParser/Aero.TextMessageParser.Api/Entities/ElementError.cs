@@ -2,7 +2,7 @@ namespace Aero.TextMessageParser.Api.Entities;
 
 public sealed class ElementError
 {
-    public int Id { get; private set; }
+    public long Id { get; private set; }
     public long MessageId { get; private set; }
     public string ErrorCode { get; private set; } = null!;
     public string? ErrorDescription { get; private set; } = null!;

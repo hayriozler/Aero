@@ -17,7 +17,7 @@ public class MessageTests
     [Trait("Kind", "Baseline")]
     public void Single_tag_bsm_parses()
     {
-        var bsm = new Bsm(ElementMapFactory.Create());
+        var bsm = new BsmParser(ElementMapFactory.Create());
         using var db = TestDbContextFactory.Create();
         var dto = bsm.ProcessMessage(TextMessages.From(SingleTagBsm(), 7), db);
         Check.True(dto is not null, "A well-formed single-tag BSM must parse.");
@@ -31,7 +31,7 @@ public class MessageTests
         Check.Equal((char?)'Y', dto.PassengerClass, "Class from .F.");
         Check.SequenceEqual(new[] { "0220123456" }, dto.BagTags, "One bag tag from .N/0220123456001.");
         Check.Equal("JOHN DOE", dto.PassengerName, "Name from .P/DOE/JOHN.");
-        Check.Equal(0, db.TextMessageErrorSet.Local.Count + db.TextMessageElementErrorSet.Local.Count, "No error rows for a valid message.");
+        Check.Equal(0, db.MessageErrors.Local.Count + db.ElementErrors.Local.Count, "No error rows for a valid message.");
     }
 
     [Fact(DisplayName = "Baseline: BSM CHG and BSM DEL with one tag parse into their DTOs")]
@@ -40,8 +40,8 @@ public class MessageTests
     {
         var map = ElementMapFactory.Create();
         using var db = TestDbContextFactory.Create();
-        var chg = new BsmChg(map).ProcessMessage(TextMessages.From(ChgText(V, F, N1, P)), db);
-        var del = new BsmDel(map).ProcessMessage(TextMessages.From(DelText(V, F, N1)), db);
+        var chg = new BsmChgParser(map).ProcessMessage(TextMessages.From(ChgText(V, F, N1, P)), db);
+        var del = new BsmDelParser(map).ProcessMessage(TextMessages.From(DelText(V, F, N1)), db);
         Check.True(chg is not null && chg.BagTags.SequenceEqual(new[] { "0220123456" }), "CHG parse.");
         Check.True(del is not null && del.BagTags.SequenceEqual(new[] { "0220123456" }), "DEL parse.");
     }
@@ -51,7 +51,7 @@ public class MessageTests
     public void Three_n_lines_give_three_tags()
     {
         const string Why = "All three .N lines are parsed by the same shared ElementN instance and the DTO is built only after all parsing is done, so every ElementResult points to the same object holding the LAST serial. Expected 0220123456, 0220123457, 0220123458.";
-        var bsm = new Bsm(ElementMapFactory.Create());
+        var bsm = new BsmParser(ElementMapFactory.Create());
         using var db = TestDbContextFactory.Create();
         var dto = bsm.ProcessMessage(TextMessages.From(BsmText(V, F, N1, N2, N3, P)), db);
         Check.True(dto is not null, "Message must parse. " + Why);
@@ -63,7 +63,7 @@ public class MessageTests
     public void Two_o_lines_give_two_distinct_onwards()
     {
         const string Why = "Same shared-instance problem for ElementO: both onward entries end up equal to the last .O line.";
-        var bsm = new Bsm(ElementMapFactory.Create());
+        var bsm = new BsmParser(ElementMapFactory.Create());
         using var db = TestDbContextFactory.Create();
         var dto = bsm.ProcessMessage(TextMessages.From(BsmText(V, F, ".O/LH401/13NOV/MUC/Y", ".O/LH402/14NOV/BER/Y", N1, P)), db);
         Check.True(dto is not null, "Message must parse. " + Why);
@@ -76,7 +76,7 @@ public class MessageTests
     {
         const string Why = "ElementP is shared and stateful: AdditionalGivenNames is only ever appended to, NumberOfPassengersWithSurname and PassengerGivenName are only overwritten when present. Message B (.P/ROE only) must not see MIDDLE1/MIDDLE2, '2' or JOHN from message A.";
         var map = ElementMapFactory.Create();
-        var bsm = new Bsm(map);
+        var bsm = new BsmParser(map);
         using var db = TestDbContextFactory.Create();
         bsm.ProcessMessage(TextMessages.From(BsmText(V, F, N1, ".P/2DOE/JOHN/MIDDLE1/MIDDLE2"), 1), db);
         bsm.ProcessMessage(TextMessages.From(BsmText(V, F, N2, ".P/ROE"), 2), db);
@@ -91,7 +91,7 @@ public class MessageTests
     public void Passenger_name_does_not_leak_into_dto()
     {
         const string Why = "Message B has .P/ROE (no given name). The DTO name must not be 'JOHN ROE' with JOHN taken from message A.";
-        var bsm = new Bsm(ElementMapFactory.Create());
+        var bsm = new BsmParser(ElementMapFactory.Create());
         using var db = TestDbContextFactory.Create();
         bsm.ProcessMessage(TextMessages.From(BsmText(V, F, N1, P), 1), db);
         var b = bsm.ProcessMessage(TextMessages.From(BsmText(V, F, N2, ".P/ROE"), 2), db);
@@ -104,7 +104,7 @@ public class MessageTests
     public void Element_s_seat_does_not_leak()
     {
         const string Why = "ElementS.Parse assigns every property on every call (using default when a field is absent), so a leak is not expected here. Written as a probe; green means ElementS is NOT affected.";
-        var bsm = new Bsm(ElementMapFactory.Create());
+        var bsm = new BsmParser(ElementMapFactory.Create());
         using var db = TestDbContextFactory.Create();
         bsm.ProcessMessage(TextMessages.From(BsmText(V, F, N1, ".S/Y/12A/B/001/123/Y/N/A"), 1), db);
         var b = bsm.ProcessMessage(TextMessages.From(BsmText(V, F, N2, ".S/Y"), 2), db);
@@ -118,7 +118,7 @@ public class MessageTests
     {
         const string Why = "ElementW.Parse only assigns Unit/Length/Width/Height/BaggageTypeCode inside the 'is unit' branch and UncheckedWeight in the else branch; fields of the previous message survive.";
         var map = ElementMapFactory.Create();
-        var bsm = new Bsm(map);
+        var bsm = new BsmParser(map);
         using var db = TestDbContextFactory.Create();
         bsm.ProcessMessage(TextMessages.From(BsmText(V, F, N1, ".W/K/001/20/CM/55/40/20/XYZ"), 1), db);
         bsm.ProcessMessage(TextMessages.From(BsmText(V, F, N2, ".W/K/001/20"), 2), db);
@@ -127,14 +127,14 @@ public class MessageTests
         Check.Equal(string.Empty, w.LengthOfBag, "LengthOfBag leaked. " + Why);
     }
 
-    [Fact(DisplayName = "Bug 3: many concurrent messages on one shared Bsm instance must each return their own bag tag and passenger")]
+    [Fact(DisplayName = "Bug 3: many concurrent messages on one shared BsmParser instance must each return their own bag tag and passenger")]
     [Trait("Bug", "3")]
     public async Task Concurrent_processing_does_not_mix_results()
     {
         const string Why = "Element instances (and their private-set properties) are shared by all concurrent messages, so results are mixed.";
         const int Parallelism = 32;
         const int Rounds = 20;
-        var bsm = new Bsm(ElementMapFactory.Create());
+        var bsm = new BsmParser(ElementMapFactory.Create());
         var mismatches = new System.Collections.Concurrent.ConcurrentBag<string>();
         for (var round = 0; round < Rounds; round++)
         {
@@ -165,35 +165,35 @@ public class MessageTests
     public void Malformed_conditional_f_gives_error_not_exception(string fLine)
     {
         const string Why = "In a BSM, F is Conditional so ElementFValidator skips all checks, then ElementF.Parse indexes ParsedText[1].Span[2] / ParsedText[2] / [3] and throws. Expected: ProcessMessage returns null and an error row is recorded.";
-        var bsm = new Bsm(ElementMapFactory.Create());
+        var bsm = new BsmParser(ElementMapFactory.Create());
         using var db = TestDbContextFactory.Create();
-        Requests.TextMessageDepartureBagRequest? dto = null;
+        Dtos.DepartureBagDto? dto = null;
         var ex = Record.Exception(() => dto = bsm.ProcessMessage(TextMessages.From(BsmText(V, fLine, N1, P)), db));
         Check.True(ex is null, $"'{fLine}' threw {ex?.GetType().Name}: {ex?.Message}. {Why}");
         Check.True(dto is null, $"'{fLine}' produced a DTO. {Why}");
-        Check.True(db.TextMessageElementErrorSet.Local.Count + db.TextMessageErrorSet.Local.Count > 0, $"No error recorded for '{fLine}'. {Why}");
+        Check.True(db.ElementErrors.Local.Count + db.MessageErrors.Local.Count > 0, $"No error recorded for '{fLine}'. {Why}");
     }
 
     private const string StatusProfileS = ".S/Y/12A/B/001/123/Y/N/A";
 
-    [Fact(DisplayName = "Bug 6: Bsm DTO PassengerStatus must be the S passenger status (B), not the profile status (Y)")]
+    [Fact(DisplayName = "Bug 6: BsmParser DTO PassengerStatus must be the S passenger status (B), not the profile status (Y)")]
     [Trait("Bug", "6")]
     public void Bsm_passenger_status_mapping()
     {
-        const string Why = "In .S/Y/12A/B/001/123/Y/N/A field 3 is passenger status 'B' and field 6 is profile status 'Y'. Bsm assigns elementS.PassengerProfileStatus to the DTO's PassengerStatus argument and never uses passengerStatus.";
-        var bsm = new Bsm(ElementMapFactory.Create());
+        const string Why = "In .S/Y/12A/B/001/123/Y/N/A field 3 is passenger status 'B' and field 6 is profile status 'Y'. BsmParser assigns elementS.PassengerProfileStatus to the DTO's PassengerStatus argument and never uses passengerStatus.";
+        var bsm = new BsmParser(ElementMapFactory.Create());
         using var db = TestDbContextFactory.Create();
         var dto = bsm.ProcessMessage(TextMessages.From(BsmText(V, F, N1, StatusProfileS, P)), db);
         Check.True(dto is not null, "Message must parse.");
         Check.Equal('B', dto!.PassengerStatus, Why);
     }
 
-    [Fact(DisplayName = "Bug 6: BsmChg DTO PassengerStatus must be the S passenger status (B), not the profile status (Y)")]
+    [Fact(DisplayName = "Bug 6: BsmChgParser DTO PassengerStatus must be the S passenger status (B), not the profile status (Y)")]
     [Trait("Bug", "6")]
     public void BsmChg_passenger_status_mapping()
     {
-        const string Why = "Same mapping error in BsmChg.";
-        var bsm = new BsmChg(ElementMapFactory.Create());
+        const string Why = "Same mapping error in BsmChgParser.";
+        var bsm = new BsmChgParser(ElementMapFactory.Create());
         using var db = TestDbContextFactory.Create();
         var dto = bsm.ProcessMessage(TextMessages.From(ChgText(V, F, N1, StatusProfileS, P)), db);
         Check.True(dto is not null, "Message must parse.");
@@ -202,12 +202,11 @@ public class MessageTests
 
     [Theory(DisplayName = "Bug 6: BSM DTOs must expose the W (weight) data that the message carries")]
     [Trait("Bug", "6")]
-    [InlineData(typeof(TextMessageDepartureBagRequest))]
-    [InlineData(typeof(TextMessageDepartureBagChgDto))]
+    [InlineData(typeof(DepartureBagDto))]
     public void Dto_exposes_weight(Type dtoType)
     {
         Check.True(dtoType.GetProperties().Any(p => p.Name.Contains("Weight", StringComparison.OrdinalIgnoreCase)),
-            $"{dtoType.Name} has no weight property. Bsm/BsmChg read PiecesWeightIndicator and CheckedWeight from ElementW into locals that are never used, so .W/K/001/20 data is lost.");
+            $"{dtoType.Name} has no weight property. BsmParser/BsmChgParser read PiecesWeightIndicator and CheckedWeight from ElementW into locals that are never used, so .W/K/001/20 data is lost.");
     }
 
     [Fact(DisplayName = "Bug 6: the W element values of a BSM and a BSM CHG reach the DTO (.W/K/001/20 gives indicator K, 001 bags, 20 kg)")]
@@ -216,8 +215,8 @@ public class MessageTests
     {
         const string W = ".W/K/001/20";
         using var db = TestDbContextFactory.Create();
-        var create = new Bsm(ElementMapFactory.Create()).ProcessMessage(TextMessages.From(BsmText(V, F, N1, W, P)), db);
-        var change = new BsmChg(ElementMapFactory.Create()).ProcessMessage(TextMessages.From(ChgText(V, F, N1, W, P)), db);
+        var create = new BsmParser(ElementMapFactory.Create()).ProcessMessage(TextMessages.From(BsmText(V, F, N1, W, P)), db);
+        var change = new BsmChgParser(ElementMapFactory.Create()).ProcessMessage(TextMessages.From(ChgText(V, F, N1, W, P)), db);
         foreach (var weight in new[] { create?.BaggageWeight, change?.BaggageWeight })
         {
             Check.True(weight is not null, "BaggageWeight must be filled when the message carries a .W/ element.");
@@ -232,7 +231,7 @@ public class MessageTests
     public void Absent_weight_is_null_and_profile_status_is_kept()
     {
         using var db = TestDbContextFactory.Create();
-        var dto = new Bsm(ElementMapFactory.Create()).ProcessMessage(TextMessages.From(BsmText(V, F, N1, StatusProfileS, P)), db);
+        var dto = new BsmParser(ElementMapFactory.Create()).ProcessMessage(TextMessages.From(BsmText(V, F, N1, StatusProfileS, P)), db);
         Check.True(dto is not null, "Message must parse.");
         Check.True(dto!.BaggageWeight is null, "No .W/ element was sent.");
         Check.Equal('B', dto.PassengerStatus, "Passenger status is field 3.");
@@ -244,7 +243,7 @@ public class MessageTests
     public void Empty_optional_s_fields_do_not_crash_the_parser()
     {
         using var db = TestDbContextFactory.Create();
-        var dto = new Bsm(ElementMapFactory.Create()).ProcessMessage(TextMessages.From(BsmText(V, F, N1, ".S/Y//S/291", P)), db);
+        var dto = new BsmParser(ElementMapFactory.Create()).ProcessMessage(TextMessages.From(BsmText(V, F, N1, ".S/Y//S/291", P)), db);
         Check.True(dto is not null, "The specification's own example must parse.");
         Check.True(dto!.SeatNumber is null, "An empty seat field must be null.");
         Check.Equal('S', dto.PassengerStatus, "Passenger status S (stand-by).");
@@ -260,13 +259,13 @@ public class MessageTests
     public void Unknown_element_gives_validation_error(string unknownLine)
     {
         const string Why = "SplitSpanMessage resolves each line with elementSequences.First(...) which throws InvalidOperationException for an identifier that is not in the message's sequence list, so the UNKNOWN_ELEMENT_FOUND branch in ValidateMessage is unreachable.";
-        var bsm = new Bsm(ElementMapFactory.Create());
+        var bsm = new BsmParser(ElementMapFactory.Create());
         using var db = TestDbContextFactory.Create();
-        Requests.TextMessageDepartureBagRequest? dto = null;
+        Dtos.DepartureBagDto? dto = null;
         var ex = Record.Exception(() => dto = bsm.ProcessMessage(TextMessages.From(BsmText(V, F, unknownLine, N1, P)), db));
         Check.True(ex is null, $"'{unknownLine}' threw {ex?.GetType().Name}: {ex?.Message}. {Why}");
         Check.True(dto is null, "A message with an unknown element must not produce a DTO.");
-        Check.True(db.TextMessageErrorSet.Local.Any(e => e.ErrorCode == "UNKNOWN_ELEMENT_FOUND"), $"No UNKNOWN_ELEMENT_FOUND error recorded for '{unknownLine}'. {Why}");
+        Check.True(db.MessageErrors.Local.Any(e => e.ErrorCode == "UNKNOWN_ELEMENT_FOUND"), $"No UNKNOWN_ELEMENT_FOUND error recorded for '{unknownLine}'. {Why}");
     }
 
     [Theory(DisplayName = "Bug 11: BCM subtype is reported in the DTO (FOM->Fom, FCM->Fcm, DBM->Dbm)")]
@@ -276,13 +275,13 @@ public class MessageTests
     [InlineData("DBM", "Dbm")]
     public void Bcm_subtype(string subType, string expected)
     {
-        const string Why = "BcmDbm.ToBcmFomDto hard-codes \"Fcm\" (copy-paste from BcmFcm). FOM and FCM are regression checks and pass.";
+        const string Why = "BcmDbmParser.ToBcmFomDto hard-codes \"Fcm\" (copy-paste from BcmFcmParser). FOM and FCM are regression checks and pass.";
         var map = ElementMapFactory.Create();
-        MessageBase<TextMessageBcmDto> handler = subType switch
+        MessageParser<BcmDto> handler = subType switch
         {
-            "FOM" => new BcmFom(map),
-            "FCM" => new BcmFcm(map),
-            _ => new BcmDbm(map)
+            "FOM" => new BcmFomParser(map),
+            "FCM" => new BcmFcmParser(map),
+            _ => new BcmDbmParser(map)
         };
         using var db = TestDbContextFactory.Create();
         var dto = handler.ProcessMessage(TextMessages.From(BcmText(subType, V, ".F/LH400/12NOV/JFK")), db);

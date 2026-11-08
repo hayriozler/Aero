@@ -3,16 +3,18 @@ using Aero.TextMessageParser.Api.Contracts;
 using Aero.TextMessageParser.Api.Entities;
 using Aero.TextMessageParser.Api.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace Aero.TextMessageParser.Api.Services;
 
 public class MessageProcessingService(
     LoggerService<MessageProcessingService> logger,
-    IServiceScopeFactory serviceFactory) : BackgroundService
+    IServiceScopeFactory serviceFactory,
+    IOptions<MessageProcessingOptions> optionsAccessor) : BackgroundService
 {
     private const string ClaimSql = @"
                 UPDATE ""messages"".""TextMessages""
-                SET ""Status"" = '" + TextMessageStatusStore.Processing + @"', ""ProcessingStartedAt"" = {0}
+                SET ""Status"" = '" + TextMessageStatusStore.Processing + @"', ""ProcessingStartedAt"" = {0}, ""AttemptCount"" = ""AttemptCount"" + 1
                 WHERE ""Id"" IN (
                     SELECT ""Id"" FROM ""messages"".""TextMessages""
                     WHERE ""Status"" = '" + TextMessageStatusStore.NotProcessed + @"'
@@ -22,18 +24,25 @@ public class MessageProcessingService(
                 )
                 RETURNING ""Id"" AS ""Value""";
 
-    private const int _batchSize = 20;
-    private static readonly TimeSpan _interval = TimeSpan.FromSeconds(5);
-    private static readonly TimeSpan _staleThreshold = TimeSpan.FromMinutes(2);
-    private static readonly TimeSpan _recoveryInterval = TimeSpan.FromMinutes(1);
+    private readonly MessageProcessingOptions _options = optionsAccessor.Value;
 
     private async Task RecoverStaleRecordsAsync(CancellationToken cancellationToken)
     {
         using var scope = serviceFactory.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<TextMessageParserDbContext>();
-        var cutoff = DateTime.UtcNow - _staleThreshold;
+        var cutoff = DateTime.UtcNow - _options.StaleThreshold;
+        var maxAttempts = _options.MaxAttempts;
 
-        var recovered = await dbContext.TextMessagesSet
+        var exhausted = await dbContext.TextMessages
+            .Where(m => m.Status == TextMessageStatus.Processing
+                     && m.ProcessingStartedAt < cutoff
+                     && m.AttemptCount >= maxAttempts)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(m => m.Status, TextMessageStatus.Error)
+                .SetProperty(m => m.ProcessDateTime, (DateTime?)DateTime.UtcNow),
+                cancellationToken);
+
+        var recovered = await dbContext.TextMessages
             .Where(m => m.Status == TextMessageStatus.Processing
                      && m.ProcessingStartedAt < cutoff)
             .ExecuteUpdateAsync(s => s
@@ -41,63 +50,65 @@ public class MessageProcessingService(
                 .SetProperty(m => m.ProcessingStartedAt, (DateTime?)null),
                 cancellationToken);
 
+        if (exhausted > 0)
+            logger.LogWarning("Marked {Count} stale PROCESSING records as ERROR after {MaxAttempts} attempts", exhausted, maxAttempts);
         if (recovered > 0)
             logger.LogWarning("Recovered {Count} stale PROCESSING records", recovered);
     }
 
-    private async Task ProcessBatchAsync(CancellationToken cancellationToken)
+    private async Task<int> ProcessBatchAsync(CancellationToken cancellationToken)
     {
-        using var scope = serviceFactory.CreateScope();
-        var textParserDataContext = scope.ServiceProvider.GetRequiredService<TextMessageParserDbContext>();
-        var claimedAt = DateTime.UtcNow;
-
-        var claimedIds = await textParserDataContext.Database
-            .SqlQueryRaw<long>(ClaimSql, claimedAt, _batchSize)
-            .ToListAsync(cancellationToken);
+        List<long> claimedIds;
+        using (var scope = serviceFactory.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<TextMessageParserDbContext>();
+            claimedIds = await dbContext.Database
+                .SqlQueryRaw<long>(ClaimSql, DateTime.UtcNow, _options.BatchSize)
+                .ToListAsync(cancellationToken);
+        }
 
         if (claimedIds.Count == 0)
         {
             logger.LogDebug("No messages found for processing");
-            return;
+            return 0;
         }
 
-        var messages = await textParserDataContext.TextMessagesSet
-            .Where(m => claimedIds.Contains(m.Id))
-            .ToListAsync(cancellationToken);
+        logger.LogInfo("Processing batch of {Count} messages", claimedIds.Count);
 
-        logger.LogInfo("Processing batch of {Count} messages", messages.Count);
+        await Parallel.ForEachAsync(
+            claimedIds,
+            new ParallelOptions { MaxDegreeOfParallelism = _options.MaxParallelism, CancellationToken = cancellationToken },
+            ProcessOneAsync);
 
-        foreach (var msg in messages)
-        {
-            try
-            {
-                var isSuccess = await ProcessMessageAsync(msg, scope.ServiceProvider, textParserDataContext, cancellationToken);
-                if (isSuccess)
-                {
-                    msg.MarkProcessed(DateTime.UtcNow);
-                    logger.LogInfo("Message {Id} processed successfully", msg.Id);
-                }
-                else
-                {
-                    msg.MarkFailed(DateTime.UtcNow);
-                    logger.LogInfo("Message {Id} processed with errors", msg.Id);
-                }
-                await textParserDataContext.SaveChangesAsync(cancellationToken);
-            }
-            catch (Exception ex) when (ex is not OperationCanceledException)
-            {
-                logger.LogError(ex, "Failed to process message {Id}", msg.Id);
-                DiscardPendingChanges(textParserDataContext, msg);
-                await RecordFailureAsync(msg.Id, ex, cancellationToken);
-            }
-        }
+        return claimedIds.Count;
     }
 
-    private static void DiscardPendingChanges(TextMessageParserDbContext dbContext, TextMessage message)
+    private async ValueTask ProcessOneAsync(long messageId, CancellationToken cancellationToken)
     {
-        foreach (var entry in dbContext.ChangeTracker.Entries().Where(e => e.State == EntityState.Added).ToList())
-            entry.State = EntityState.Detached;
-        dbContext.Entry(message).State = EntityState.Unchanged;
+        try
+        {
+            using var scope = serviceFactory.CreateScope();
+            var dbContext = scope.ServiceProvider.GetRequiredService<TextMessageParserDbContext>();
+            var message = await dbContext.TextMessages.FirstAsync(m => m.Id == messageId, cancellationToken);
+
+            var isSuccess = await ProcessMessageAsync(message, scope.ServiceProvider, dbContext, cancellationToken);
+            if (isSuccess)
+            {
+                message.MarkProcessed(DateTime.UtcNow);
+                logger.LogInfo("Message {Id} processed successfully", message.Id);
+            }
+            else
+            {
+                message.MarkFailed(DateTime.UtcNow);
+                logger.LogInfo("Message {Id} processed with errors", message.Id);
+            }
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            logger.LogError(ex, "Failed to process message {Id}", messageId);
+            await RecordFailureAsync(messageId, ex, cancellationToken);
+        }
     }
 
     private async Task RecordFailureAsync(long messageId, Exception exception, CancellationToken cancellationToken)
@@ -106,12 +117,17 @@ public class MessageProcessingService(
         {
             using var scope = serviceFactory.CreateScope();
             var dbContext = scope.ServiceProvider.GetRequiredService<TextMessageParserDbContext>();
-            var message = await dbContext.TextMessagesSet.FirstAsync(m => m.Id == messageId, cancellationToken);
-            message.MarkFailed(DateTime.UtcNow);
+            var message = await dbContext.TextMessages.FirstAsync(m => m.Id == messageId, cancellationToken);
+
+            var retry = FailureClassifier.IsTransient(exception) && message.TryRelease(_options.MaxAttempts);
+            if (!retry)
+                message.MarkFailed(DateTime.UtcNow);
+            else
+                logger.LogWarning("Message {Id} will be retried, attempt {Attempt} of {MaxAttempts}", messageId, message.AttemptCount, _options.MaxAttempts);
 
             var description = $"{exception.GetType().Name}: {exception.Message}";
             if (description.Length > 250) description = description[..250];
-            dbContext.TextMessageErrorSet.Add(TextMessageError.Create(
+            dbContext.MessageErrors.Add(TextMessageError.Create(
                 messageId, ErrorCodes.UNHANDLED_PROCESSING_ERROR, description));
             await dbContext.SaveChangesAsync(cancellationToken);
         }
@@ -132,7 +148,7 @@ public class MessageProcessingService(
         var processor = scopedServices.GetKeyedService<IMessageProcessor>(key);
         if (processor is null)
         {
-            textParserDataContext.TextMessageErrorSet.Add(TextMessageError.Create(
+            textParserDataContext.MessageErrors.Add(TextMessageError.Create(
                 message.Id,
                 ErrorCodes.NO_MSG_REGISTERED_HANDLER,
                 $"No handler registered for message type {key}"));
@@ -156,16 +172,18 @@ public class MessageProcessingService(
                 if (DateTime.UtcNow >= nextRecoveryAt)
                 {
                     await RecoverStaleRecordsAsync(stoppingToken);
-                    nextRecoveryAt = DateTime.UtcNow + _recoveryInterval;
+                    nextRecoveryAt = DateTime.UtcNow + _options.RecoveryInterval;
                 }
-                await ProcessBatchAsync(stoppingToken);
+                var claimed = await ProcessBatchAsync(stoppingToken);
+                if (claimed >= _options.BatchSize)
+                    continue;
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
                 logger.LogError(ex, "Unhandled error in message processing batch");
             }
 
-            await Task.Delay(_interval, stoppingToken);
+            await Task.Delay(_options.PollInterval, stoppingToken);
         }
 
         logger.LogInfo("MessageProcessingService stopped");

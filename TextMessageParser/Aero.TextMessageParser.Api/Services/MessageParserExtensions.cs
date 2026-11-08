@@ -10,7 +10,7 @@ public static class MessageParserExtensions
     private const int MaxDescriptionLength = 250;
 
     public static TResult? ProcessMessage<TResult>(
-        this MessageBase<TResult> parser,
+        this MessageParser<TResult> parser,
         TextMessage message,
         TextMessageParserDbContext dbContext)
         where TResult : class
@@ -19,9 +19,9 @@ public static class MessageParserExtensions
         foreach (var error in result.Errors)
         {
             if (error.IsElementError)
-                dbContext.TextMessageElementErrorSet.Add(ElementError.Create(message.Id, error.ErrorCode, Describe(error)));
+                dbContext.ElementErrors.Add(ElementError.Create(message.Id, error.ErrorCode, Describe(error)));
             else
-                dbContext.TextMessageErrorSet.Add(TextMessageError.Create(message.Id, error.ErrorCode, error.Description));
+                dbContext.MessageErrors.Add(TextMessageError.Create(message.Id, error.ErrorCode, error.Description));
         }
         return result.Value;
     }

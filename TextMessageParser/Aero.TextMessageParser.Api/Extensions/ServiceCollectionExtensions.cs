@@ -45,25 +45,23 @@ public static class ServiceCollectionExtensions
                 [Consts.Y] = sp.GetRequiredService<ElementY>(),
             });
 
-        services.AddSingleton<Bsm>();
-        services.AddSingleton<BsmChg>();
-        services.AddSingleton<BsmDel>();
-        services.AddSingleton<Bum>();
-        services.AddSingleton<BcmFom>();
-        services.AddSingleton<BcmFcm>();
-        services.AddSingleton<BcmBam>();
-        services.AddSingleton<BcmDbm>();
+        services.AddSingleton<BsmParser>();
+        services.AddSingleton<BsmChgParser>();
+        services.AddSingleton<BsmDelParser>();
+        services.AddSingleton<BumParser>();
+        services.AddSingleton<BcmFomParser>();
+        services.AddSingleton<BcmFcmParser>();
+        services.AddSingleton<BcmDbmParser>();
         services.AddSingleton<IReadOnlyDictionary<string, IMessageHandler>>(sp =>
             new Dictionary<string, IMessageHandler>
             {
-                [Consts.BSM]              = sp.GetRequiredService<Bsm>(),
-                [Consts.BSM + Consts.CHG] = sp.GetRequiredService<BsmChg>(),
-                [Consts.BSM + Consts.DEL] = sp.GetRequiredService<BsmDel>(),
-                [Consts.BUM]              = sp.GetRequiredService<Bum>(),
-                [Consts.BCM + Consts.FOM] = sp.GetRequiredService<BcmFom>(),
-                [Consts.BCM + Consts.FCM] = sp.GetRequiredService<BcmFcm>(),
-                [Consts.BCM + Consts.BAM] = sp.GetRequiredService<BcmBam>(),
-                [Consts.BCM + Consts.DBM] = sp.GetRequiredService<BcmDbm>(),
+                [Consts.BSM]              = sp.GetRequiredService<BsmParser>(),
+                [Consts.BSM + Consts.CHG] = sp.GetRequiredService<BsmChgParser>(),
+                [Consts.BSM + Consts.DEL] = sp.GetRequiredService<BsmDelParser>(),
+                [Consts.BUM]              = sp.GetRequiredService<BumParser>(),
+                [Consts.BCM + Consts.FOM] = sp.GetRequiredService<BcmFomParser>(),
+                [Consts.BCM + Consts.FCM] = sp.GetRequiredService<BcmFcmParser>(),
+                [Consts.BCM + Consts.DBM] = sp.GetRequiredService<BcmDbmParser>(),
             });
 
         return services;
@@ -71,20 +69,19 @@ public static class ServiceCollectionExtensions
 
     public static IServiceCollection InstallProcessors(this IServiceCollection services)
     {
-        services.AddProcessor<Bsm, TextMessageDepartureBagRequest>(Consts.BSM);
-        services.AddProcessor<BsmChg, TextMessageDepartureBagChgDto>(Consts.BSM + Consts.CHG);
-        services.AddProcessor<BsmDel, TextMessageDepartureBagDeleteDto>(Consts.BSM + Consts.DEL);
-        services.AddProcessor<Bum, TextMessageBumRequest>(Consts.BUM);
-        services.AddProcessor<BcmFom, TextMessageBcmDto>(Consts.BCM + Consts.FOM);
-        services.AddProcessor<BcmFcm, TextMessageBcmDto>(Consts.BCM + Consts.FCM);
-        services.AddProcessor<BcmBam, TextMessageBcmDto>(Consts.BCM + Consts.BAM);
-        services.AddProcessor<BcmDbm, TextMessageBcmDto>(Consts.BCM + Consts.DBM);
+        services.AddProcessor<BsmParser, DepartureBagDto>(Consts.BSM);
+        services.AddProcessor<BsmChgParser, DepartureBagDto>(Consts.BSM + Consts.CHG);
+        services.AddProcessor<BsmDelParser, BagRemovalDto>(Consts.BSM + Consts.DEL);
+        services.AddProcessor<BumParser, BagRemovalDto>(Consts.BUM);
+        services.AddProcessor<BcmFomParser, BcmDto>(Consts.BCM + Consts.FOM);
+        services.AddProcessor<BcmFcmParser, BcmDto>(Consts.BCM + Consts.FCM);
+        services.AddProcessor<BcmDbmParser, BcmDto>(Consts.BCM + Consts.DBM);
 
         return services;
     }
 
     private static void AddProcessor<TParser, TResult>(this IServiceCollection services, string key)
-        where TParser : MessageBase<TResult>
+        where TParser : MessageParser<TResult>
         where TResult : class
         => services.AddKeyedScoped<IMessageProcessor>(key, (sp, _) =>
             new MessageProcessor<TResult>(

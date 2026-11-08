@@ -3,5 +3,5 @@ using Aero.TextMessageParser.Api.Parsers.Elements;
 
 namespace Aero.TextMessageParser.Api.Parsers.Messages.Bcms;
 
-public sealed class BcmFom(IReadOnlyDictionary<string, Element> elementMap)
-    : BcmBase(Consts.FOM, elementMap);
+public sealed class BcmFomParser(IReadOnlyDictionary<string, Element> elementMap)
+    : BcmParserBase(Consts.FOM, elementMap);

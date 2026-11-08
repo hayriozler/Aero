@@ -5,7 +5,7 @@ using Aero.TextMessageParser.Api.Persistence;
 namespace Aero.TextMessageParser.Api.Services;
 
 public sealed class MessageProcessor<TResult>(
-    MessageBase<TResult> parser,
+    MessageParser<TResult> parser,
     TextMessageParserDbContext dbContext) : IMessageProcessor
     where TResult : class
 {

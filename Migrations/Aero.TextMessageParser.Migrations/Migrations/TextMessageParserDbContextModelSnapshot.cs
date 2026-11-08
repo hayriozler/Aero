@@ -24,12 +24,12 @@ namespace Aero.TextMessageParser.Migrations.Migrations
 
             modelBuilder.Entity("Aero.TextMessageParser.Api.Entities.ElementError", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("BIGINT")
                         .HasColumnOrder(0);
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<string>("ErrorCode")
                         .IsRequired()
@@ -52,6 +52,8 @@ namespace Aero.TextMessageParser.Migrations.Migrations
 
                     b.HasKey("Id")
                         .HasName("PK_ElementErrorId");
+
+                    b.HasIndex("MessageId");
 
                     b.ToTable("ElementErrors", "messages");
                 });
@@ -273,6 +275,12 @@ namespace Aero.TextMessageParser.Migrations.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
+                    b.Property<int>("AttemptCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(0)
+                        .HasColumnOrder(11);
+
                     b.Property<string>("Message")
                         .IsRequired()
                         .HasMaxLength(4000)
@@ -313,12 +321,12 @@ namespace Aero.TextMessageParser.Migrations.Migrations
 
             modelBuilder.Entity("Aero.TextMessageParser.Api.Entities.TextMessageError", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("BIGINT")
                         .HasColumnOrder(0);
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<string>("ErrorCode")
                         .IsRequired()
@@ -342,7 +350,18 @@ namespace Aero.TextMessageParser.Migrations.Migrations
                     b.HasKey("Id")
                         .HasName("PK_MessageErrorId");
 
+                    b.HasIndex("MessageId");
+
                     b.ToTable("MessageErrors", "messages");
+                });
+
+            modelBuilder.Entity("Aero.TextMessageParser.Api.Entities.ElementError", b =>
+                {
+                    b.HasOne("Aero.TextMessageParser.Api.Entities.TextMessage", null)
+                        .WithMany()
+                        .HasForeignKey("MessageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Aero.TextMessageParser.Api.Entities.ParsedBagTag", b =>
@@ -428,6 +447,15 @@ namespace Aero.TextMessageParser.Migrations.Migrations
                         .IsRequired();
 
                     b.Navigation("Header")
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Aero.TextMessageParser.Api.Entities.TextMessageError", b =>
+                {
+                    b.HasOne("Aero.TextMessageParser.Api.Entities.TextMessage", null)
+                        .WithMany()
+                        .HasForeignKey("MessageId")
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 

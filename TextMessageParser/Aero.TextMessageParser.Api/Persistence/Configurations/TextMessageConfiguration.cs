@@ -60,6 +60,11 @@ internal sealed class TextMessageConfiguration : IEntityTypeConfiguration<TextMe
             .HasColumnOrder(8);
 
 
+        builder.Property(e => e.AttemptCount)
+            .HasColumnType("INTEGER")
+            .HasDefaultValue(0)
+            .HasColumnOrder(11);
+
         builder.Ignore(e => e.Completed);
 
         builder.Property(e => e.ProcessDateTime)

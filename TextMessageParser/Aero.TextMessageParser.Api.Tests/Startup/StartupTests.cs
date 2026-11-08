@@ -10,28 +10,28 @@ namespace Aero.TextMessageParser.Api.Tests.Startup;
 
 public class StartupTests
 {
-    [Fact(DisplayName = "Bug 1: the real Program.cs host registers the element map and the Bsm handler")]
+    [Fact(DisplayName = "Bug 1: the real Program.cs host registers the element map and the BsmParser handler")]
     [Trait("Bug", "1")]
     public void Program_host_registers_element_map_and_message_handlers()
     {
-        const string Why = "Originally Program.cs never called InstallElements/InstallMessages, so the element map and Bsm could not be resolved. The test boots the real Program through WebApplicationFactory (processing hosted service removed and DB swapped to InMemory so only registrations are examined) and resolves both. It is green once Program.cs registers them (observed green on the current source).";
+        const string Why = "Originally Program.cs never called InstallElements/InstallMessages, so the element map and BsmParser could not be resolved. The test boots the real Program through WebApplicationFactory (processing hosted service removed and DB swapped to InMemory so only registrations are examined) and resolves both. It is green once Program.cs registers them (observed green on the current source).";
         using var factory = new ApiFactory(removeProcessingService: true);
         var elementMap = factory.Services.GetService<IReadOnlyDictionary<string, Element>>();
-        var bsm = factory.Services.GetService<Bsm>();
+        var bsm = factory.Services.GetService<BsmParser>();
         Check.True(elementMap is not null, "IReadOnlyDictionary<string, Element> is not registered. " + Why);
-        Check.True(bsm is not null, "Bsm is not registered. " + Why);
+        Check.True(bsm is not null, "BsmParser is not registered. " + Why);
     }
 
     [Fact(DisplayName = "Bug 1: MessageProcessingService can be constructed from the real host container and every message type has a keyed IMessageProcessor")]
     [Trait("Bug", "1")]
     public void Processing_service_dependencies_resolve()
     {
-        const string Why = "The hosted service needs LoggerService and IServiceScopeFactory from the container, and ProcessMessageAsync looks up IMessageProcessor by key (BSM, BSMCHG, BSMDEL, BUM, BCMFOM, BCMFCM, BCMBAM, BCMDBM).";
+        const string Why = "The hosted service needs LoggerService and IServiceScopeFactory from the container, and ProcessMessageAsync looks up IMessageProcessor by key (BSM, BSMCHG, BSMDEL, BUM, BCMFOM, BCMFCM, BCMDBM).";
         using var factory = new ApiFactory(removeProcessingService: true);
         var service = ActivatorUtilities.CreateInstance<MessageProcessingService>(factory.Services);
         Check.True(service is not null, Why);
         using var scope = factory.Services.CreateScope();
-        foreach (var key in new[] { "BSM", "BSMCHG", "BSMDEL", "BUM", "BCMFOM", "BCMFCM", "BCMBAM", "BCMDBM" })
+        foreach (var key in new[] { "BSM", "BSMCHG", "BSMDEL", "BUM", "BCMFOM", "BCMFCM", "BCMDBM" })
             Check.True(scope.ServiceProvider.GetKeyedService<IMessageProcessor>(key) is not null, $"No IMessageProcessor registered for key {key}. {Why}");
     }
 
@@ -53,14 +53,14 @@ public class StartupTests
         Check.True(ex is null, $"Model creation threw {ex?.GetType().Name}: {ex?.Message}. {Why}");
     }
 
-    [Fact(DisplayName = "Baseline: InstallElements + InstallMessages are self-consistent and resolve Bsm with the shared element map")]
+    [Fact(DisplayName = "Baseline: InstallElements + InstallMessages are self-consistent and resolve BsmParser with the shared element map")]
     [Trait("Kind", "Baseline")]
     public void Install_extensions_resolve_bsm()
     {
         var services = new ServiceCollection();
         services.InstallElements().InstallMessages();
         using var provider = services.BuildServiceProvider();
-        Check.True(provider.GetService<Bsm>() is not null, "Bsm must resolve once both Install* extensions have run.");
+        Check.True(provider.GetService<BsmParser>() is not null, "BsmParser must resolve once both Install* extensions have run.");
         Check.True(provider.GetService<IReadOnlyDictionary<string, Element>>()?.Count == 24, "The element map must contain the 24 element parsers.");
     }
 }

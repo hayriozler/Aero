@@ -17,7 +17,7 @@ public class HeaderTests
         return services.BuildServiceProvider().GetRequiredService<IReadOnlyDictionary<string, IMessageHandler>>();
     }
 
-    [Theory(DisplayName = "Header: BSM CHG and BSM DEL keep CHG/DEL as the change of status indicator, BCM keeps FOM/FCM/BAM/DBM as the secondary level identifier (IATA table 2.2)")]
+    [Theory(DisplayName = "Header: BSM CHG and BSM DEL keep CHG/DEL as the change of status indicator, BCM keeps FOM/FCM/DBM as the secondary level identifier (IATA table 2.2)")]
     [InlineData("BSM", null, null, null)]
     [InlineData("BSM", "CHG", null, "CHG")]
     [InlineData("BSM", "DEL", null, "DEL")]
@@ -48,7 +48,6 @@ public class HeaderTests
     [InlineData("BUM", null)]
     [InlineData("BCM", "FOM")]
     [InlineData("BCM", "FCM")]
-    [InlineData("BCM", "BAM")]
     [InlineData("BCM", "DBM")]
     public void Parsed_header_finds_its_handler(string type, string? second)
     {
@@ -65,7 +64,7 @@ public class HeaderTests
         var oldStyle = TextMessage.Create(raw, new MessageHeader("BSM", "CHG", null), footer);
         oldStyle.Id = 1;
         Check.Equal(parsed.RoutingKey, oldStyle.Header.RoutingKey, "Old and new storage must give the same routing key.");
-        var handler = new Aero.TextMessageParser.Api.Parsers.Messages.Bsms.BsmChg(ElementMapFactory.Create());
+        var handler = new Aero.TextMessageParser.Api.Parsers.Messages.Bsms.BsmChgParser(ElementMapFactory.Create());
         var result = handler.Parse(oldStyle);
         Check.True(result.IsSuccess, "A CHG row that was stored with CHG in the secondary identifier column must still parse.");
     }

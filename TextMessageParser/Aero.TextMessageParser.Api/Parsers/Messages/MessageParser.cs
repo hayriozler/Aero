@@ -6,7 +6,7 @@ using Aero.TextMessageParser.Api.ValueObjects;
 
 namespace Aero.TextMessageParser.Api.Parsers.Messages;
 
-public abstract class MessageBase<TResult>(
+public abstract class MessageParser<TResult>(
     MessageHeader header,
     IReadOnlyDictionary<string, Element> elementMap)
     : IMessageHandler

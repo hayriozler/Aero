@@ -48,6 +48,7 @@ public sealed class TextMessage
     public bool Completed => Status is TextMessageStatus.Processed or TextMessageStatus.Error;
     public TextMessageStatus Status { get; private set; } = TextMessageStatus.NotProcessed;
     public DateTime? ProcessingStartedAt { get; private set; }
+    public int AttemptCount { get; private set; }
 
     public static TextMessage Create(string textMessage, MessageHeader header, MessageFooter footer) =>
     new()
@@ -61,6 +62,18 @@ public sealed class TextMessage
     public void MarkProcessed(DateTime processedAtUtc) => Complete(TextMessageStatus.Processed, processedAtUtc);
 
     public void MarkFailed(DateTime processedAtUtc) => Complete(TextMessageStatus.Error, processedAtUtc);
+
+    public bool TryRelease(int maxAttempts)
+    {
+        if (Status != TextMessageStatus.Processing)
+            throw new InvalidOperationException(
+                $"Text message {Id} is {Status}; only a claimed ({TextMessageStatus.Processing}) message can be released.");
+        if (AttemptCount >= maxAttempts)
+            return false;
+        Status = TextMessageStatus.NotProcessed;
+        ProcessingStartedAt = null;
+        return true;
+    }
 
     private void Complete(TextMessageStatus status, DateTime processedAtUtc)
     {

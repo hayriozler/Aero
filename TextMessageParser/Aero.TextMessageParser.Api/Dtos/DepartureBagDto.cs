@@ -1,9 +1,6 @@
-﻿using Aero.TextMessageParser.Api.Dtos;
+﻿namespace Aero.TextMessageParser.Api.Dtos;
 
-namespace Aero.TextMessageParser.Api.Requests;
-
-public sealed record TextMessageDepartureBagRequest(
-    long Id,
+public sealed record DepartureBagDto(long Id,
     char? AckRequest,
     bool AuthorityToLoad,
     bool AuthorityToTransport,

@@ -33,10 +33,10 @@ The service will no longer talk to the Scanner API, so these were dropped and ar
 ## Bug 1 - Startup registration (fixed in current source, tests green)
 | Test | Input | Expected | Actual |
 |---|---|---|---|
-| Program_host_registers_element_map_and_message_handlers | Real Program via WebApplicationFactory, hosted service removed | `IReadOnlyDictionary<string, Element>` and `Bsm` resolvable | Resolvable (green). Was missing before Program.cs began calling Install*. |
-| Processing_service_dependencies_resolve | Real host container | `MessageProcessingService` constructible; keyed `IMessageProcessor` for BSM, BSMCHG, BSMDEL, BUM, BCMFOM, BCMFCM, BCMBAM, BCMDBM | Green |
+| Program_host_registers_element_map_and_message_handlers | Real Program via WebApplicationFactory, hosted service removed | `IReadOnlyDictionary<string, Element>` and `BsmParser` resolvable | Resolvable (green). Was missing before Program.cs began calling Install*. |
+| Processing_service_dependencies_resolve | Real host container | `MessageProcessingService` constructible; keyed `IMessageProcessor` for BSM, BSMCHG, BSMDEL, BUM, BCMFOM, BCMFCM, BCMDBM | Green |
 | Host_starts_with_processing_service | Host with hosted service enabled | Host starts | SKIPPED: the service runs `ExecuteUpdateAsync` and PostgreSQL-only raw SQL, which InMemory cannot execute; needs PostgreSQL |
-| Install_extensions_resolve_bsm (Baseline) | `InstallElements().InstallMessages()` | Bsm resolves, 24 elements | Green |
+| Install_extensions_resolve_bsm (Baseline) | `InstallElements().InstallMessages()` | BsmParser resolves, 24 elements | Green |
 
 ## Bug 3 - Stateful shared element instances (fixed)
 | Test | Input | Expected | Actual | Why it matters |
@@ -47,7 +47,7 @@ The service will no longer talk to the Scanner API, so these were dropped and ar
 | Passenger_name_does_not_leak_into_dto | A: `.P/DOE/JOHN`, B: `.P/ROE` | B name without JOHN | `JOHN ROE` | Leak visible in the DTO. |
 | Element_s_seat_does_not_leak (probe) | A: `.S/Y/12A/B/001/SEC123/Y/N/A`, B: `.S/Y` | B seat is null | null (green) | NOT a bug: ElementS assigns every property on each Parse. |
 | Element_w_state_does_not_leak | A: `.W/K/001/20/CM/55/40/20/XYZ`, B: `.W/K/001/20` | Unit and LengthOfBag empty | Unit `CM` leaked | Unit/dimensions are only assigned inside one branch. |
-| Concurrent_processing_does_not_mix_results | 32 threads x 20 rounds, unique serial and name each, one shared Bsm, Barrier-synchronised | Each DTO matches its own message | ~250-320 of 640 mixed (e.g. msg 28 got tag of msg 27) | Real concurrent processing corrupts data. (Count varies run to run.) |
+| Concurrent_processing_does_not_mix_results | 32 threads x 20 rounds, unique serial and name each, one shared BsmParser, Barrier-synchronised | Each DTO matches its own message | ~250-320 of 640 mixed (e.g. msg 28 got tag of msg 27) | Real concurrent processing corrupts data. (Count varies run to run.) |
 
 ## Bug 4 - Validators skip non-Mandatory elements (fixed)
 | Test | Input | Expected | Actual |
@@ -64,7 +64,7 @@ The field layout of `.S/` is: 1 Authority to Load (Y/N, the only mandatory field
 | ElementS_invalid_values_fail | One invalid value per field, e.g. `.S/B` (S_04), `.S/Y/123` (S_05), `.S/Y/23A/Q` (S_01), `.S/Y/23A/C/01` (S_06), `...016/67` (S_07), `...678/Q` (S_02), `...Y/Q` (S_08), `...Y/Y/Z` (S_03) | Rejected with the field's own error code | Green |
 | ElementS_length_is_enforced | `.S/`, a 28 character line | Rejected | Green |
 
-## Bug 6 - Bsm/BsmChg mapping (fixed)
+## Bug 6 - BsmParser/BsmChgParser mapping (fixed)
 | Test | Input | Expected | Actual |
 |---|---|---|---|
 | Bsm_passenger_status_mapping | `.S/Y/12A/B/001/123/Y/N/A` (status B, profile Y) | DTO.PassengerStatus = `B` | Green after the fix (the DTO now gets the S passenger status) |
@@ -85,7 +85,7 @@ The field layout of `.S/` is: 1 Authority to Load (Y/N, the only mandatory field
 | Failed_message_is_persisted_as_terminal | SKIPPED: needs PostgreSQL (raw claim SQL, private method). Skip reason holds the reproduction: BUM message, observe Status stays PROCESSING, Completed false. |
 | Catch_block_persists_failure (SourceGuard) | Green after the fix: the catch block calls `RecordFailureAsync`, which opens a fresh scope and writes Status ERROR, ProcessDateTime and a `MSG_HND_02` error row. |
 | Stale_recovery_runs_inside_the_loop (SourceGuard) | Green after the fix: `RecoverStaleRecordsAsync` runs every minute inside the loop, not only at startup. |
-| Bum_handler_throws_not_implemented | Green, documents that `Bum.Handle` throws NotImplementedException (what reaches the catch block). |
+| Bum_handler_throws_not_implemented | Green, documents that `BumParser.Handle` throws NotImplementedException (what reaches the catch block). |
 
 ## Bug 9 - Raw SQL alias
 | Test | Result |
@@ -96,8 +96,8 @@ The field layout of `.S/` is: 1 Authority to Load (Y/N, the only mandatory field
 ## Bug 10 - JSON serialization of Onwards (fixed)
 | Test | Input | Expected | Actual |
 |---|---|---|---|
-| Request_onwards_are_serialized (default and web options) | Two `OnwardFlightDto` records (LH401 13NOV MUC Y, EW9021 14NOV BER C) in TextMessageDepartureBagRequest | JSON contains airline, number, date, destination of each | Green after the fix. Before: onwards were ValueTuples, whose members are fields that System.Text.Json ignores, so each serialized as `{}` |
-| Chg_onwards_are_serialized (default and web) | Same in TextMessageDepartureBagChgDto | Same | Green after the fix |
+| Request_onwards_are_serialized (default and web options) | Two `OnwardFlightDto` records (LH401 13NOV MUC Y, EW9021 14NOV BER C) in DepartureBagDto | JSON contains airline, number, date, destination of each | Green after the fix. Before: onwards were ValueTuples, whose members are fields that System.Text.Json ignores, so each serialized as `{}` |
+| Chg_onwards_are_serialized (default and web) | Same in DepartureBagDto | Same | Green after the fix |
 | Scalars_are_serialized (Baseline) | Scalars and bag tags | Present | Green |
 
 ## Bug 11 - BCM subtype
@@ -105,7 +105,7 @@ The field layout of `.S/` is: 1 Authority to Load (Y/N, the only mandatory field
 |---|---|---|---|
 | Bcm_subtype FOM | `BCM / FOM / .V/7LFRA / .F/LH400/12NOV/JFK / ENDBCM` | `Fom` | `Fom` (green) |
 | Bcm_subtype FCM | same with FCM | `Fcm` | `Fcm` (green) |
-| Bcm_subtype DBM | same with DBM | `Dbm` | `Fcm` (RED, hard-coded in BcmDbm) |
+| Bcm_subtype DBM | same with DBM | `Dbm` | `Fcm` (RED, hard-coded in BcmDbmParser) |
 
 ## Bug 12 - Envelope handling (fixed)
 | Test | Input | Expected | Actual |
@@ -125,7 +125,7 @@ The field layout of `.S/` is: 1 Authority to Load (Y/N, the only mandatory field
 | GetMessageIdentifier_is_independent_of_line_ending LF | Sample BSM with `\n` | Header BSM, footer ENDBSM | ArgumentOutOfRangeException (`Span.Split(char[])` splits on the whole `\r\n` sequence, so LF-only text is one line) |
 | same, CRLF | with `\r\n` | same | Green |
 | ProcessMessage_is_independent_of_line_ending LF / CRLF | Sample BSM | Same DTO | LF red, CRLF green |
-| NewLineSeparator_is_cached (Priority=Low) | Two reads of `Consts.NEW_LINE_SEPERATOR` | Same array instance | New array each time (red) |
+| NewLineSeparator_is_cached (Priority=Low) | Two reads of `Consts.LineSeparators` | Same array instance | New array each time (red) |
 
 On Linux the separator is `['\n']`, so CRLF text would keep a trailing `\r` on every line; that direction cannot be exercised on this machine.
 
@@ -145,7 +145,7 @@ Production_model_builds: `new TextMessageParserDbContext(options).Model` throws 
 | Completing_requires_a_claimed_message | Unclaimed message, and an already completed one | InvalidOperationException | Green |
 
 ## Parser without a database, shared mapping (clean architecture step)
-`MessageBase<TResult>.Parse(TextMessage)` returns a `ParseResult<TResult>` (a value or a list of `ParseError`s, each flagged as message level or element level) and no longer knows the DbContext. `MessageParserExtensions.ProcessMessage(parser, message, db)` in the Services namespace parses and writes the errors to `MessageErrors` / `ElementErrors`; `MessageProcessor` uses it. BSM, BSM CHG and BSM DEL share `BsmFields` (reads the elements once) and `BsmMapper` (builds the DTO). BCM FOM, FCM and DBM share one `Handle` in `BcmBase`; the sub type comes from the identifier.
+`MessageParser<TResult>.Parse(TextMessage)` returns a `ParseResult<TResult>` (a value or a list of `ParseError`s, each flagged as message level or element level) and no longer knows the DbContext. `MessageParserExtensions.ProcessMessage(parser, message, db)` in the Services namespace parses and writes the errors to `MessageErrors` / `ElementErrors`; `MessageProcessor` uses it. BSM, BSM CHG and BSM DEL share `BsmFields` (reads the elements once) and `BsmMapper` (builds the DTO). BCM FOM, FCM and DBM share one `Handle` in `BcmParserBase`; the sub type comes from the identifier.
 | Test | Input | Expected | Actual |
 |---|---|---|---|
 | Valid_message_succeeds_without_a_database (Baseline) | Single tag BSM | Success, no errors, one bag tag | Green |
@@ -168,7 +168,7 @@ Production_model_builds: `new TextMessageParserDbContext(options).Model` throws 
 | Message_codes_are_centralised | Helper methods | Same strings as before | Green |
 
 ## Message header semantics (medium item A3)
-IATA table 2.2 names three header concepts: the Standard Message Identifier (BSM, BUM, BCM), the Secondary Level Message Identifier (BAM, FOM, FCM, FFM, DBM, used by BCM) and the Change of Status Indicator (CHG or DEL, used by BSM). `Consts.CHANGE_OF_STATUS` was `["ACK","NAK"]`, so CHG and DEL were stored as a secondary identifier while the handlers described themselves with a change of status. It is now `["CHG","DEL"]`. `MessageHeader.RoutingKey` (identifier + secondary + change of status) is the single routing key, exposed by `IMessageHandler.RoutingKey` and used by `MessageProcessingService`. Rows stored the old way (CHG in the secondary column) build the same key and keep working; no data migration is required.
+IATA table 2.2 names three header concepts: the Standard Message Identifier (BSM, BUM, BCM), the Secondary Level Message Identifier (FOM, FCM, FFM, DBM, used by BCM) and the Change of Status Indicator (CHG or DEL, used by BSM). `Consts.CHANGE_OF_STATUS` was `["ACK","NAK"]`, so CHG and DEL were stored as a secondary identifier while the handlers described themselves with a change of status. It is now `["CHG","DEL"]`. `MessageHeader.RoutingKey` (identifier + secondary + change of status) is the single routing key, exposed by `IMessageHandler.RoutingKey` and used by `MessageProcessingService`. Rows stored the old way (CHG in the secondary column) build the same key and keep working; no data migration is required.
 | Test | Input | Expected | Actual |
 |---|---|---|---|
 | Second_line_goes_to_the_right_header_field (5 cases) | BSM, BSM CHG, BSM DEL, BCM FOM, BCM DBM | CHG/DEL in change of status, FOM/DBM in secondary identifier | Green |
@@ -223,3 +223,15 @@ Not an automated test. On a temporary `postgres:17-alpine` container both migrat
 
 ## Manual check of parsed results and read endpoint (2026-11-08)
 Not an automated test. On a temporary `postgres:17-alpine` container all four migrations were applied, the API was started and three BSM messages were posted (full message, message without .S/.W/.O, message with two bag tags). All three became PROCESSED with one `ParsedMessages` row each plus bag tags and onward flights. `GET /api/parsedmessages` returned the three records, `POST /api/parsedmessages/consumed` with ids 1 and 2 answered `{"updated":2}`, and a second GET returned only record 3. The first run exposed that a missing .S wrote `'\0'` into a text column and PostgreSQL rejected it; that is fixed and covered by a test.
+
+## RetryTests (B10) and bag tag count
+| Test | Scenario | Expected | State |
+|---|---|---|---|
+| Release_under_limit | Claimed message, attempt 1 of 3, `TryRelease(3)` | Back to NOT_PROCESSED, claim time cleared | Green |
+| No_release_at_limit | Claimed message, attempt 3 of 3 | Release refused, status unchanged so the caller marks it ERROR | Green |
+| Release_requires_claim | `TryRelease` on a message that is not PROCESSING | `InvalidOperationException` | Green |
+| Classifier_separates_transient_from_permanent | Timeout, IO, HTTP, `DbUpdateException` versus `NotImplementedException`, `InvalidOperationException` | First group transient, second permanent | Green |
+| Validators_report_the_kind_of_problem (`.N/0220123456000`) | Consecutive count 000 | Code 1002; the count is the total number of tags and starts at 001 | Green |
+
+## Manual check of the reworked processing service (2026-11-08)
+Not an automated test. On a temporary `postgres:17-alpine` container five migrations were applied and nine messages were posted: six BSM, one BUM, one BSM with a bad `.F` line and one unknown type. Result: seven PROCESSED with a parsed row each (BUM stored as `BUM`), `AttemptCount` 1 on every row, the bad `.F` ended ERROR with element error `1001`, the unknown type ended ERROR with `MSG_HND_01`, and no unexpected failure was logged. Retry after a transient failure is covered by unit tests only, it was not provoked on the database.

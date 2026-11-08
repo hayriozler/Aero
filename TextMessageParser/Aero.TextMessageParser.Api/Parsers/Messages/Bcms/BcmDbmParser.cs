@@ -3,8 +3,8 @@ using Aero.TextMessageParser.Api.Parsers.Elements;
 
 namespace Aero.TextMessageParser.Api.Parsers.Messages.Bcms;
 
-public sealed class BcmFcm(IReadOnlyDictionary<string, Element> elementMap)
-    : BcmBase(Consts.FCM, elementMap)
+public sealed class BcmDbmParser(IReadOnlyDictionary<string, Element> elementMap)
+    : BcmParserBase(Consts.DBM, elementMap)
 {
     public override IReadOnlyList<ElementSequence> ElementSequences { get; } =
     [

@@ -13,7 +13,7 @@ internal sealed class ElementErrorConfiguration : IEntityTypeConfiguration<Eleme
         builder.HasKey(e => e.Id).HasName("PK_ElementErrorId");
 
         builder.Property(e => e.Id)
-            .HasColumnType("INTEGER")
+            .HasColumnType("BIGINT")
             .HasColumnOrder(0);
 
         builder.Property(e => e.MessageId)
@@ -35,6 +35,9 @@ internal sealed class ElementErrorConfiguration : IEntityTypeConfiguration<Eleme
             .HasColumnType("TIMESTAMPTZ")
             .IsRequired()
             .HasColumnOrder(4);
+
+        builder.HasIndex(e => e.MessageId);
+        builder.HasOne<TextMessage>().WithMany().HasForeignKey(e => e.MessageId).OnDelete(DeleteBehavior.Cascade);
 
     }
 }

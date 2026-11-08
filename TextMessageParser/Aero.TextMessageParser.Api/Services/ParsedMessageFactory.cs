@@ -8,18 +8,14 @@ public static class ParsedMessageFactory
 {
     public static ParsedMessage? Create(TextMessage message, object result) => result switch
     {
-        TextMessageDepartureBagRequest r => FromDeparture(message, r.AckRequest, r.AuthorityToLoad, r.AuthorityToTransport,
+        DepartureBagDto r => FromDeparture(message, r.AckRequest, r.AuthorityToLoad, r.AuthorityToTransport,
             r.SourceIndicator, r.SourceAirportCode, r.AirlineCode, r.FlightNumber, r.FlightIataDate, r.Destination,
             r.BagTagStatus, r.BagTags, r.Onwards, r.PassengerStatus, r.PassengerName, r.PassengerSecurityNumber,
             r.PassengerSequenceNumber, r.PassengerClass, r.SeatNumber, r.BaggageWeight, r.PassengerProfileStatus),
-        TextMessageDepartureBagChgDto r => FromDeparture(message, r.AckRequest, r.AuthorityToLoad, r.AuthorityToTransport,
-            r.SourceIndicator, r.SourceAirportCode, r.AirlineCode, r.FlightNumber, r.FlightIataDate, r.Destination,
-            r.BagTagStatus, r.BagTags, r.Onwards, r.PassengerStatus, r.PassengerName, r.PassengerSecurityNumber,
-            r.PassengerSequenceNumber, r.PassengerClass, r.SeatNumber, r.BaggageWeight, r.PassengerProfileStatus),
-        TextMessageDepartureBagDeleteDto r => ParsedMessage.Create(message.Id, message.Header.RoutingKey, r.ackRequest,
-            r.sourceIndicator, r.sourceAirport, r.airlineCode, r.flightNumber, r.flightIataDate, r.destination, r.BagTags),
-        TextMessageBcmDto r => ParsedMessage.Create(message.Id, message.Header.RoutingKey, r.ackRequest,
-            r.sourceIndicator, r.sourceAirport, r.AirlineCode, r.FlightNumber, r.FlightIataDate, null, []),
+        BagRemovalDto r => ParsedMessage.Create(message.Id, message.Header.RoutingKey, r.AckRequest,
+            r.SourceIndicator, r.SourceAirportCode, r.AirlineCode, r.FlightNumber, r.FlightIataDate, r.Destination, r.BagTags),
+        BcmDto r => ParsedMessage.Create(message.Id, message.Header.RoutingKey, r.AckRequest,
+            r.SourceIndicator, r.SourceAirportCode, r.AirlineCode, r.FlightNumber, r.FlightIataDate, null, []),
         _ => null
     };
 

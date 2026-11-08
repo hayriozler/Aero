@@ -11,7 +11,7 @@ public class ProcessingTests
 {
     private const string ProcessingServicePath = "Services/MessageProcessingService.cs";
 
-    [Fact(DisplayName = "Bug 8 (reproduction, skipped): a message whose processing throws must end in a persisted terminal state", Skip = "Needs PostgreSQL: ProcessBatchAsync claims rows with raw UPDATE ... FOR UPDATE SKIP LOCKED ... RETURNING, which neither InMemory nor SQLite can run, and the method is private. Reproduction: insert a BUM TextMessage (Bum.Handle throws NotImplementedException) into a real PostgreSQL schema 'messages', run the service for one batch, then read the row: expected Status ERROR (or similar), Completed true and a TextMessageError row; observed Status stays PROCESSING and Completed false until stale recovery resets it after 2 minutes, so it is retried forever.")]
+    [Fact(DisplayName = "Bug 8 (reproduction, skipped): a message whose processing throws must end in a persisted terminal state", Skip = "Needs PostgreSQL: ProcessBatchAsync claims rows with raw UPDATE ... FOR UPDATE SKIP LOCKED ... RETURNING, which neither InMemory nor SQLite can run, and the method is private. Reproduction: insert a BUM TextMessage (BumParser.Handle throws NotImplementedException) into a real PostgreSQL schema 'messages', run the service for one batch, then read the row: expected Status ERROR (or similar), Completed true and a TextMessageError row; observed Status stays PROCESSING and Completed false until stale recovery resets it after 2 minutes, so it is retried forever.")]
     [Trait("Bug", "8")]
     public void Failed_message_is_persisted_as_terminal()
     {
@@ -32,7 +32,7 @@ public class ProcessingTests
         var helperStart = source.IndexOf("private async Task RecordFailureAsync", StringComparison.Ordinal);
         Check.True(helperStart > 0, "RecordFailureAsync not found. " + Why);
         var helperBody = source.Substring(helperStart);
-        Check.True(helperBody.Contains("MarkFailed") && helperBody.Contains("TextMessageErrorSet.Add") && helperBody.Contains("SaveChangesAsync"),
+        Check.True(helperBody.Contains("MarkFailed") && helperBody.Contains("MessageErrors.Add") && helperBody.Contains("SaveChangesAsync"),
             "RecordFailureAsync must call TextMessage.MarkFailed (which sets Status ERROR and Completed), add a TextMessageError and call SaveChangesAsync. " + Why);
     }
 
@@ -48,15 +48,17 @@ public class ProcessingTests
             "RecoverStaleRecordsAsync is only called before the loop, so rows left in PROCESSING by a crash or cancellation stay stuck until the next restart. Static source guard because the service needs PostgreSQL.");
     }
 
-    [Fact(DisplayName = "Bug 8 (current behavior): Bum.Handle throws NotImplementedException, which is what reaches the catch block")]
-    [Trait("Bug", "8")]
-    public void Bum_handler_throws_not_implemented()
+    [Fact(DisplayName = "BUM: a message with .V and .N is mapped to a bag removal DTO with its bag tag")]
+    [Trait("Kind", "Baseline")]
+    public void Bum_is_mapped_to_a_bag_removal()
     {
         var raw = SampleMessages.Build("BUM", null, SampleMessages.NativeNewLine, SampleMessages.V, SampleMessages.N1);
-        var bum = new Bum(ElementMapFactory.Create());
+        var bum = new BumParser(ElementMapFactory.Create());
         using var db = TestDbContextFactory.Create();
-        var ex = Record.Exception(() => bum.ProcessMessage(TextMessages.From(raw), db));
-        Check.True(ex is NotImplementedException, $"Documents today's behavior; observed {ex?.GetType().Name ?? "no exception"}.");
+        var dto = bum.ProcessMessage(TextMessages.From(raw), db);
+        Check.True(dto is not null, "A BUM with .V and .N must parse.");
+        Check.SequenceEqual(new[] { "0220123456" }, dto!.BagTags, "Bag tags.");
+        Check.Equal('L', dto.SourceIndicator, "Source indicator.");
     }
 
     [Fact(DisplayName = "Bug 9 (reproduction, skipped): SqlQueryRaw<long> over 'RETURNING \"Id\"' must work", Skip = "Needs PostgreSQL. SqlQueryRaw<long> maps a single column that must be named \"Value\"; the statement returns a column named \"Id\", so EF fails with 'The required column Value was not present in the results of a FromSql operation'. Reproduction: run ProcessBatchAsync against PostgreSQL with one NOT_PROCESSED row. InMemory cannot run raw SQL and SQLite lacks the 'messages' schema and FOR UPDATE SKIP LOCKED.")]

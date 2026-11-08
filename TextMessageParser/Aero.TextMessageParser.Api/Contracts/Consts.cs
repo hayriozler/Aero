@@ -2,17 +2,15 @@
 
 public class Consts
 {
-    public static readonly char[] NEW_LINE_SEPERATOR = ['\r', '\n'];
+    public static readonly char[] LineSeparators = ['\r', '\n'];
     public const int MaxBagTagSerial = 999999;
     public const int MaxMessageLength = 4000;
     public const string BCM = "BCM"; // Baggage Control Message, it is the main message and other messages are related to it by using its identifier as secondary identifier
-    public const string BAM = "BAM"; // Baggage Acknowledgement Message
     public const string END = "END"; // End of Message, it is used to identify the end of message and the type of message it is ending for is identified by using the secondary identifier
     public const string FCM = "FCM"; // Flight Close Message
     public const string FMM = "FMM"; // Final Match Message
     public const string BMM = "BMM"; // Baggage Manifest Message
     public const string BNS = "BNS"; // Baggage Not Seend Message
-    public const string BPM = "BPM"; // Baggage Processed Message
     public const string BRQ = "BRQ"; // Baggage Request Message
     public const string BSM = "BSM"; // Baggage Source Message
     public const string CHG = "CHG"; // Baggage Source Change Message also can be used for deleting baggage

@@ -12,7 +12,7 @@ public class ParsedMessageTests
     public void Parsed_message_carries_the_parsed_values()
     {
         var message = TextMessages.From(BsmText(V, F, N1, P));
-        var result = new Bsm(ElementMapFactory.Create()).Parse(message).Value;
+        var result = new BsmParser(ElementMapFactory.Create()).Parse(message).Value;
         var parsed = ParsedMessageFactory.Create(message, result!);
 
         Check.True(parsed is not null, "A BSM result must be mapped.");
@@ -28,7 +28,7 @@ public class ParsedMessageTests
     public void Missing_passenger_elements_become_null()
     {
         var message = TextMessages.From(BsmText(V, F, N1));
-        var result = new Bsm(ElementMapFactory.Create()).Parse(message).Value;
+        var result = new BsmParser(ElementMapFactory.Create()).Parse(message).Value;
         var parsed = ParsedMessageFactory.Create(message, result!)!;
 
         Check.True(parsed.PassengerStatus is null, "Status must be null, not '\\0'.");
@@ -41,7 +41,7 @@ public class ParsedMessageTests
     public void Mark_consumed_sets_flag()
     {
         var message = TextMessages.From(BsmText(V, F, N1));
-        var result = new Bsm(ElementMapFactory.Create()).Parse(message).Value;
+        var result = new BsmParser(ElementMapFactory.Create()).Parse(message).Value;
         var parsed = ParsedMessageFactory.Create(message, result!)!;
         var at = new DateTime(2026, 11, 8, 12, 0, 0, DateTimeKind.Utc);
 

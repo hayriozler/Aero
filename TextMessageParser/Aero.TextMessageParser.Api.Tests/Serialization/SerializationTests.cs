@@ -25,31 +25,31 @@ public class SerializationTests
             $"{kind}: onward flights serialized as {json}. Missing: {string.Join(", ", missing)}. ValueTuple members are public FIELDS and System.Text.Json (also under HttpClient.PostAsJsonAsync) ignores fields by default, so every onward becomes {{}}. Use a record/class for onwards or IncludeFields.");
     }
 
-    [Theory(DisplayName = "Bug 10: TextMessageDepartureBagRequest serializes every onward flight (airline, number, date, destination)")]
+    [Theory(DisplayName = "Bug 10: DepartureBagDto serializes every onward flight (airline, number, date, destination)")]
     [Trait("Bug", "10")]
     [MemberData(nameof(OptionNames))]
     public void Request_onwards_are_serialized(string options)
     {
-        var dto = new TextMessageDepartureBagRequest(1, null, true, true, 'L', "FRA", "LH", "400", "12NOV", "JFK",
+        var dto = new DepartureBagDto(1, null, true, true, 'L', "FRA", "LH", "400", "12NOV", "JFK",
             true, ["0220123456"], Onwards, 'B', "JOHN DOE", null, "001", 'Y', "12A");
-        AssertAllPresent(JsonSerializer.Serialize(dto, OptionsFor(options)), "TextMessageDepartureBagRequest");
+        AssertAllPresent(JsonSerializer.Serialize(dto, OptionsFor(options)), "DepartureBagDto");
     }
 
-    [Theory(DisplayName = "Bug 10: TextMessageDepartureBagChgDto serializes every onward flight (airline, number, date, destination)")]
+    [Theory(DisplayName = "Bug 10: DepartureBagDto serializes every onward flight (airline, number, date, destination)")]
     [Trait("Bug", "10")]
     [MemberData(nameof(OptionNames))]
     public void Chg_onwards_are_serialized(string options)
     {
-        var dto = new TextMessageDepartureBagChgDto(1, null, true, true, 'L', "FRA", "LH", "400", "12NOV", "JFK",
+        var dto = new DepartureBagDto(1, null, true, true, 'L', "FRA", "LH", "400", "12NOV", "JFK",
             true, ["0220123456"], Onwards, 'B', "JOHN DOE", null, "001", 'Y', "12A");
-        AssertAllPresent(JsonSerializer.Serialize(dto, OptionsFor(options)), "TextMessageDepartureBagChgDto");
+        AssertAllPresent(JsonSerializer.Serialize(dto, OptionsFor(options)), "DepartureBagDto");
     }
 
     [Fact(DisplayName = "Baseline: scalar properties and bag tags of the request DTO serialize")]
     [Trait("Kind", "Baseline")]
     public void Scalars_are_serialized()
     {
-        var dto = new TextMessageDepartureBagRequest(1, null, true, true, 'L', "FRA", "LH", "400", "12NOV", "JFK",
+        var dto = new DepartureBagDto(1, null, true, true, 'L', "FRA", "LH", "400", "12NOV", "JFK",
             true, ["0220123456"], [], 'B', "JOHN DOE", null, "001", 'Y', "12A");
         var json = JsonSerializer.Serialize(dto, new JsonSerializerOptions(JsonSerializerDefaults.Web));
         Check.True(json.Contains("0220123456") && json.Contains("JOHN DOE") && json.Contains("\"flightNumber\":\"400\""), "Got " + json);

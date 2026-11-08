@@ -5,7 +5,7 @@ using Aero.Shared.Infrastructure.Diagnostics;
 using Aero.Shared.Infrastructure.Persistence;
 using Aero.Shared.Infrastructure.Services;
 using Aero.Shared.WebUtilities.Middlewares;
-using Aero.TextMessageParser.Api.EndPoints;
+using Aero.TextMessageParser.Api.Endpoints;
 using Aero.TextMessageParser.Api.Extensions;
 using Aero.TextMessageParser.Api.Persistence;
 using Aero.TextMessageParser.Api.Services;
@@ -44,6 +44,7 @@ builder.Services.AddDbContext<TextMessageParserDbContext>((sp, opt) =>
 #endif
 });
 
+builder.Services.Configure<MessageProcessingOptions>(builder.Configuration.GetSection(MessageProcessingOptions.Section));
 builder.Services.AddOpenApi();
 builder.Services.AddHostedService<MessageProcessingService>();
 

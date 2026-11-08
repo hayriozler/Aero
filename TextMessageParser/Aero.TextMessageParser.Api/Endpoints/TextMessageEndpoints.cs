@@ -6,9 +6,9 @@ using Aero.TextMessageParser.Api.Persistence;
 using Aero.TextMessageParser.Api.Requests;
 using Aero.TextMessageParser.Api.Responses;
 
-namespace Aero.TextMessageParser.Api.EndPoints;
+namespace Aero.TextMessageParser.Api.Endpoints;
 
-public static class TextParserEndPoint
+public static class TextMessageEndpoints
 {
     public static IEndpointRouteBuilder MapMessagingEndpoints(this IEndpointRouteBuilder app)
     {
@@ -47,7 +47,7 @@ public static class TextParserEndPoint
             }
 
             var message = TextMessage.Create(request.Message, messageHeader, messageFooter);
-            db.TextMessagesSet.Add(message);
+            db.TextMessages.Add(message);
             await db.SaveChangesAsync(cancellationToken);
             return Results.Accepted(value: new TextMessageAcceptedResponse(message.Id));
         })

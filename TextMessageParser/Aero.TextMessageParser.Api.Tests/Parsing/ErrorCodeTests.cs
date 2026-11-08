@@ -16,6 +16,7 @@ public class ErrorCodeTests
     [Theory(DisplayName = "Error codes: a validator reports the kind of problem (length, value, format, missing field) instead of one generic length code")]
     [InlineData(".N/022012345", ErrorCodes.ELEMENT_LENGTH_NOT_CORRECT, "N")]
     [InlineData(".N/022012345600A", ErrorCodes.ELEMENT_FORMAT_NOT_CORRECT, "N")]
+    [InlineData(".N/0220123456000", ErrorCodes.ELEMENT_VALUE_NOT_CORRECT, "N")]
     [InlineData(".W/X/001/20", ErrorCodes.ELEMENT_VALUE_NOT_CORRECT, "W")]
     [InlineData(".P/DOE//JOHN", ErrorCodes.ELEMENT_FIELD_MISSING, "P")]
     public void Validators_report_the_kind_of_problem(string line, string expectedCode, string element)
@@ -46,9 +47,9 @@ public class ErrorCodeTests
     public void Element_error_row_contains_the_line()
     {
         using var db = TestDbContextFactory.Create();
-        var dto = new Bsm(ElementMapFactory.Create()).ProcessMessage(TextMessages.From(BsmText(V, ".F/LH400", N1, P)), db);
+        var dto = new BsmParser(ElementMapFactory.Create()).ProcessMessage(TextMessages.From(BsmText(V, ".F/LH400", N1, P)), db);
         Check.True(dto is null, "A malformed .F/ line must not produce a DTO.");
-        var error = db.TextMessageElementErrorSet.Local.Single();
+        var error = db.ElementErrors.Local.Single();
         Check.True(error.ErrorDescription is not null && error.ErrorDescription.Contains(".F/LH400"),
             $"The element error must name the failing line; got '{error.ErrorDescription}'.");
     }
@@ -58,9 +59,9 @@ public class ErrorCodeTests
     {
         using var db = TestDbContextFactory.Create();
         var longLine = ".R/" + new string('X', 400);
-        var dto = new Bsm(ElementMapFactory.Create()).ProcessMessage(TextMessages.From(BsmText(V, F, N1, longLine, P)), db);
+        var dto = new BsmParser(ElementMapFactory.Create()).ProcessMessage(TextMessages.From(BsmText(V, F, N1, longLine, P)), db);
         Check.True(dto is null, "An over-long .R/ free text must be rejected.");
-        var error = db.TextMessageElementErrorSet.Local.Single();
+        var error = db.ElementErrors.Local.Single();
         Check.True(error.ErrorDescription is { Length: <= 250 }, $"Description length was {error.ErrorDescription?.Length}.");
     }
 
