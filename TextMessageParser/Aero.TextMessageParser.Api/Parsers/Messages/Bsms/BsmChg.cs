@@ -29,7 +29,7 @@ public sealed class BsmChg(IReadOnlyDictionary<string, Element> elementMap)
         bool bagTagStatus = false;
         string? piecesWeightIndicator;
         string? checkedWeight;
-        List<(string AirlineCode, string FlightNumber, string FlightIataDate, string Destination, char? Class)> Onwards = [];
+        List<OnwardFlightDto> Onwards = [];
         List<string> BagTags = [];
 
         foreach (var element in elementResults)

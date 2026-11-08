@@ -43,7 +43,7 @@ public sealed class BcmDbm(IReadOnlyDictionary<string, Element> elementMap)
         }
         return new TextMessageBcmDto(
             messageId,
-            "Fcm",
+            "Dbm",
             ackRequest,
             sourceIndicator,
             sourceAirport,

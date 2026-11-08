@@ -1,4 +1,6 @@
-﻿namespace Aero.TextMessageParser.Api.Requests;
+﻿using Aero.TextMessageParser.Api.Dtos;
+
+namespace Aero.TextMessageParser.Api.Requests;
 
 public sealed record TextMessageDepartureBagRequest(
     long Id,
@@ -13,7 +15,7 @@ public sealed record TextMessageDepartureBagRequest(
     string Destination,
     bool BagTagStatus,
     List<string> BagTags,
-    List<(string AirlineCode, string FlightNumber, string FlightIataDate, string Destination, char? Class)> Onwards,
+    List<OnwardFlightDto> Onwards,
     char PassengerStatus,
     string PassengerName,
     string? PassengerSecurityNumber,

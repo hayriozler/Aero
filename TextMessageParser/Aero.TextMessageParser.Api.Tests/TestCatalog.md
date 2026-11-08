@@ -95,9 +95,8 @@ Additional observation: the validator's field positions for the 2/5/6-part branc
 ## Bug 10 - JSON serialization of Onwards (RED)
 | Test | Input | Expected | Actual |
 |---|---|---|---|
-| Request_onwards_are_serialized (default and web options) | Onwards `("LH","401","13NOV","MUC",'Y')`, `("EW","9021","14NOV","BER",'C')` in TextMessageDepartureBagRequest | JSON contains airline, number, date, destination of each | Each onward is `{}` (ValueTuple fields are ignored) |
-| Chg_onwards_are_serialized (default and web) | Same in TextMessageDepartureBagChgDto | Same | `{}` |
-| Onwards_currently_serialize_as_empty_objects | Same | Documents `{}` | `{}` (green) |
+| Request_onwards_are_serialized (default and web options) | Two `OnwardFlightDto` records (LH401 13NOV MUC Y, EW9021 14NOV BER C) in TextMessageDepartureBagRequest | JSON contains airline, number, date, destination of each | Green after the fix. Before: onwards were ValueTuples, whose members are fields that System.Text.Json ignores, so each serialized as `{}` |
+| Chg_onwards_are_serialized (default and web) | Same in TextMessageDepartureBagChgDto | Same | Green after the fix |
 | Scalars_are_serialized (Baseline) | Scalars and bag tags | Present | Green |
 
 ## Bug 11 - BCM subtype

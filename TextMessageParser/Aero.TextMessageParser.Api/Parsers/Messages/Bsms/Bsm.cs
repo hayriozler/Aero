@@ -1,4 +1,5 @@
 using Aero.TextMessageParser.Api.Contracts;
+using Aero.TextMessageParser.Api.Dtos;
 using Aero.TextMessageParser.Api.Parsers.Elements;
 using Aero.TextMessageParser.Api.Requests;
 
@@ -28,7 +29,7 @@ public sealed class Bsm(IReadOnlyDictionary<string, Element> elementMap)
         bool bagTagStatus = false;
         string? piecesWeightIndicator;
         string? checkedWeight;
-        List<(string AirlineCode, string FlightNumber, string FlightIataDate, string Destination, char? Class)> Onwards = [];
+        List<OnwardFlightDto> Onwards = [];
         List<string> BagTags = [];
 
         foreach (var element in elementResults)

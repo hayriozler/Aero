@@ -7,8 +7,8 @@ namespace Aero.TextMessageParser.Api.Tests.Serialization;
 
 public class SerializationTests
 {
-    private static readonly List<(string AirlineCode, string FlightNumber, string FlightIataDate, string Destination, char? Class)> Onwards =
-        [("LH", "401", "13NOV", "MUC", 'Y'), ("EW", "9021", "14NOV", "BER", 'C')];
+    private static readonly List<OnwardFlightDto> Onwards =
+        [new("LH", "401", "13NOV", "MUC", 'Y'), new("EW", "9021", "14NOV", "BER", 'C')];
 
     private static readonly string[] Expected = ["LH", "401", "13NOV", "MUC", "EW", "9021", "14NOV", "BER"];
 
@@ -43,18 +43,6 @@ public class SerializationTests
         var dto = new TextMessageDepartureBagChgDto(1, null, true, true, 'L', "FRA", "LH", "400", "12NOV", "JFK",
             true, ["0220123456"], Onwards, 'B', "JOHN DOE", null, "001", 'Y', "12A");
         AssertAllPresent(JsonSerializer.Serialize(dto, OptionsFor(options)), "TextMessageDepartureBagChgDto");
-    }
-
-    [Fact(DisplayName = "Bug 10 (current behavior): onward flights serialize as empty JSON objects")]
-    [Trait("Bug", "10")]
-    public void Onwards_currently_serialize_as_empty_objects()
-    {
-        var dto = new TextMessageDepartureBagRequest(1, null, true, true, 'L', "FRA", "LH", "400", "12NOV", "JFK",
-            true, ["0220123456"], Onwards, 'B', "JOHN DOE", null, "001", 'Y', "12A");
-        using var doc = JsonDocument.Parse(JsonSerializer.Serialize(dto, new JsonSerializerOptions(JsonSerializerDefaults.Web)));
-        var first = doc.RootElement.GetProperty("onwards")[0];
-        Check.True(first.ValueKind == JsonValueKind.Object && !first.EnumerateObject().Any(),
-            $"Documents today's behavior; first onward serialized as {first.GetRawText()}.");
     }
 
     [Fact(DisplayName = "Baseline: scalar properties and bag tags of the request DTO serialize")]
