@@ -1,6 +1,4 @@
-using Aero.Flights.Api.Infrastructure;
-using Aero.Flights.Application.Common;
-using Aero.Flights.Application.Flights.CodeShares;
+using Aero.Flights.Application.OpsFlights.CodeShares;
 using Aero.Flights.Contracts.Flights;
 using Aero.Flights.Domain.Identity;
 using Aero.Flights.Domain.Ops.Resources;
@@ -27,7 +25,7 @@ public static class FlightCodeShareEndpoints
             HttpContext ctx,
             CancellationToken ct) =>
             ApiResult.Ok(ctx, await handler.HandleAsync(new ListCodeSharesQuery<TCodeShare>(flightId), ct)))
-            .RequireAuthorization(Permissions.FlightView);
+            .RequireAuthorization(FlightPermissions.FlightView);
 
         app.MapPost(basePath, async (
             long flightId,
@@ -43,7 +41,7 @@ public static class FlightCodeShareEndpoints
 
             var result = await handler.HandleAsync(new AddCodeShareCommand<TCodeShare>(flightId, request), ct);
             return ApiResult.Created(ctx, result, $"{basePath}/{result.Id}");
-        }).RequireAuthorization(Permissions.FlightWrite);
+        }).RequireAuthorization(FlightPermissions.FlightWrite);
 
         app.MapPut($"{basePath}/{{codeShareId:long}}", async (
             long flightId,
@@ -62,7 +60,7 @@ public static class FlightCodeShareEndpoints
             return result is null
                 ? ApiResult.NotFound(ctx, "CODESHARE_NOT_FOUND", $"Codeshare {codeShareId} not found.")
                 : ApiResult.Ok(ctx, result);
-        }).RequireAuthorization(Permissions.FlightWrite);
+        }).RequireAuthorization(FlightPermissions.FlightWrite);
 
         app.MapDelete($"{basePath}/{{codeShareId:long}}", async (
             long flightId,
@@ -75,6 +73,6 @@ public static class FlightCodeShareEndpoints
             return deleted
                 ? ApiResult.NoContent(ctx)
                 : ApiResult.NotFound(ctx, "CODESHARE_NOT_FOUND", $"Codeshare {codeShareId} not found.");
-        }).RequireAuthorization(Permissions.FlightWrite);
+        }).RequireAuthorization(FlightPermissions.FlightWrite);
     }
 }

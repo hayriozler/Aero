@@ -11,11 +11,12 @@ public class ElementN(IElementValidator validator) : Element(Consts.N)
     {
         var validationResult = validator.Validate(elementDetail);
         if (!validationResult.IsValid) return new(this, validationResult);
+        var result = new ElementN(validator);
         var parsedText = elementDetail.ParsedText;
         var tag = parsedText[1];
-        AirlinePrefix   = tag[..4].ToString();
-        TagSerial       = tag.Slice(4, 6).ToString();
-        ConsecutiveTags = tag.Slice(10, 3).ToString();
-        return new(this, validationResult);
+        result.AirlinePrefix   = tag[..4].ToString();
+        result.TagSerial       = tag.Slice(4, 6).ToString();
+        result.ConsecutiveTags = tag.Slice(10, 3).ToString();
+        return new(result, validationResult);
     }
 }

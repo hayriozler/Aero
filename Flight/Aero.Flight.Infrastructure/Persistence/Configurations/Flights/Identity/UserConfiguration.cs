@@ -1,7 +1,4 @@
-using Aero.Flights.Domain.Audit.Identity;
-using Aero.Flights.Domain.Identity;
-using Aero.Flights.Infrastructure;
-using Aero.Flights.Infrastructure.Persistence.Configurations;
+using Aero.Shared.Domain.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -13,7 +10,7 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
     {
         builder.ToTable("User", "identity");
         builder.HasKey(u => u.Id);
-    
+
 
         builder.Property(u => u.Username).IsRequired().HasMaxLength(100).HasColumnType("citext");
         builder.Property(u => u.PasswordHash).IsRequired().HasMaxLength(500);

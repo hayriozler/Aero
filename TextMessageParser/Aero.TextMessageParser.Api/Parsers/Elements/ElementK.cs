@@ -9,8 +9,9 @@ public class ElementK(IElementValidator validator) : Element(Consts.K)
     {
         var validationResult = validator.Validate(elementDetail);
         if (!validationResult.IsValid) return new(this, validationResult);
+        var result = new ElementK(validator);
         var parsedText = elementDetail.ParsedText;
-        PrinterId = parsedText.Length > 1 ? parsedText[1].ToString() : string.Empty;
-        return new(this, validationResult);
+        result.PrinterId = parsedText.Length > 1 ? parsedText[1].ToString() : string.Empty;
+        return new(result, validationResult);
     }
 }

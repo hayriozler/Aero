@@ -14,7 +14,7 @@ public static class ResourceStatusMapEndpoints
     public static IEndpointRouteBuilder MapResourceStatusMapEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/resource-status-maps")
-            .RequireAuthorization(Policies.AirportOperator);
+            .RequireAuthorization(ScannerPolicies.AirportOperator);
 
         group.MapGet("/", GetAll)
             .WithName("GetResourceStatusMaps")

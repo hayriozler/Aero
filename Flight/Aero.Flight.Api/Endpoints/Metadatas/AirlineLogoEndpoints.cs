@@ -21,7 +21,7 @@ public static class AirlineLogoEndpoints
             HttpContext ctx,
             CancellationToken ct) =>
             ApiResult.Ok(ctx, await handler.HandleAsync(new ListAirlineLogosQuery(code), ct)))
-            .RequireAuthorization(Permissions.MetadataView);
+            .RequireAuthorization(FlightPermissions.MetadataView);
 
         group.MapGet("/{id:int}", async (
             string code,
@@ -34,7 +34,7 @@ public static class AirlineLogoEndpoints
             return image is null
                 ? ApiResult.NotFound(ctx, "AIRLINE_LOGO_NOT_FOUND", $"Logo {id} not found for airline '{code}'.")
                 : Results.Bytes(image.Data, image.ContentType);
-        }).RequireAuthorization(Permissions.MetadataView);
+        }).RequireAuthorization(FlightPermissions.MetadataView);
 
         group.MapPost("/", async (
             string code,
@@ -55,7 +55,7 @@ public static class AirlineLogoEndpoints
 
             var result = await handler.HandleAsync(new AddAirlineLogoCommand(code, name.Trim(), stream.ToArray(), file.ContentType), ct);
             return ApiResult.Created(ctx, result, $"{basePath.Replace("{code}", code)}/{result.Id}");
-        }).RequireAuthorization(Permissions.MetadataCreate).DisableAntiforgery();
+        }).RequireAuthorization(FlightPermissions.MetadataCreate).DisableAntiforgery();
 
         group.MapPut("/{id:int}", async (
             string code,
@@ -74,7 +74,7 @@ public static class AirlineLogoEndpoints
             return result is null
                 ? ApiResult.NotFound(ctx, "AIRLINE_LOGO_NOT_FOUND", $"Logo {id} not found for airline '{code}'.")
                 : ApiResult.Ok(ctx, result);
-        }).RequireAuthorization(Permissions.MetadataUpdate);
+        }).RequireAuthorization(FlightPermissions.MetadataUpdate);
 
         group.MapDelete("/{id:int}", async (
             string code,
@@ -87,7 +87,7 @@ public static class AirlineLogoEndpoints
             return deleted
                 ? ApiResult.NoContent(ctx)
                 : ApiResult.NotFound(ctx, "AIRLINE_LOGO_NOT_FOUND", $"Logo {id} not found for airline '{code}'.");
-        }).RequireAuthorization(Permissions.MetadataDelete);
+        }).RequireAuthorization(FlightPermissions.MetadataDelete);
 
         return app;
     }

@@ -15,7 +15,7 @@
 
 
 	<ItemGroup>
-	  <ProjectReference Include="..\..\Aero.Shared.Contracts\Aero.Shared.Contracts.csproj" />
+	  <ProjectReference Include="..\Aero.Shared.Contracts\Aero.Shared.Contracts.csproj" />
 	  <ProjectReference Include="..\Aero.Shared.Domain\Aero.Shared.Domain.csproj" />
 	  <ProjectReference Include="..\Aero.Shared.Infrastructure\Aero.Shared.Infrastructure.csproj" />
 	</ItemGroup>

@@ -1,19 +1,10 @@
 using Aero.Flights.Contracts.Metadatas;
 using Aero.Flights.Domain.Metadatas;
-using FluentValidation;
 using System.Linq.Expressions;
 
 namespace Aero.Flights.Application.Metadatas;
 
-public sealed class CountryRequestValidator : AbstractValidator<CountryRequest>
-{
-    public CountryRequestValidator()
-    {
-        RuleFor(x => x.Code).NotEmpty().MaximumLength(10);
-        RuleFor(x => x.Name).NotEmpty().MaximumLength(200);
-        RuleFor(x => x.CountryTypeCode).MaximumLength(10);
-    }
-}
+
 
 public sealed class CountryMetadataMap : IMetadataMap<Country, CountryRequest, CountryResponse>
 {

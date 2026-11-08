@@ -13,13 +13,14 @@ public class ElementF(IElementValidator validator) : Element(Consts.F)
     {
         var validationResult = validator.Validate(elementDetail);
         if (!validationResult.IsValid) return new(this, validationResult);
+        var result = new ElementF(validator);
         var parsedText = elementDetail.ParsedText;
         int airlineLen = GetAirlineLen(elementDetail.ParsedText[1].Span[2]);
-        AirlineCode  = elementDetail.ParsedText[1][..airlineLen].ToString();
-        FlightNumber = elementDetail.ParsedText[1][airlineLen..].ToString();
-        FlightDate  = elementDetail.ParsedText[2].ToString();
-        Destination = elementDetail.ParsedText[3].ToString();
-        Class = parsedText.Length > 4 ? parsedText[4].Span[0] : default;
-        return new(this, validationResult);
+        result.AirlineCode  = elementDetail.ParsedText[1][..airlineLen].ToString();
+        result.FlightNumber = elementDetail.ParsedText[1][airlineLen..].ToString();
+        result.FlightDate  = elementDetail.ParsedText[2].ToString();
+        result.Destination = elementDetail.ParsedText[3].ToString();
+        result.Class = parsedText.Length > 4 ? parsedText[4].Span[0] : default;
+        return new(result, validationResult);
     }
 }

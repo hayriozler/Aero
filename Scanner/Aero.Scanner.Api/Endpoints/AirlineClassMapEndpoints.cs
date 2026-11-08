@@ -14,7 +14,7 @@ public static class AirlineClassMapEndpoints
     public static IEndpointRouteBuilder MapAirlineClassMapEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/airline-class-maps")
-            .RequireAuthorization(Policies.AirportOrRamp);
+            .RequireAuthorization(ScannerPolicies.AirportOrRamp);
 
         group.MapGet("/", GetAll)
             .WithName("GetAirlineClassMaps")

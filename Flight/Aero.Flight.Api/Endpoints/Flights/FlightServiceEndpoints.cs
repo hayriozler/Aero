@@ -1,6 +1,6 @@
 using Aero.Flights.Api.Infrastructure;
 using Aero.Flights.Application.Common;
-using Aero.Flights.Application.Flights.Services;
+using Aero.Flights.Application.OpsFlights.Services;
 using Aero.Flights.Contracts.Flights;
 using Aero.Flights.Domain.Identity;
 using Aero.Flights.Domain.Ops.Services;
@@ -27,7 +27,7 @@ public static class FlightServiceEndpoints
             HttpContext ctx,
             CancellationToken ct) =>
             ApiResult.Ok(ctx, await handler.HandleAsync(new ListServicesQuery<TService>(flightId), ct)))
-            .RequireAuthorization(Permissions.FlightView);
+            .RequireAuthorization(FlightPermissions.FlightView);
 
         app.MapPost(basePath, async (
             long flightId,
@@ -43,7 +43,7 @@ public static class FlightServiceEndpoints
 
             var result = await handler.HandleAsync(new AddServiceCommand<TService>(flightId, request), ct);
             return ApiResult.Created(ctx, result, $"{basePath}/{result.Id}");
-        }).RequireAuthorization(Permissions.FlightWrite);
+        }).RequireAuthorization(FlightPermissions.FlightWrite);
 
         app.MapPut($"{basePath}/{{serviceId:long}}", async (
             long flightId,
@@ -62,7 +62,7 @@ public static class FlightServiceEndpoints
             return result is null
                 ? ApiResult.NotFound(ctx, "SERVICE_NOT_FOUND", $"Service {serviceId} not found.")
                 : ApiResult.Ok(ctx, result);
-        }).RequireAuthorization(Permissions.FlightWrite);
+        }).RequireAuthorization(FlightPermissions.FlightWrite);
 
         app.MapDelete($"{basePath}/{{serviceId:long}}", async (
             long flightId,
@@ -75,6 +75,6 @@ public static class FlightServiceEndpoints
             return deleted
                 ? ApiResult.NoContent(ctx)
                 : ApiResult.NotFound(ctx, "SERVICE_NOT_FOUND", $"Service {serviceId} not found.");
-        }).RequireAuthorization(Permissions.FlightWrite);
+        }).RequireAuthorization(FlightPermissions.FlightWrite);
     }
 }

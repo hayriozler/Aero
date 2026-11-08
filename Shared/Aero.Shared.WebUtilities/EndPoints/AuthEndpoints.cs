@@ -1,5 +1,6 @@
 ﻿using Aero.Shared.Contracts.Dtos;
 using Aero.Shared.Contracts.Requests;
+using Aero.Shared.Domain;
 using Aero.Shared.Domain.Identity;
 using Aero.Shared.Infrastructure.Persistence;
 using Aero.Shared.Infrastructure.Services;
@@ -8,10 +9,10 @@ using FluentValidation;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.EntityFrameworkCore;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-
 namespace Aero.Shared.WebUtilities.EndPoints;
 
 public static class AuthEndpoints
@@ -55,16 +56,16 @@ public static class AuthEndpoints
     private static async Task<Results<Ok<LoginResponseDto>, UnauthorizedHttpResult>> Login(
         LoginRequest request,
         IDataStoreContext db,
-        JwtTokenService tokenService,
+        IJwtTokenService tokenService,
+        IPasswordHasherService passwordHasherService,
         CancellationToken ct)
     {
         var user = await db.UserSet
-            .Include(u => u.UserRoles).ThenInclude(ur => ur.Role)
-            .Include(u => u.Company)
-            .FirstOrDefaultAsync(
-                u => u.Username == request.Username.ToLowerInvariant().Trim(), ct);
+            .Include(u => u.Roles)
+            .ThenInclude(ur => ur.Role)
+            .FirstOrDefaultAsync(u => u.Username == request.Username.ToLowerInvariant().Trim(), ct);
 
-        if (user is null || !PasswordHasherService.Verify(request.Password, user.PasswordHash))
+        if (user is null || !passwordHasherService.Verify(request.Password, user.PasswordHash))
             return TypedResults.Unauthorized();
 
         user.RecordLogin();
@@ -74,12 +75,15 @@ public static class AuthEndpoints
             .Where(t => t.UserId == user.Id && t.RevokedAt == null)
             .ExecuteUpdateAsync(t => t.SetProperty(x => x.RevokedAt, DateTime.UtcNow), ct);
 
-        var (token, expiresAt) = tokenService.GenerateToken(user);
+        var (token, expiresAt) = tokenService.GenerateToken(new JwtOptions
+        {
+            User = user
+        });
 
-        var rawRefreshToken = JwtTokenService.GenerateRefreshToken();
+        var rawRefreshToken = tokenService.GenerateRefreshToken();
         db.RefreshTokenSet.Add(RefreshToken.Create(
             user.Id,
-            JwtTokenService.HashRefreshToken(rawRefreshToken),
+            tokenService.HashRefreshToken(rawRefreshToken),
             DateTime.UtcNow.AddDays(_refreshTokenDays)));
 
         await db.SaveChangesAsync(ct);
@@ -90,17 +94,16 @@ public static class AuthEndpoints
     private static async Task<Results<Ok<LoginResponseDto>, UnauthorizedHttpResult>> Refresh(
         RefreshRequest request,
         IDataStoreContext db,
-        JwtTokenService tokenService,
+        IJwtTokenService tokenService,
         CancellationToken ct)
     {
-        var tokenHash = JwtTokenService.HashRefreshToken(request.RefreshToken);
+        var tokenHash = tokenService.HashRefreshToken(request.RefreshToken);
 
         var existing = await db.RefreshTokenSet
             .Include(t => t.User)
-                .ThenInclude(u => u.UserRoles)
-                    .ThenInclude(ur => ur.Role)
+            .ThenInclude(u => u.Roles)
+            .ThenInclude(ur => ur.Role)
             .Include(t => t.User)
-                .ThenInclude(u => u.Company)
             .FirstOrDefaultAsync(t => t.TokenHash == tokenHash, ct);
 
         if (existing is null || !existing.IsActive)
@@ -108,12 +111,15 @@ public static class AuthEndpoints
 
         existing.Revoke();
 
-        var (newToken, expiresAt) = tokenService.GenerateToken(existing.User);
+        var (newToken, expiresAt) = tokenService.GenerateToken(new JwtOptions
+        {
+            User = existing.User
+        });
 
-        var rawRefreshToken = JwtTokenService.GenerateRefreshToken();
+        var rawRefreshToken = tokenService.GenerateRefreshToken();
         db.RefreshTokenSet.Add(RefreshToken.Create(
             existing.UserId,
-            JwtTokenService.HashRefreshToken(rawRefreshToken),
+            tokenService.HashRefreshToken(rawRefreshToken),
             DateTime.UtcNow.AddDays(_refreshTokenDays)));
 
         await db.SaveChangesAsync(ct);
@@ -124,6 +130,7 @@ public static class AuthEndpoints
     private static async Task<Results<NoContent, BadRequest<string>, UnauthorizedHttpResult>> ChangePassword(
         ChangePasswordRequest request,
         IDataStoreContext db,
+        IPasswordHasherService passwordHasherService,
         HttpContext httpContext,
         CancellationToken ct)
     {
@@ -136,10 +143,10 @@ public static class AuthEndpoints
         var user = await db.UserSet.FindAsync([userId], ct);
         if (user is null) return TypedResults.Unauthorized();
 
-        if (!PasswordHasherService.Verify(request.CurrentPassword, user.PasswordHash))
+        if (!passwordHasherService.Verify(request.CurrentPassword, user.PasswordHash))
             return TypedResults.BadRequest("Current password is incorrect.");
 
-        var result = user.UpdatePassword(PasswordHasherService.Hash(request.NewPassword));
+        var result = user.UpdatePassword(passwordHasherService.Hash(request.NewPassword));
         if (result.IsFailure) return TypedResults.BadRequest(result.Error!);
 
         await db.SaveChangesAsync(ct);
@@ -148,12 +155,13 @@ public static class AuthEndpoints
 
     private static async Task<NoContent> Logout(
         LogoutRequest? request,
+        IJwtTokenService jwtTokenService,
         IDataStoreContext db,
         CancellationToken ct)
     {
         if (!string.IsNullOrWhiteSpace(request?.RefreshToken))
         {
-            var tokenHash = JwtTokenService.HashRefreshToken(request.RefreshToken);
+            var tokenHash = jwtTokenService.HashRefreshToken(request.RefreshToken);
             await db.RefreshTokenSet
                 .Where(t => t.TokenHash == tokenHash && t.RevokedAt == null)
                 .ExecuteUpdateAsync(t => t.SetProperty(x => x.RevokedAt, DateTime.UtcNow), ct);
@@ -167,8 +175,8 @@ public static class AuthEndpoints
             Token: token,
             RefreshToken: refreshToken,
             Username: user.Username,
-            DisplayName: user.DisplayName,
-            Roles: [.. user.GetRoleNames()],
+            RealName: user.RealName,
+            Roles: [.. user.Roles.Select(r => r.RoleName)],
             ExpiresAt: expiresAt);
 }
 

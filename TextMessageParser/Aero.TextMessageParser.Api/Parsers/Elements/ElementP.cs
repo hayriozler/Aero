@@ -12,6 +12,7 @@ public class ElementP(IElementValidator validator) : Element(Consts.P)
     {
         var validationResult = validator.Validate(elementDetail);
         if (!validationResult.IsValid) return new(this, validationResult);
+        var result = new ElementP(validator);
         if (elementDetail.ParsedText.Length < 2) return new(this, validationResult);
         int digits = 0;
         while (digits < elementDetail.ParsedText[1].Length && char.IsDigit(elementDetail.ParsedText[1].Span[digits]))
@@ -20,18 +21,18 @@ public class ElementP(IElementValidator validator) : Element(Consts.P)
         }
         if (digits > 0)
         {
-            NumberOfPassengersWithSurname = elementDetail.ParsedText[1][..digits].ToString();
-            PassengerSurname = elementDetail.ParsedText[1][digits..].ToString();
+            result.NumberOfPassengersWithSurname = elementDetail.ParsedText[1][..digits].ToString();
+            result.PassengerSurname = elementDetail.ParsedText[1][digits..].ToString();
         }
         else
         {
-            PassengerSurname = elementDetail.ParsedText[1].ToString();
+            result.PassengerSurname = elementDetail.ParsedText[1].ToString();
         }
         if (elementDetail.ParsedText.Length > 2)
-            PassengerGivenName = elementDetail.ParsedText[2].ToString();
+            result.PassengerGivenName = elementDetail.ParsedText[2].ToString();
 
         for (int i = 3; i < elementDetail.ParsedText.Length; i++)
-            AdditionalGivenNames.Add(elementDetail.ParsedText[i].ToString());
-        return new(this, validationResult);
+            result.AdditionalGivenNames.Add(elementDetail.ParsedText[i].ToString());
+        return new(result, validationResult);
     }
 }

@@ -1,13 +1,14 @@
-using Aero.Scanner.Shared.Dtos;
 using Aero.TextMessageParser.Api.Contracts;
+using Aero.TextMessageParser.Api.Dtos;
 using Aero.TextMessageParser.Api.Parsers.Elements;
 
 namespace Aero.TextMessageParser.Api.Parsers.Messages.Bsms;
 
+public sealed record DepartureBagChg();
 public sealed class BsmChg(IReadOnlyDictionary<string, Element> elementMap)
     : BsmBase<TextMessageDepartureBagChgDto>(Consts.CHG, elementMap)
 {
-    private TextMessageDepartureBagChgDto ToChgDepartureBaggageDto(long messageId, ElementResult[] elementResults)
+    private static TextMessageDepartureBagChgDto ToChgDepartureBaggageDto(long messageId, ElementResult[] elementResults)
     {
         char? sourceIndicator = null;
         char? ackRequest = null;

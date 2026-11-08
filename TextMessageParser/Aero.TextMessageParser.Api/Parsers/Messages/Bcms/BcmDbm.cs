@@ -1,5 +1,5 @@
-using Aero.Scanner.Shared.Requests.TextMessages;
 using Aero.TextMessageParser.Api.Contracts;
+using Aero.TextMessageParser.Api.Dtos;
 using Aero.TextMessageParser.Api.Parsers.Elements;
 
 namespace Aero.TextMessageParser.Api.Parsers.Messages.Bcms;
@@ -15,7 +15,7 @@ public sealed class BcmDbm(IReadOnlyDictionary<string, Element> elementMap)
 
     protected override TextMessageBcmDto Handle(long messageId, ElementResult[] elementResults)
        => ToBcmFomDto(messageId, elementResults);
-    internal TextMessageBcmDto ToBcmFomDto(long messageId, ElementResult[] elementResults)
+    internal static TextMessageBcmDto ToBcmFomDto(long messageId, ElementResult[] elementResults)
     {
         char? ackRequest = null, sourceIndicator = null;
         string sourceAirport = string.Empty;

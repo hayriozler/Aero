@@ -1,4 +1,3 @@
-using Aero.Flights.Application.Metadatas;
 using Aero.Flights.Contracts.Outbound;
 using Aero.Flights.Contracts.Topology;
 using Aero.Flights.Domain.Messaging;
@@ -8,8 +7,6 @@ using System.Text.Json;
 
 namespace Aero.Flights.Infrastructure.Persistence.Interceptors;
 
-// Registered after AuditInterceptor so audit fields are populated in the emitted payload.
-// Writes the outbox row in the same SaveChanges as the change (atomic, single transaction).
 public sealed class MetadataOutboxInterceptor(IEnumerable<IMetadataOutboxMapper> mappers, TimeProvider clock)
     : SaveChangesInterceptor
 {

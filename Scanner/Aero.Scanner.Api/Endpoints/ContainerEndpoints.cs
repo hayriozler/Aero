@@ -29,7 +29,7 @@ public static class ContainerEndpoints
 
         // Create — airport operator or ramp supervisor (handling agent)
         var createGroup = app.MapGroup("/api/containers")
-            .RequireAuthorization(Policies.AirportOrRamp);
+            .RequireAuthorization(ScannerPolicies.AirportOrRamp);
 
         createGroup.MapPost("/", Create)
             .WithName("CreateContainer")
@@ -40,7 +40,7 @@ public static class ContainerEndpoints
 
         // Modify/delete — airport operator only
         var editGroup = app.MapGroup("/api/containers")
-            .RequireAuthorization(Policies.AirportOperator);
+            .RequireAuthorization(ScannerPolicies.AirportOperator);
 
         editGroup.MapPut("/{id:int}", Update)
             .WithName("UpdateContainer")

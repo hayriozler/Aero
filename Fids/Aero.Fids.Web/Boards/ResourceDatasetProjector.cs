@@ -1,10 +1,7 @@
-using Aero.Fids.Infrastructure.Flights;
+using Aero.Fids.Domain.Flights;
 
 namespace Aero.Fids.Web.Boards;
 
-// Projects a FidsFlight down to the trimmed dataset item a resource-type client (Gate/Belt/Counter/
-// Spot) actually receives — used both for the initial snapshot (BoardEndpoints) and for diffing old
-// vs new state to decide whether a push is warranted (FlightUpdatesConsumer).
 internal static class ResourceDatasetProjector
 {
     public static string EventNameFor(string kind) => kind switch

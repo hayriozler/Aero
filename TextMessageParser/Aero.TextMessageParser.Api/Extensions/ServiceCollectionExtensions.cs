@@ -1,4 +1,8 @@
 using Aero.TextMessageParser.Api.Contracts;
+using Aero.TextMessageParser.Api.Dtos;
+using Aero.TextMessageParser.Api.Persistence;
+using Aero.TextMessageParser.Api.Requests;
+using Aero.TextMessageParser.Api.Services;
 using Aero.TextMessageParser.Api.Parsers.Elements;
 using Aero.TextMessageParser.Api.Parsers.Elements.Validators;
 using Aero.TextMessageParser.Api.Parsers.Messages;
@@ -64,6 +68,27 @@ public static class ServiceCollectionExtensions
 
         return services;
     }
+
+    public static IServiceCollection InstallProcessors(this IServiceCollection services)
+    {
+        services.AddProcessor<Bsm, TextMessageDepartureBagRequest>(Consts.BSM);
+        services.AddProcessor<BsmChg, TextMessageDepartureBagChgDto>(Consts.BSM + Consts.CHG);
+        services.AddProcessor<BsmDel, TextMessageDepartureBagDeleteDto>(Consts.BSM + Consts.DEL);
+        services.AddProcessor<Bum, TextMessageBumRequest>(Consts.BUM);
+        services.AddProcessor<BcmFom, TextMessageBcmDto>(Consts.BCM + Consts.FOM);
+        services.AddProcessor<BcmFcm, TextMessageBcmDto>(Consts.BCM + Consts.FCM);
+        services.AddProcessor<BcmBam, TextMessageBcmDto>(Consts.BCM + Consts.BAM);
+        services.AddProcessor<BcmDbm, TextMessageBcmDto>(Consts.BCM + Consts.DBM);
+
+        return services;
+    }
+
+    private static void AddProcessor<TParser, TResult>(this IServiceCollection services, string key)
+        where TParser : MessageBase<TResult>
+        => services.AddKeyedScoped<IMessageProcessor>(key, (sp, _) =>
+            new MessageProcessor<TResult>(
+                sp.GetRequiredService<TParser>(),
+                sp.GetRequiredService<TextMessageParserDbContext>()));
 
     public static IServiceCollection InstallElements(this IServiceCollection services)
     {

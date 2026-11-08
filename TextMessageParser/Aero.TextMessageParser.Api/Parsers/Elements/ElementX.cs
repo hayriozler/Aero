@@ -14,13 +14,14 @@ public class ElementX(IElementValidator validator) : Element(Consts.X)
     {
         var validationResult = validator.Validate(elementDetail);
         if (!validationResult.IsValid) return new(this, validationResult);
+        var result = new ElementX(validator);
         var parsedText = elementDetail.ParsedText;
-        SecurityScreenInstruction  = parsedText.Length > 1 ? parsedText[1].ToString() : string.Empty;
-        SecurityScreenResult       = parsedText.Length > 2 ? parsedText[2].ToString() : string.Empty;
-        SecurityScreenResultReason = parsedText.Length > 3 ? parsedText[3].ToString() : string.Empty;
-        SecurityScreenMethod       = parsedText.Length > 4 ? parsedText[4].ToString() : string.Empty;
-        Autograph                  = parsedText.Length > 5 ? parsedText[5].ToString() : string.Empty;
-        FreeText                   = parsedText.Length > 6 ? parsedText[6].ToString() : string.Empty;
-        return new(this, validationResult);
+        result.SecurityScreenInstruction  = parsedText.Length > 1 ? parsedText[1].ToString() : string.Empty;
+        result.SecurityScreenResult       = parsedText.Length > 2 ? parsedText[2].ToString() : string.Empty;
+        result.SecurityScreenResultReason = parsedText.Length > 3 ? parsedText[3].ToString() : string.Empty;
+        result.SecurityScreenMethod       = parsedText.Length > 4 ? parsedText[4].ToString() : string.Empty;
+        result.Autograph                  = parsedText.Length > 5 ? parsedText[5].ToString() : string.Empty;
+        result.FreeText                   = parsedText.Length > 6 ? parsedText[6].ToString() : string.Empty;
+        return new(result, validationResult);
     }
 }

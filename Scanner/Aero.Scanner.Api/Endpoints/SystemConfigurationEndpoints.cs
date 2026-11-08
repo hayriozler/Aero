@@ -14,7 +14,7 @@ public static class SystemConfigurationEndpoints
     public static IEndpointRouteBuilder MapSystemConfigurationEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/system-configs")
-            .RequireAuthorization(Policies.AirportOperator);
+            .RequireAuthorization(ScannerPolicies.AirportOperator);
 
         group.MapGet("/", GetAll)
             .WithName("GetAllSystemConfigurations")

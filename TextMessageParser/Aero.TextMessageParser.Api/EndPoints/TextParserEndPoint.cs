@@ -1,8 +1,8 @@
-﻿using Aero.Scanner.Shared.Requests;
-using Aero.Shared.Infrastructure.Services;
+﻿using Aero.Shared.Infrastructure.Services;
 using Aero.TextMessageParser.Api.Entities;
 using Aero.TextMessageParser.Api.Extensions;
 using Aero.TextMessageParser.Api.Persistence;
+using Aero.TextMessageParser.Api.Requests;
 
 namespace Aero.TextMessageParser.Api.EndPoints;
 

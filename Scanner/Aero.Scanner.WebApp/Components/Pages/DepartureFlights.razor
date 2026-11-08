@@ -339,7 +339,7 @@
         if (!firstRender) return;
         var authState = await AuthState.GetAuthenticationStateAsync();
         var companyType = authState.User.FindFirst("company_type")?.Value;
-        _isAirportOperator  = string.Equals(companyType, Policies.AirportOperator, StringComparison.OrdinalIgnoreCase);
+        _isAirportOperator  = string.Equals(companyType, ScannerPolicies.AirportOperator, StringComparison.OrdinalIgnoreCase);
         _isHandlingCompany  = string.Equals(companyType, "HandlingAgent", StringComparison.OrdinalIgnoreCase);
 
         await Task.WhenAll(Settings.LoadAsync(JS), Time.LoadAsync(JS));

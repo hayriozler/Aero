@@ -1,10 +1,9 @@
 using Aero.Shared.Application.Commands.Roles;
+using Aero.Shared.Domain.Enums;
 using Aero.Shared.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace Aero.Shared.Application.Handlers.Roles;
-
-public enum DeleteRoleResult { Deleted, NotFound, Protected }
 
 public sealed class DeleteRoleCommandHandler(IDataStoreContext db) : ICommandHandler<DeleteRoleCommand, DeleteRoleResult>
 {

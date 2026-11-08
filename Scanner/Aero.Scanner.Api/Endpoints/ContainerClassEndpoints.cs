@@ -14,7 +14,7 @@ public static class ContainerClassEndpoints
     public static IEndpointRouteBuilder MapContainerClassEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/container-classes")
-            .RequireAuthorization(Policies.AirportOperator);
+            .RequireAuthorization(ScannerPolicies.AirportOperator);
 
         group.MapGet("/", GetAll)
             .WithName("GetAllContainerClasses")

@@ -122,7 +122,7 @@
            
             <AuthorizeView>
                 <Authorized Context="authCtx">
-                    @if (authCtx.User.FindFirst("company_type")?.Value == Policies.AirportOperator)
+                    @if (authCtx.User.FindFirst("company_type")?.Value == ScannerPolicies.AirportOperator)
                     {
                         <NavLink href="/roles"
                                  ActiveClass="text-primary-container border-l-4 border-primary-container bg-surface-container-high"

@@ -14,6 +14,7 @@
     <ProjectReference Include="..\..\ServiceDefaults\Aero.ServiceDefaults.csproj" />
     <ProjectReference Include="..\..\Shared\Aero.Shared.Application\Aero.Shared.Application.csproj" />
     <ProjectReference Include="..\..\Shared\Aero.Shared.Infrastructure\Aero.Shared.Infrastructure.csproj" />
+    <ProjectReference Include="..\Aero.Fids.Application\Aero.Fids.Application.csproj" />
     <ProjectReference Include="..\Aero.Fids.Infrastructure\Aero.Fids.Infrastructure.csproj" />
   </ItemGroup>
 

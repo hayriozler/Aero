@@ -1,6 +1,4 @@
-using Aero.Flights.Domain.Audit.Identity;
-using Aero.Flights.Domain.Identity;
-using Aero.Flights.Infrastructure.Persistence.Configurations;
+using Aero.Shared.Domain.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 

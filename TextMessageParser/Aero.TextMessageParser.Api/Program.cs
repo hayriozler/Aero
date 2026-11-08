@@ -6,6 +6,7 @@ using Aero.Shared.Infrastructure.Persistence;
 using Aero.Shared.Infrastructure.Services;
 using Aero.Shared.WebUtilities.Middlewares;
 using Aero.TextMessageParser.Api.EndPoints;
+using Aero.TextMessageParser.Api.Extensions;
 using Aero.TextMessageParser.Api.Persistence;
 using Aero.TextMessageParser.Api.Services;
 using Microsoft.EntityFrameworkCore;
@@ -19,12 +20,10 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<QueryCollector>();
 builder.Services.AddScoped<QueryCollectorInterceptor>();
 
-builder.Services.AddHttpClient("scannerapi", client =>
-{
-    client.BaseAddress = new Uri("");
-    client.DefaultRequestHeaders.Add("Accept", "application/json");
-    client.Timeout = TimeSpan.FromSeconds(30);
-});
+builder.Services
+    .InstallElements()
+    .InstallMessages()
+    .InstallProcessors();
 
 builder.Services.Configure<SlowRequestOptions>(builder.Configuration.GetSection(SlowRequestOptions.Section));
 builder.Services.AddDbContext<TextMessageParserDbContext, TextMessageParserDbContext>((sp, opt) =>

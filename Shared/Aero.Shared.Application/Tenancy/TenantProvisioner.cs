@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Aero.Shared.Application.Tenancy;
 
-internal sealed class TenantProvisioner(
+public sealed class TenantProvisioner(
     IDbContextFactory<TenantDbContext> contextFactory,
     IStringProtector protector,
     ITenantStore store,

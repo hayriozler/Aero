@@ -1,18 +1,10 @@
 using Aero.Flights.Contracts.Metadatas;
 using Aero.Flights.Domain.Metadatas;
-using FluentValidation;
 using System.Linq.Expressions;
 
 namespace Aero.Flights.Application.Metadatas;
 
-public sealed class CompanyTypeRequestValidator : AbstractValidator<CompanyTypeRequest>
-{
-    public CompanyTypeRequestValidator()
-    {
-        RuleFor(x => x.Code).NotEmpty().MaximumLength(20);
-        RuleFor(x => x.Description).NotEmpty().MaximumLength(50);
-    }
-}
+
 
 public sealed class CompanyTypeMetadataMap : IMetadataMap<CompanyType, CompanyTypeRequest, CompanyTypeResponse>
 {

@@ -1,6 +1,6 @@
 using Aero.Flights.Application.Common;
-using Aero.Flights.Application.Flights;
 using Aero.Flights.Application.Interfaces;
+using Aero.Flights.Application.OpsFlights;
 using Aero.Flights.Domain.Ops;
 using Aero.Flights.Domain.Ops.Resources;
 using Microsoft.EntityFrameworkCore;

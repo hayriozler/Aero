@@ -7,6 +7,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Shared\Aero.Shared.Infrastructure\Aero.Shared.Infrastructure.csproj" />
+    <ProjectReference Include="..\Aero.Fids.Domain\Aero.Fids.Domain.csproj" />
   </ItemGroup>
 
 </Project>

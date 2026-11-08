@@ -16,7 +16,7 @@ public static class CompanyEndpoints
     public static IEndpointRouteBuilder MapCompanyEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/companies")
-            .RequireAuthorization(Policies.AirportOrRamp);
+            .RequireAuthorization(ScannerPolicies.AirportOrRamp);
 
         group.MapGet("/", GetAll)
             .WithName("GetAllCompanies")

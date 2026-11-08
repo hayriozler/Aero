@@ -16,7 +16,7 @@ namespace Aero.Scanner.Api.Endpoints;
 //            .Produces<ReconciliationDto>()
 //            .ProducesProblem(400)
 //            .ProducesProblem(404)
-//            .RequireAuthorization(Policies.Supervisor);
+//            .RequireAuthorization(ScannerPolicies.Supervisor);
 
 //        return app;
 //    }

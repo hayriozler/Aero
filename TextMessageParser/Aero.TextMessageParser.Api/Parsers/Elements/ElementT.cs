@@ -9,8 +9,9 @@ public class ElementT(IElementValidator validator) : Element(Consts.T)
     {
         var validationResult = validator.Validate(elementDetail);
         if (!validationResult.IsValid) return new(this, validationResult);
+        var result = new ElementT(validator);
         var parsedText = elementDetail.ParsedText;
-        BagTagPrinterId = parsedText.Length > 1 ? parsedText[1].ToString() : string.Empty;
-        return new(this, validationResult);
+        result.BagTagPrinterId = parsedText.Length > 1 ? parsedText[1].ToString() : string.Empty;
+        return new(result, validationResult);
     }
 }

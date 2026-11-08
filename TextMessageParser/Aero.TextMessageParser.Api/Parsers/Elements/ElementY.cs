@@ -10,9 +10,10 @@ public class ElementY(IElementValidator validator) : Element(Consts.Y)
     {
         var validationResult = validator.Validate(elementDetail);
         if (!validationResult.IsValid) return new(this, validationResult);
+        var result = new ElementY(validator);
         var parsedText = elementDetail.ParsedText;
-        FrequentTravellerId = parsedText.Length > 1 ? parsedText[1].ToString() : string.Empty;
-        TierId              = parsedText.Length > 2 ? parsedText[2].ToString() : string.Empty;
-        return new(this, validationResult);
+        result.FrequentTravellerId = parsedText.Length > 1 ? parsedText[1].ToString() : string.Empty;
+        result.TierId              = parsedText.Length > 2 ? parsedText[2].ToString() : string.Empty;
+        return new(result, validationResult);
     }
 }

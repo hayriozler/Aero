@@ -22,7 +22,7 @@ public static class ResourceEndpoints
     {
         var group = app.MapGroup("/api/resources")
             .WithTags("Resources")
-            .RequireAuthorization(Permissions.FlightView);
+            .RequireAuthorization(FlightPermissions.FlightView);
 
         group.MapGet("/{type}/timeline", async (
             string type,

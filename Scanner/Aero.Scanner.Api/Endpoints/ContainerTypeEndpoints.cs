@@ -14,7 +14,7 @@ public static class ContainerTypeEndpoints
     public static IEndpointRouteBuilder MapContainerTypeEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/container-types")
-            .RequireAuthorization(Policies.AirportOperator);
+            .RequireAuthorization(ScannerPolicies.AirportOperator);
 
         group.MapGet("/", GetAll)
             .WithName("GetAllContainerTypes")

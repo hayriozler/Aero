@@ -1,6 +1,7 @@
 using Aero.Flights.Api.Infrastructure;
 using Aero.Flights.Application.Common;
 using Aero.Flights.Application.Metadatas;
+using Aero.Flights.Application.Metadatas.Commands;
 using Aero.Flights.Contracts.Metadatas;
 using Aero.Flights.Domain.Identity;
 using FluentValidation;
@@ -22,7 +23,7 @@ public static class MetadataEndpoints
             HttpContext ctx,
             CancellationToken ct) =>
             ApiResult.Ok(ctx, await handler.HandleAsync(new MetadataAuditQuery<TEntity>(id), ct)))
-            .RequireAuthorization(Permissions.MetadataView);
+            .RequireAuthorization(FlightPermissions.MetadataView);
 
         group.MapPost("/", async (
             TRequest request,
@@ -37,7 +38,7 @@ public static class MetadataEndpoints
 
             var result = await handler.HandleAsync(new MetadataCreateCommand<TEntity, TRequest>(request), ct);
             return ApiResult.Created(ctx, result, $"{route}/{getRequestCode(request)}");
-        }).RequireAuthorization(Permissions.MetadataCreate);
+        }).RequireAuthorization(FlightPermissions.MetadataCreate);
 
         group.MapPut("/{id}", async (
             string id,
@@ -55,7 +56,7 @@ public static class MetadataEndpoints
             return result is null
                 ? ApiResult.NotFound(ctx, "Metadata_NOT_FOUND", $"{tag} '{id}' not found.")
                 : ApiResult.Ok(ctx, result);
-        }).RequireAuthorization(Permissions.MetadataUpdate);
+        }).RequireAuthorization(FlightPermissions.MetadataUpdate);
 
         group.MapDelete("/{id}", async (
             string id,
@@ -70,7 +71,7 @@ public static class MetadataEndpoints
                 MetadataDeleteOutcome.InUse => ApiResult.Conflict(ctx, "Metadata_IN_USE", result.Reason ?? $"{tag} '{id}' is in use and cannot be deleted."),
                 _ => ApiResult.NotFound(ctx, "Metadata_NOT_FOUND", $"{tag} '{id}' not found.")
             };
-        }).RequireAuthorization(Permissions.MetadataDelete);
+        }).RequireAuthorization(FlightPermissions.MetadataDelete);
 
         return app;
     }
@@ -92,7 +93,7 @@ public static class MetadataEndpoints
             HttpContext ctx,
             CancellationToken ct) =>
             ApiResult.Ok(ctx, await handler.HandleAsync(new MetadataListQuery<TEntity>(), ct)))
-            .RequireAuthorization(Permissions.MetadataView);
+            .RequireAuthorization(FlightPermissions.MetadataView);
 
         group.MapGet("/{id}", async (
             string id,
@@ -104,6 +105,6 @@ public static class MetadataEndpoints
             return result is null
                 ? ApiResult.NotFound(ctx, "Metadata_NOT_FOUND", $"{tag} '{id}' not found.")
                 : ApiResult.Ok(ctx, result);
-        }).RequireAuthorization(Permissions.MetadataView);
+        }).RequireAuthorization(FlightPermissions.MetadataView);
     }
 }

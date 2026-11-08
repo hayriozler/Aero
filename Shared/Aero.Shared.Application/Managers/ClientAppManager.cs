@@ -6,7 +6,7 @@ using System.Text;
 
 namespace Aero.Shared.Application.Managers;
 
-internal sealed class ClientAppManager(
+public sealed class ClientAppManager(
     IDbContextFactory<TenantDbContext> contextFactory, IStringProtector protector, TimeProvider clock) : IClientAppManager
 {
     public async Task<bool> VerifyAsync(string tenantId, string clientId, string clientSecret, CancellationToken ct)

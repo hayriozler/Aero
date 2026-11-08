@@ -1,18 +1,8 @@
 using Aero.Flights.Contracts.Metadatas;
 using Aero.Flights.Domain.Metadatas;
-using FluentValidation;
 using System.Linq.Expressions;
 
 namespace Aero.Flights.Application.Metadatas;
-
-public sealed class RunwayRequestValidator : AbstractValidator<RunwayRequest>
-{
-    public RunwayRequestValidator()
-    {
-        RuleFor(x => x.Code).NotEmpty().MaximumLength(10);
-        RuleFor(x => x.Name).MaximumLength(100);
-    }
-}
 
 public sealed class RunwayMetadataMap : IMetadataMap<Runway, RunwayRequest, RunwayResponse>
 {

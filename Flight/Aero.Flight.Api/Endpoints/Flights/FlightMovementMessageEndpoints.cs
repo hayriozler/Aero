@@ -1,6 +1,6 @@
 using Aero.Flights.Api.Infrastructure;
 using Aero.Flights.Application.Common;
-using Aero.Flights.Application.Flights.MovementMessages;
+using Aero.Flights.Application.OpsFlights.MovementMessages;
 using Aero.Flights.Contracts.Flights;
 using Aero.Flights.Domain.Identity;
 using Aero.Flights.Domain.Ops.MovementMessages;
@@ -26,6 +26,6 @@ public static class FlightMovementMessageEndpoints
             HttpContext ctx,
             CancellationToken ct) =>
             ApiResult.Ok(ctx, await handler.HandleAsync(new ListMovementMessagesQuery<TMessage>(flightId), ct)))
-            .RequireAuthorization(Permissions.FlightView);
+            .RequireAuthorization(FlightPermissions.FlightView);
     }
 }

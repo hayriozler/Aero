@@ -16,7 +16,7 @@ public static class UserEndpoints
     public static IEndpointRouteBuilder MapUserEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/users")
-            .RequireAuthorization(Policies.AirportOrRamp);
+            .RequireAuthorization(ScannerPolicies.AirportOrRamp);
 
         group.MapGet("/", GetAll)
             .WithName("GetAllUsers")

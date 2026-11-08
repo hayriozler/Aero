@@ -1,10 +1,10 @@
 ﻿using Aero.Shared.Application.Commands.Users;
+using Aero.Shared.Domain.Enums;
 using Aero.Shared.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace Aero.Shared.Application.Handlers.Users;
 
-public enum DeleteUserResult { Deleted, NotFound, Protected }
 public sealed class DeleteUserCommandHandler(IDataStoreContext db) : ICommandHandler<DeleteUserCommand, DeleteUserResult>
 {
     public async Task<DeleteUserResult> HandleAsync(DeleteUserCommand command, CancellationToken ct)

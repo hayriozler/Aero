@@ -18,7 +18,7 @@ public static class AirlineHandlingContractEndpoints
         // Both airport-operator admins/supervisors AND handling-agent supervisors can access.
         // Company-level scoping is enforced inside each handler.
         var group = app.MapGroup("/api/handling-contracts")
-            .RequireAuthorization(Policies.RamSupervisor);
+            .RequireAuthorization(ScannerPolicies.RamSupervisor);
 
         group.MapGet("/", GetAll)
             .WithName("GetAllHandlingContracts")

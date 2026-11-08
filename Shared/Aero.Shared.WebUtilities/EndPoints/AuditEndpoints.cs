@@ -1,6 +1,8 @@
 ﻿using Aero.Shared.Contracts.Dtos;
 using Aero.Shared.Domain;
+using Aero.Shared.Domain.Identity.Audits;
 using Aero.Shared.Infrastructure.Extensions;
+using Aero.Shared.Infrastructure.Persistence;
 using FluentValidation;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -36,7 +38,7 @@ public static class AuditEndpoints
     private static async Task<Results<Ok<IReadOnlyList<AuditEntryDto>>, NotFound<string>>> GetHistory(
         string entityType,
         string pk,
-        AeroScanDataContext db,
+        IDataStoreContext db,
         CancellationToken ct)
     {
         if (!_logTypesLazy.Value.TryGetValue(entityType, out var logType))

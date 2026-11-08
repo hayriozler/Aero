@@ -1,6 +1,6 @@
 using Aero.Flights.Api.Infrastructure;
 using Aero.Flights.Application.Common;
-using Aero.Flights.Application.Flights.Commands;
+using Aero.Flights.Application.OpsFlights.Commands;
 using Aero.Flights.Contracts.Flights;
 using Aero.Flights.Domain.Identity;
 using Aero.Flights.Domain.Ops;
@@ -32,7 +32,7 @@ public static class FlightFieldEndpoints
             return updated
                 ? ApiResult.Ok(ctx, true)
                 : ApiResult.NotFound(ctx, "FLIGHT_NOT_FOUND", $"Flight {flightId} not found.");
-        }).RequireAuthorization(Permissions.FlightWrite);
+        }).RequireAuthorization(FlightPermissions.FlightWrite);
 
         app.MapPut($"{basePath}/terminal", async (
             long flightId,
@@ -45,7 +45,7 @@ public static class FlightFieldEndpoints
             return updated
                 ? ApiResult.Ok(ctx, true)
                 : ApiResult.NotFound(ctx, "FLIGHT_NOT_FOUND", $"Flight {flightId} not found.");
-        }).RequireAuthorization(Permissions.FlightWrite);
+        }).RequireAuthorization(FlightPermissions.FlightWrite);
 
         app.MapPut($"{basePath}/registration", async (
             long flightId,
@@ -58,6 +58,6 @@ public static class FlightFieldEndpoints
             return updated
                 ? ApiResult.Ok(ctx, true)
                 : ApiResult.NotFound(ctx, "FLIGHT_NOT_FOUND", $"Flight {flightId} not found.");
-        }).RequireAuthorization(Permissions.FlightWrite);
+        }).RequireAuthorization(FlightPermissions.FlightWrite);
     }
 }

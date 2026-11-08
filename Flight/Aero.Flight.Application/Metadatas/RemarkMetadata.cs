@@ -1,18 +1,10 @@
 using Aero.Flights.Contracts.Metadatas;
 using Aero.Flights.Domain.Metadatas;
-using FluentValidation;
 using System.Linq.Expressions;
 
 namespace Aero.Flights.Application.Metadatas;
 
-public sealed class RemarkRequestValidator : AbstractValidator<RemarkRequest>
-{
-    public RemarkRequestValidator()
-    {
-        RuleFor(x => x.Code).NotEmpty().MaximumLength(20);
-        RuleFor(x => x.Description).MaximumLength(20);
-    }
-}
+
 
 public sealed class RemarkMetadataMap : IMetadataMap<Remark, RemarkRequest, RemarkResponse>
 {

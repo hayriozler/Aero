@@ -13,7 +13,7 @@ public static class RuleEndpoints
     {
         var group = app.MapGroup("/api/rules")
             .WithTags("Rules")
-            .RequireAuthorization(Permissions.RuleManage);
+            .RequireAuthorization(FlightPermissions.RuleManage);
 
         group.MapGet("/", async (
             IQueryHandler<GetRulesQuery, IReadOnlyList<RuleResponse>> handler,

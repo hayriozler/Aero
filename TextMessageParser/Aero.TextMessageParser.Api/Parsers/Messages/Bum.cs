@@ -1,6 +1,6 @@
-using Aero.Scanner.Shared.Requests.TextMessages;
 using Aero.TextMessageParser.Api.Contracts;
 using Aero.TextMessageParser.Api.Parsers.Elements;
+using Aero.TextMessageParser.Api.Requests;
 using Aero.TextMessageParser.Api.ValueObjects;
 
 namespace Aero.TextMessageParser.Api.Parsers.Messages;

@@ -26,7 +26,7 @@ public static class DepartureBagEndpoints
         //    .AddEndpointFilter<ValidationFilter<CheckInBagRequest>>()
         //    .Produces<BagDto>(201)
         //    .ProducesProblem(400)
-        //    .RequireAuthorization(Policies.BaggageAgent);
+        //    .RequireAuthorization(ScannerPolicies.BaggageAgent);
 
         //bags.MapPost("/{tagNumber}/offload", OffloadBag)
         //    .WithName("OffloadBag")
@@ -34,7 +34,7 @@ public static class DepartureBagEndpoints
         //    .Produces<BagDto>()
         //    .ProducesProblem(400)
         //    .ProducesProblem(404)
-        //    .RequireAuthorization(Policies.BaggageAgent);
+        //    .RequireAuthorization(ScannerPolicies.BaggageAgent);
 
         //bags.MapPost("/transfer", TransferBag)
         //    .WithName("TransferBag")
@@ -42,7 +42,7 @@ public static class DepartureBagEndpoints
         //    .Produces<BagDto>()
         //    .ProducesProblem(400)
         //    .ProducesProblem(404)
-        //    .RequireAuthorization(Policies.BaggageAgent);
+        //    .RequireAuthorization(ScannerPolicies.BaggageAgent);
 
         //bags.MapGet("/{tagNumber}/journey", GetBagJourney)
         //    .WithName("GetBagJourney")

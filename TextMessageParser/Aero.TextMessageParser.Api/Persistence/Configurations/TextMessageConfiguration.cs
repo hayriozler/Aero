@@ -16,11 +16,6 @@ internal sealed class TextMessageConfiguration : IEntityTypeConfiguration<TextMe
         .HasColumnType("BIGINT")
         .HasColumnOrder(0);
 
-        builder.Property(e => e.RemoteId)
-      .HasColumnType("TEXT")
-      .HasMaxLength(250)
-      .HasColumnOrder(1);
-
         builder.OwnsOne(e => e.Header, header =>
         {
             header.Property(e => e.Identifier)

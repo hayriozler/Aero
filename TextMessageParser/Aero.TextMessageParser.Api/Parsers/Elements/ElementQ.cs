@@ -9,8 +9,9 @@ public class ElementQ(IElementValidator validator) : Element(Consts.Q)
     {
         var validationResult = validator.Validate(elementDetail);
         if (!validationResult.IsValid) return new(this, validationResult);
+        var result = new ElementQ(validator);
         var parsedText = elementDetail.ParsedText;
-        LoadSequenceNumber = parsedText.Length > 1 ? parsedText[1].ToString() : string.Empty;
-        return new(this, validationResult);
+        result.LoadSequenceNumber = parsedText.Length > 1 ? parsedText[1].ToString() : string.Empty;
+        return new(result, validationResult);
     }
 }

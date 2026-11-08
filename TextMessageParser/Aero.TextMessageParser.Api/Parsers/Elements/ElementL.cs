@@ -9,8 +9,9 @@ public class ElementL(IElementValidator validator) : Element(Consts.L)
     {
         var validationResult = validator.Validate(elementDetail);
         if (!validationResult.IsValid) return new(this, validationResult);
+        var result = new ElementL(validator);
         var parsedText = elementDetail.ParsedText;
-        PnrAddress = parsedText.Length > 1 ? parsedText[1].ToString() : string.Empty;
-        return new(this, validationResult);
+        result.PnrAddress = parsedText.Length > 1 ? parsedText[1].ToString() : string.Empty;
+        return new(result, validationResult);
     }
 }

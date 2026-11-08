@@ -1,4 +1,3 @@
-using Aero.Flights.Application.Interfaces;
 using Aero.Flights.Domain.Metadatas;
 using Aero.Flights.Domain.Ops;
 using Aero.Flights.Domain.Ops.Delays;
@@ -6,21 +5,17 @@ using Aero.Flights.Domain.Ops.Passengers;
 using Aero.Flights.Domain.Ops.Resources;
 using Aero.Flights.Domain.Ops.Routing;
 using Aero.Flights.Domain.Ops.Services;
+using Aero.Flights.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace Aero.Flights.Application.Metadatas;
 
-// Covers every FK that points at Airline (checked against HasOne<Airline>() across all
-// configurations, not just the ones explicitly set to Restrict) — AirlineContact/AirlineLogo are
-// excluded on purpose since those cascade (they're Airline's own child rows, not a blocker).
-public sealed class AirlineUsageGuard(IAeroFlightDbContext db) : IMetadataUsageGuard<Airline>
+public sealed class AirlineUsageGuard(AeroFlightDbContext db) : IMetadataUsageGuard<Airline>
 {
     public async Task<string?> GetBlockReasonAsync(Airline entity, CancellationToken ct)
     {
         var code = entity.Id;
 
-        // AnyAsync short-circuits both in .NET (|| stops at the first true) and in Postgres
-        // (EXISTS stops scanning at the first match) — no row count needed, just in-use or not.
         var inUse =
             await db.Query<ArrivalFlight>().AnyAsync(f => f.AirlineCode == code || f.OperatingAirlineCode == code, ct)
             || await db.Query<DepartureFlight>().AnyAsync(f => f.AirlineCode == code || f.OperatingAirlineCode == code, ct)
@@ -33,7 +28,7 @@ public sealed class AirlineUsageGuard(IAeroFlightDbContext db) : IMetadataUsageG
     }
 }
 
-public sealed class FlightTypeUsageGuard(IAeroFlightDbContext db) : IMetadataUsageGuard<FlightType>
+public sealed class FlightTypeUsageGuard(AeroFlightDbContext db) : IMetadataUsageGuard<FlightType>
 {
     public async Task<string?> GetBlockReasonAsync(FlightType entity, CancellationToken ct)
     {

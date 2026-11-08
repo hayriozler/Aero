@@ -2,8 +2,6 @@
 
 public class Consts
 {
-    public readonly static char DOT = '.';
-    public readonly static char FLIGHT_NUMBER_PAD_CHAR = '0';
     public static char[] NEW_LINE_SEPERATOR => Environment.NewLine == "\r\n" ? ['\r', '\n'] : ['\n'];
     public const string BCM = "BCM"; // Baggage Control Message, it is the main message and other messages are related to it by using its identifier as secondary identifier
     public const string BAM = "BAM"; // Baggage Acknowledgement Message
@@ -45,10 +43,7 @@ public class Consts
     public const string W = ".W/";
     public const string X = ".X/";
     public const string Y = ".Y/";
-    public readonly static string LOCAL_SOURCE_INDICATOR = "LOCAL_SOURCE_INDICATOR";
-    public readonly static string AUTHORITY_LOAD_FLAG = "AUTHORITY_LOAD_FLAG";
     public static readonly string[] CHANGE_OF_STATUS = ["ACK", "NAK"];
-    public static readonly HashSet<string> PartitionableIdentifiers = [BPM, BNS, BCM, BMM];
     public static readonly string[] ACK_NAK_ARRAY = ["ACK", "NAK"];
     public static readonly string[] BAG_STATUS_CODE_ARRAY = ["NAL", "OFF", "UNS", "OND", "ONA"];
     public static readonly string[] AUTHORITY_LOAD_ARRAY = ["Y", "N"];

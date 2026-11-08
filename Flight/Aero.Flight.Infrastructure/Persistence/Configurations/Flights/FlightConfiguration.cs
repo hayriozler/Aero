@@ -1,6 +1,5 @@
 using Aero.Flights.Domain.Metadatas;
-using Aero.Flights.Infrastructure.Persistence.Configurations;
-using AeroFlight.Domain.Ops;
+using Aero.Flights.Domain.Ops;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -43,6 +42,6 @@ internal sealed class FlightConfiguration : IEntityTypeConfiguration<Flight>
         builder.HasOne<AircraftType>().WithMany().HasForeignKey(f => f.AircraftTypeCode);
         builder.HasOne<ParkPosition>().WithMany().HasForeignKey(f => f.ParkPositionCode);
         builder.HasOne<ParkPosition>().WithMany().HasForeignKey(f => f.CurrentParkPositionCode);
-        builder.HasOne<Terminal>().WithMany().HasForeignKey(f => f.TerminalCode);        
+        builder.HasOne<Terminal>().WithMany().HasForeignKey(f => f.TerminalCode);
     }
 }

@@ -15,7 +15,7 @@ public static class HandheldTerminalEndpoints
     public static IEndpointRouteBuilder MapHandheldTerminalEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/hht")
-            .RequireAuthorization(Policies.AirportOrRamp);
+            .RequireAuthorization(ScannerPolicies.AirportOrRamp);
 
         group.MapGet("/", GetAll)
             .WithName("GetAllHht")
@@ -27,7 +27,7 @@ public static class HandheldTerminalEndpoints
             .ProducesProblem(404);
 
         group.MapPost("/", Create)
-            .RequireAuthorization([Policies.AirportOperator])
+            .RequireAuthorization([ScannerPolicies.AirportOperator])
             .WithName("CreateHht")
             .AddEndpointFilter<EndPointValidationFilter<CreateHandheldTerminalRequest>>()
             .Produces<HandheldTerminalDto>(201)
@@ -36,7 +36,7 @@ public static class HandheldTerminalEndpoints
             .ProducesProblem(409);
 
         group.MapPut("/{id:int}", Update)
-            .RequireAuthorization([Policies.AirportOperator])
+            .RequireAuthorization([ScannerPolicies.AirportOperator])
             .WithName("UpdateHht")
             .AddEndpointFilter<EndPointValidationFilter<UpdateHandheldTerminalRequest>>()
             .Produces<HandheldTerminalDto>()

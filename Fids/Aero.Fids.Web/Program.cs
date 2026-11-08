@@ -1,4 +1,6 @@
+using Aero.Fids.Web.BackgroundServices;
 using Aero.Fids.Web.Boards;
+using Aero.Fids.Web.Endpoints.Boards;
 using Aero.ServiceDefaults;
 using Aero.Shared.Infrastructure.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;

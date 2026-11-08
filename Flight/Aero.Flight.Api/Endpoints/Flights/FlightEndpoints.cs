@@ -1,7 +1,7 @@
 using Aero.Flights.Api.Infrastructure;
 using Aero.Flights.Application.Common;
-using Aero.Flights.Application.Flights.Commands;
-using Aero.Flights.Application.Flights.Queries;
+using Aero.Flights.Application.OpsFlights.Commands;
+using Aero.Flights.Application.OpsFlights.Queries;
 using Aero.Flights.Contracts.Flights;
 using Aero.Flights.Contracts.Metadatas;
 using Aero.Flights.Domain.Identity;
@@ -15,7 +15,7 @@ public static class FlightEndpoints
     {
         var group = app.MapGroup("/api/flights")
             .WithTags("Flights")
-            .RequireAuthorization(Permissions.FlightView);
+            .RequireAuthorization(FlightPermissions.FlightView);
 
         group.MapGet("/", async (
             DateOnly? fromDate,
@@ -102,7 +102,7 @@ public static class FlightEndpoints
                     "A flight with this airline, flight number and date already exists."),
                 _ => ApiResult.Created(ctx, result.Flight!, $"/api/flights/{result.Flight!.Id}"),
             };
-        }).RequireAuthorization(Permissions.FlightWrite);
+        }).RequireAuthorization(FlightPermissions.FlightWrite);
 
         group.MapPost("/departures", async (
             DepartureCreateRequest request,
@@ -122,7 +122,7 @@ public static class FlightEndpoints
                     "A flight with this airline, flight number and date already exists."),
                 _ => ApiResult.Created(ctx, result.Flight!, $"/api/flights/{result.Flight!.Id}"),
             };
-        }).RequireAuthorization(Permissions.FlightWrite);
+        }).RequireAuthorization(FlightPermissions.FlightWrite);
 
         group.MapPut("/arrivals/{id:long}", async (
             long id,
@@ -144,7 +144,7 @@ public static class FlightEndpoints
                     "A flight with this airline, flight number and date already exists."),
                 _ => ApiResult.Ok(ctx, result.Flight!),
             };
-        }).RequireAuthorization(Permissions.FlightWrite);
+        }).RequireAuthorization(FlightPermissions.FlightWrite);
 
         group.MapPut("/departures/{id:long}", async (
             long id,
@@ -166,7 +166,7 @@ public static class FlightEndpoints
                     "A flight with this airline, flight number and date already exists."),
                 _ => ApiResult.Ok(ctx, result.Flight!),
             };
-        }).RequireAuthorization(Permissions.FlightWrite);
+        }).RequireAuthorization(FlightPermissions.FlightWrite);
 
         group.MapDelete("/arrivals/{id:long}", async (
             long id,
@@ -179,7 +179,7 @@ public static class FlightEndpoints
             return deleted
                 ? ApiResult.NoContent(ctx)
                 : ApiResult.NotFound(ctx, "FLIGHT_NOT_FOUND", $"Arrival flight {id} not found.");
-        }).RequireAuthorization(Permissions.FlightWrite);
+        }).RequireAuthorization(FlightPermissions.FlightWrite);
 
         group.MapDelete("/departures/{id:long}", async (
             long id,
@@ -192,7 +192,7 @@ public static class FlightEndpoints
             return deleted
                 ? ApiResult.NoContent(ctx)
                 : ApiResult.NotFound(ctx, "FLIGHT_NOT_FOUND", $"Departure flight {id} not found.");
-        }).RequireAuthorization(Permissions.FlightWrite);
+        }).RequireAuthorization(FlightPermissions.FlightWrite);
 
         group.MapPost("/arrivals/{id:long}/unlink", async (
             long id,
@@ -204,7 +204,7 @@ public static class FlightEndpoints
             return unlinked
                 ? ApiResult.NoContent(ctx)
                 : ApiResult.NotFound(ctx, "FLIGHT_NOT_LINKED", $"Arrival flight {id} not found or not linked to a departure.");
-        }).RequireAuthorization(Permissions.FlightWrite);
+        }).RequireAuthorization(FlightPermissions.FlightWrite);
 
         group.MapPost("/departures/{id:long}/unlink", async (
             long id,
@@ -216,7 +216,7 @@ public static class FlightEndpoints
             return unlinked
                 ? ApiResult.NoContent(ctx)
                 : ApiResult.NotFound(ctx, "FLIGHT_NOT_LINKED", $"Departure flight {id} not found or not linked to an arrival.");
-        }).RequireAuthorization(Permissions.FlightWrite);
+        }).RequireAuthorization(FlightPermissions.FlightWrite);
 
         group.MapPost("/arrivals/{id:long}/link", async (
             long id,
@@ -234,7 +234,7 @@ public static class FlightEndpoints
                 LinkFlightsResult.ArrivalAlreadyLinked => ApiResult.Conflict(ctx, "FLIGHT_ALREADY_LINKED", $"Arrival flight {id} is already linked. Unlink it first."),
                 _ => ApiResult.Conflict(ctx, "FLIGHT_ALREADY_LINKED", $"Departure flight {request.OtherFlightId} is already linked. Unlink it first."),
             };
-        }).RequireAuthorization(Permissions.FlightWrite);
+        }).RequireAuthorization(FlightPermissions.FlightWrite);
 
         group.MapPost("/departures/{id:long}/link", async (
             long id,
@@ -252,7 +252,7 @@ public static class FlightEndpoints
                 LinkFlightsResult.ArrivalAlreadyLinked => ApiResult.Conflict(ctx, "FLIGHT_ALREADY_LINKED", $"Arrival flight {request.OtherFlightId} is already linked. Unlink it first."),
                 _ => ApiResult.Conflict(ctx, "FLIGHT_ALREADY_LINKED", $"Departure flight {id} is already linked. Unlink it first."),
             };
-        }).RequireAuthorization(Permissions.FlightWrite);
+        }).RequireAuthorization(FlightPermissions.FlightWrite);
 
         return app;
     }

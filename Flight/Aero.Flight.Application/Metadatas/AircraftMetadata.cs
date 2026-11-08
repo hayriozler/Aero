@@ -1,22 +1,10 @@
 using Aero.Flights.Contracts.Metadatas;
 using Aero.Flights.Domain.Metadatas;
-using FluentValidation;
 using System.Linq.Expressions;
 
 namespace Aero.Flights.Application.Metadatas;
 
-public sealed class AircraftRequestValidator : AbstractValidator<AircraftRequest>
-{
-    public AircraftRequestValidator()
-    {
-        RuleFor(x => x.Code).NotEmpty().MaximumLength(20);
-        RuleFor(x => x.AircraftTypeCode).NotEmpty().MaximumLength(10);
-        RuleFor(x => x.AirlineCode).MaximumLength(3);
-        RuleFor(x => x.Owner).MaximumLength(100);
-        RuleFor(x => x.SizeCategory).MaximumLength(5);
-        RuleFor(x => x.NoiseCategory).MaximumLength(10);
-    }
-}
+
 public sealed class AircraftMetadataMap : IMetadataMap<Aircraft, AircraftRequest, AircraftResponse>
 {
     public string GetCode(Aircraft entity) => entity.Id;

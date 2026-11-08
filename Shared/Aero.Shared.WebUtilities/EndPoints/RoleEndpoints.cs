@@ -1,8 +1,14 @@
 ﻿using Aero.Shared.Application;
+using Aero.Shared.Application.Commands.RolePermissions;
 using Aero.Shared.Application.Commands.Roles;
+using Aero.Shared.Application.Queries.Audits;
+using Aero.Shared.Application.Queries.RolePermissions;
+using Aero.Shared.Application.Queries.Roles;
 using Aero.Shared.Contracts.Requests;
 using Aero.Shared.Contracts.Responses;
+using Aero.Shared.Domain.Enums;
 using Aero.Shared.Domain.Identity;
+using Aero.Shared.Domain.Identity.Audits;
 using FluentValidation;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -27,15 +33,15 @@ public static class RoleEndpoints
             ApiResult.Ok(ctx, await handler.HandleAsync(new GetRolesQuery(), ct)))
             .RequireAuthorization(Permissions.RoleManage);
 
-        group.MapGet("/{id:int}", async (
-            int id,
+        group.MapGet("/{name}", async (
+            string name,
             IQueryHandler<GetRoleQuery, RoleResponse?> handler,
             HttpContext ctx,
             CancellationToken ct) =>
         {
-            var result = await handler.HandleAsync(new GetRoleQuery(id), ct);
+            var result = await handler.HandleAsync(new GetRoleQuery(name), ct);
             return result is null
-                ? ApiResult.NotFound(ctx, "ROLE_NOT_FOUND", $"Role {id} not found.")
+                ? ApiResult.NotFound(ctx, "ROLE_NOT_FOUND", $"Role {name} not found.")
                 : ApiResult.Ok(ctx, result);
         }).RequireAuthorization(Permissions.RoleManage);
 
@@ -51,56 +57,56 @@ public static class RoleEndpoints
                 return ApiResult.ValidationFailed(ctx, validation);
 
             var result = await handler.HandleAsync(command, ct);
-            return ApiResult.Created(ctx, result, $"/api/roles/{result.Id}");
+            return ApiResult.Created(ctx, result, $"/api/roles/{result.Name}");
         });
 
         group.MapPut("/{id:int}", async (
-            int id,
+            string name,
             UpdateRoleCommand command,
             ICommandHandler<UpdateRoleCommand, RoleResponse?> handler,
             IValidator<UpdateRoleCommand> validator,
             HttpContext ctx,
             CancellationToken ct) =>
         {
-            var validation = await validator.ValidateAsync(command with { Id = id }, ct);
+            var validation = await validator.ValidateAsync(command with { Name = name }, ct);
             if (!validation.IsValid)
                 return ApiResult.ValidationFailed(ctx, validation);
 
-            var result = await handler.HandleAsync(command with { Id = id }, ct);
+            var result = await handler.HandleAsync(command with { Name = name }, ct);
             return result is null
-                ? ApiResult.NotFound(ctx, "ROLE_NOT_FOUND", $"Role {id} not found.")
+                ? ApiResult.NotFound(ctx, "ROLE_NOT_FOUND", $"Role {name} not found.")
                 : ApiResult.Ok(ctx, result);
         });
 
-        group.MapGet("/{id:int}/permissions", async (
-            int id,
+        group.MapGet("/{roleName}/permissions", async (
+            string roleName,
             IQueryHandler<GetRolePermissionsQuery, IReadOnlyList<string>> handler,
             HttpContext ctx,
             CancellationToken ct) =>
-            ApiResult.Ok(ctx, await handler.HandleAsync(new GetRolePermissionsQuery(id), ct)))
+            ApiResult.Ok(ctx, await handler.HandleAsync(new GetRolePermissionsQuery(roleName), ct)))
             .RequireAuthorization(Permissions.RoleManage);
 
-        group.MapPut("/{id:int}/permissions", async (
-            int id,
+        group.MapPut("/{roleName}/permissions", async (
+            string roleName,
             SetPermissionsRequest request,
             ICommandHandler<SetRolePermissionsCommand> handler,
             HttpContext ctx,
             CancellationToken ct) =>
         {
-            await handler.HandleAsync(new SetRolePermissionsCommand(id, request.PermissionCodes), ct);
+            await handler.HandleAsync(new SetRolePermissionsCommand(roleName, request.PermissionCodes), ct);
             return ApiResult.NoContent(ctx);
         }).RequireAuthorization(Permissions.RoleManage);
 
-        group.MapDelete("/{id:int}", async (
-            int id,
+        group.MapDelete("/{name}", async (
+            string name,
             ICommandHandler<DeleteRoleCommand, DeleteRoleResult> handler,
             HttpContext ctx,
             CancellationToken ct) =>
         {
-            var result = await handler.HandleAsync(new DeleteRoleCommand(id), ct);
+            var result = await handler.HandleAsync(new DeleteRoleCommand(name), ct);
             return result switch
             {
-                DeleteRoleResult.NotFound => ApiResult.NotFound(ctx, "ROLE_NOT_FOUND", $"Role {id} not found."),
+                DeleteRoleResult.NotFound => ApiResult.NotFound(ctx, "ROLE_NOT_FOUND", $"Role {name} not found."),
                 DeleteRoleResult.Protected => ApiResult.Conflict(ctx, "ROLE_PROTECTED", "The default Admin role cannot be deleted."),
                 _ => ApiResult.NoContent(ctx),
             };
@@ -108,10 +114,10 @@ public static class RoleEndpoints
 
         group.MapGet("/{id:int}/audit", async (
             int id,
-            IQueryHandler<MetadataAuditQuery<Role>, IReadOnlyList<AuditEntryResponse>> handler,
+            IQueryHandler<AuditQuery<Role>, IReadOnlyList<AuditEntryResponse>> handler,
             HttpContext ctx,
             CancellationToken ct) =>
-            ApiResult.Ok(ctx, await handler.HandleAsync(new MetadataAuditQuery<Role>(id.ToString()), ct)))
+            ApiResult.Ok(ctx, await handler.HandleAsync(new AuditQuery<Role>(id.ToString()), ct)))
             .RequireAuthorization(Permissions.RoleManage);
 
         return app;

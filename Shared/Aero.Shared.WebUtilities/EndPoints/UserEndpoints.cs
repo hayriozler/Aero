@@ -1,7 +1,13 @@
 ﻿using Aero.Shared.Application;
+using Aero.Shared.Application.Commands.UserRoles;
+using Aero.Shared.Application.Commands.Users;
+using Aero.Shared.Application.Queries.Audits;
 using Aero.Shared.Application.Queries.Users;
+using Aero.Shared.Contracts.Requests;
 using Aero.Shared.Contracts.Responses;
+using Aero.Shared.Domain.Enums;
 using Aero.Shared.Domain.Identity;
+using Aero.Shared.Domain.Identity.Audits;
 using FluentValidation;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -62,25 +68,25 @@ public static class UserEndpoints
                 : ApiResult.Ok(ctx, result);
         });
 
-        group.MapPost("/{id:int}/roles", async (
-            int id,
-            AssignRoleRequest request,
-            ICommandHandler<AssignRoleCommand> handler,
+        group.MapPost("{userid:int}/roles", async (
+            int userId,
+            AssignUserRoleRequest request,
+            ICommandHandler<AssignUserRoleCommand> handler,
             HttpContext ctx,
             CancellationToken ct) =>
         {
-            await handler.HandleAsync(new AssignRoleCommand(id, request.RoleId), ct);
+            await handler.HandleAsync(new AssignUserRoleCommand(userId, request.RoleName), ct);
             return ApiResult.NoContent(ctx);
         });
 
-        group.MapDelete("/{id:int}/roles/{roleId:int}", async (
-            int id,
-            int roleId,
-            ICommandHandler<RemoveRoleCommand> handler,
+        group.MapDelete("/{userId:int}/roles/{roleName}", async (
+            int userId,
+            string roleName,
+            ICommandHandler<RemoveUserRoleCommand> handler,
             HttpContext ctx,
             CancellationToken ct) =>
         {
-            await handler.HandleAsync(new RemoveRoleCommand(id, roleId), ct);
+            await handler.HandleAsync(new RemoveUserRoleCommand(userId, roleName), ct);
             return ApiResult.NoContent(ctx);
         });
 
@@ -99,12 +105,12 @@ public static class UserEndpoints
             };
         }).RequireAuthorization(Permissions.UserManage);
 
-        group.MapGet("/{id:int}/audit", async (
+        group.MapGet("/{id:int}/audits", async (
             int id,
-            IQueryHandler<MetadataAuditQuery<User>, IReadOnlyList<AuditEntryResponse>> handler,
+            IQueryHandler<AuditQuery<User>, IReadOnlyList<AuditEntryResponse>> handler,
             HttpContext ctx,
             CancellationToken ct) =>
-            ApiResult.Ok(ctx, await handler.HandleAsync(new MetadataAuditQuery<User>(id.ToString()), ct)))
+            ApiResult.Ok(ctx, await handler.HandleAsync(new AuditQuery<User>(id.ToString()), ct)))
             .RequireAuthorization(Permissions.UserManage);
 
         return app;

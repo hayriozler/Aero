@@ -1,18 +1,10 @@
 using Aero.Flights.Contracts.Metadatas;
 using Aero.Flights.Domain.Metadatas;
-using FluentValidation;
 using System.Linq.Expressions;
 
 namespace Aero.Flights.Application.Metadatas;
 
-public sealed class TerminalRequestValidator : AbstractValidator<TerminalRequest>
-{
-    public TerminalRequestValidator()
-    {
-        RuleFor(x => x.Code).NotEmpty().MaximumLength(10);
-        RuleFor(x => x.Description).MaximumLength(200);
-    }
-}
+
 
 public sealed class TerminalMetadataMap : IMetadataMap<Terminal, TerminalRequest, TerminalResponse>
 {

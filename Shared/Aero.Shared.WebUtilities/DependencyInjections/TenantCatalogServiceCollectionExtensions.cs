@@ -1,7 +1,9 @@
 ﻿using Aero.Shared.Application.Managers;
 using Aero.Shared.Application.Tenancy;
 using Aero.Shared.Infrastructure.Services;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Aero.Shared.WebUtilities.DependencyInjections;
 

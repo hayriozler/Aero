@@ -1,21 +1,12 @@
-using Aero.Fids.Infrastructure.Boards;
+using Aero.Fids.Application.Clients;
+using Aero.Fids.Application.DisplayClients;
+using Aero.Fids.Application.FieldMappings;
+using Aero.Fids.Domain.Boards;
+using Aero.Fids.Web.Endpoints.Boards;
 using Microsoft.AspNetCore.SignalR;
 
 namespace Aero.Fids.Web.Boards;
 
-// A display client only ever identifies itself by tenant + name; its DisplayClient row (see
-// DisplayClientRegistry) fully resolves what it shows — the physical screen carries no
-// configuration of its own, and there is no anonymous/unregistered connection mode. A flight-list
-// Type (DepartureFlightList/ArrivalFlightList/FullFlightList) is whole-airport, shared by every
-// screen of that Type. A resource Type (Gate/Counter/DepartureBelt/ArrivalBelt/Spot) with a
-// ResourceCode is per physical instance; the same Type with no ResourceCode is an overview of every
-// code of that kind — either way, the server has already grouped/filtered everything by the time it
-// reaches the client (see ResourceDatasetProjector), which only ever renders.
-//
-// This hub is the entire client-facing surface for board data — no REST fallback (see
-// BoardEndpoints). A client that connects gets its initial snapshot pushed here, then deltas via
-// "flightUpdated" (flight-list boards), "gateUpdated"/"beltUpdated"/"counterUpdated"/"spotUpdated"
-// (single-instance resource boards), or repeated "boardSnapshot" full replaces (overview boards).
 public sealed class BoardHub(
     IConnectedClientsRegistry connectedClients, IDisplayClientRegistry displayClients,
     IFlightBoardStore store, IFlightBoardBootstrapper bootstrapper, IFieldMappingRegistry fieldMappings) : Hub

@@ -151,7 +151,7 @@
         var authState = await AuthState.GetAuthenticationStateAsync();
         _isAirportOperator = string.Equals(
             authState.User.FindFirst("company_type")?.Value,
-            Policies.AirportOperator, StringComparison.OrdinalIgnoreCase);
+            ScannerPolicies.AirportOperator, StringComparison.OrdinalIgnoreCase);
 
         if (!_isAirportOperator) return;
 

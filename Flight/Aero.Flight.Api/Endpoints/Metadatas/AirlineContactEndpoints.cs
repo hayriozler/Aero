@@ -20,7 +20,7 @@ public static class AirlineContactEndpoints
             HttpContext ctx,
             CancellationToken ct) =>
             ApiResult.Ok(ctx, await handler.HandleAsync(new ListAirlineContactsQuery(code), ct)))
-            .RequireAuthorization(Permissions.MetadataView);
+            .RequireAuthorization(FlightPermissions.MetadataView);
 
         group.MapPost("/", async (
             string code,
@@ -36,7 +36,7 @@ public static class AirlineContactEndpoints
 
             var result = await handler.HandleAsync(new AddAirlineContactCommand(code, request), ct);
             return ApiResult.Created(ctx, result, $"{basePath.Replace("{code}", code)}/{result.Id}");
-        }).RequireAuthorization(Permissions.MetadataCreate);
+        }).RequireAuthorization(FlightPermissions.MetadataCreate);
 
         group.MapPut("/{id:int}", async (
             string code,
@@ -55,7 +55,7 @@ public static class AirlineContactEndpoints
             return result is null
                 ? ApiResult.NotFound(ctx, "AIRLINE_CONTACT_NOT_FOUND", $"Airline contact {id} not found.")
                 : ApiResult.Ok(ctx, result);
-        }).RequireAuthorization(Permissions.MetadataUpdate);
+        }).RequireAuthorization(FlightPermissions.MetadataUpdate);
 
         group.MapDelete("/{id:int}", async (
             string code,
@@ -68,7 +68,7 @@ public static class AirlineContactEndpoints
             return deleted
                 ? ApiResult.NoContent(ctx)
                 : ApiResult.NotFound(ctx, "AIRLINE_CONTACT_NOT_FOUND", $"Airline contact {id} not found.");
-        }).RequireAuthorization(Permissions.MetadataDelete);
+        }).RequireAuthorization(FlightPermissions.MetadataDelete);
 
         return app;
     }

@@ -242,7 +242,7 @@
         var authState = await AuthState.GetAuthenticationStateAsync();
         var user = authState.User;
         var companyType = user.FindFirst("company_type")?.Value ?? string.Empty;
-        _isAirportOperator = string.Equals(companyType, Policies.AirportOperator, StringComparison.OrdinalIgnoreCase);
+        _isAirportOperator = string.Equals(companyType, ScannerPolicies.AirportOperator, StringComparison.OrdinalIgnoreCase);
         var companyCode = user.FindFirst("company_code");
         if (companyCode is not null)
             _myCompanyCode = companyCode.Value;

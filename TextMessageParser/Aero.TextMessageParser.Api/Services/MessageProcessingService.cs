@@ -1,7 +1,6 @@
 using Aero.Shared.Infrastructure.Services;
 using Aero.TextMessageParser.Api.Contracts;
 using Aero.TextMessageParser.Api.Entities;
-using Aero.TextMessageParser.Api.Parsers;
 using Aero.TextMessageParser.Api.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,8 +8,7 @@ namespace Aero.TextMessageParser.Api.Services;
 
 public class MessageProcessingService(
     LoggerService<MessageProcessingService> logger,
-    IServiceScopeFactory serviceFactory,
-    IReadOnlyDictionary<string, IMessageParserDispatcher> dispatcherMap) : BackgroundService
+    IServiceScopeFactory serviceFactory) : BackgroundService
 {
     private const int _batchSize = 20;
     private static readonly TimeSpan _interval = TimeSpan.FromSeconds(5);
@@ -71,7 +69,7 @@ public class MessageProcessingService(
         {
             try
             {
-                var isSuccess = await DispatchMessageAsync(msg, textParserDataContext, cancellationToken);
+                var isSuccess = await ProcessMessageAsync(msg, scope.ServiceProvider, textParserDataContext, cancellationToken);
                 if (isSuccess)
                 {
                     msg.Status = "PROCESSED";
@@ -94,14 +92,16 @@ public class MessageProcessingService(
         }
     }
 
-    private async Task<bool> DispatchMessageAsync(
+    private async Task<bool> ProcessMessageAsync(
         TextMessage message,
+        IServiceProvider scopedServices,
         TextMessageParserDbContext textParserDataContext,
         CancellationToken cancellationToken)
     {
         var key = message.Header.Identifier + message.Header.SecondaryIdentifier;
 
-        if (!dispatcherMap.TryGetValue(key, out var dispatcher))
+        var processor = scopedServices.GetKeyedService<IMessageProcessor>(key);
+        if (processor is null)
         {
             textParserDataContext.TextMessageErrorSet.Add(TextMessageError.Create(
                 message.Id,
@@ -111,7 +111,7 @@ public class MessageProcessingService(
             return false;
         }
 
-        return await dispatcher.DispatchAsync(message, cancellationToken);
+        return await processor.ProcessAsync(message, cancellationToken);
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)

@@ -1,4 +1,4 @@
-using Aero.Fids.Web.Services;
+using Aero.Fids.Application.DisplayClients;
 
 namespace Aero.Fids.Web.Endpoints.DisplayClients;
 

@@ -18,6 +18,8 @@
     <ProjectReference Include="..\..\Shared\Aero.Shared.Application\Aero.Shared.Application.csproj" />
     <ProjectReference Include="..\..\Shared\Aero.Shared.Domain\Aero.Shared.Domain.csproj" />
     <ProjectReference Include="..\..\Shared\Aero.Shared.Infrastructure\Aero.Shared.Infrastructure.csproj" />
+    <ProjectReference Include="..\Aero.Flight.Contracts\Aero.Flights.Contracts.csproj" />
+    <ProjectReference Include="..\Aero.Flight.Domain\Aero.Flights.Domain.csproj" />
   </ItemGroup>
 
 </Project>

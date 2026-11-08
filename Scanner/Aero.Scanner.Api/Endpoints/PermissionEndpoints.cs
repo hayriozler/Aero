@@ -15,7 +15,7 @@ public static class PermissionEndpoints
     public static IEndpointRouteBuilder MapPermissionEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/permissions")
-            .RequireAuthorization(Policies.AirportOperator);
+            .RequireAuthorization(ScannerPolicies.AirportOperator);
 
         group.MapGet("/", GetAll)
             .WithName("GetAllPermissions")

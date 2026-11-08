@@ -1,18 +1,10 @@
 using Aero.Flights.Contracts.Metadatas;
 using Aero.Flights.Domain.Metadatas;
-using FluentValidation;
 using System.Linq.Expressions;
 
 namespace Aero.Flights.Application.Metadatas;
 
-public sealed class DepartureBeltRequestValidator : AbstractValidator<DepartureBeltRequest>
-{
-    public DepartureBeltRequestValidator()
-    {
-        RuleFor(x => x.Code).NotEmpty().MaximumLength(10);
-        RuleFor(x => x.Description).MaximumLength(200);
-    }
-}
+
 
 public sealed class DepartureBeltMetadataMap
     : IMetadataMap<DepartureBelt, DepartureBeltRequest, DepartureBeltResponse>

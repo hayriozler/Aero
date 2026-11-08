@@ -20,7 +20,7 @@ public static class AirportImageEndpoints
             HttpContext ctx,
             CancellationToken ct) =>
             ApiResult.Ok(ctx, await handler.HandleAsync(new ListAirportImagesQuery(code), ct)))
-            .RequireAuthorization(Permissions.MetadataView);
+            .RequireAuthorization(FlightPermissions.MetadataView);
 
         group.MapGet("/{id:int}", async (
             string code,
@@ -33,7 +33,7 @@ public static class AirportImageEndpoints
             return image is null
                 ? ApiResult.NotFound(ctx, "AIRPORT_IMAGE_NOT_FOUND", $"Airport image {id} not found.")
                 : Results.Bytes(image.Data, image.ContentType);
-        }).RequireAuthorization(Permissions.MetadataView);
+        }).RequireAuthorization(FlightPermissions.MetadataView);
 
         group.MapPost("/", async (
             string code,
@@ -52,7 +52,7 @@ public static class AirportImageEndpoints
 
             var result = await handler.HandleAsync(new AddAirportImageCommand(code, stream.ToArray(), file.ContentType, displayOrder), ct);
             return ApiResult.Created(ctx, result, $"{basePath.Replace("{code}", code)}/{result.Id}");
-        }).RequireAuthorization(Permissions.MetadataCreate).DisableAntiforgery();
+        }).RequireAuthorization(FlightPermissions.MetadataCreate).DisableAntiforgery();
 
         group.MapDelete("/{id:int}", async (
             string code,
@@ -65,7 +65,7 @@ public static class AirportImageEndpoints
             return deleted
                 ? ApiResult.NoContent(ctx)
                 : ApiResult.NotFound(ctx, "AIRPORT_IMAGE_NOT_FOUND", $"Airport image {id} not found.");
-        }).RequireAuthorization(Permissions.MetadataDelete);
+        }).RequireAuthorization(FlightPermissions.MetadataDelete);
 
         return app;
     }

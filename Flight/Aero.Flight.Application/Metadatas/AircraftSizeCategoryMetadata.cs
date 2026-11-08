@@ -1,18 +1,10 @@
 using Aero.Flights.Contracts.Metadatas;
 using Aero.Flights.Domain.Metadatas;
-using FluentValidation;
 using System.Linq.Expressions;
 
 namespace Aero.Flights.Application.Metadatas;
 
-public sealed class AircraftSizeCategoryRequestValidator : AbstractValidator<AircraftSizeCategoryRequest>
-{
-    public AircraftSizeCategoryRequestValidator()
-    {
-        RuleFor(x => x.Code).NotEmpty().MaximumLength(20);
-        RuleFor(x => x.Description).NotEmpty().MaximumLength(200);
-    }
-}
+
 
 public sealed class AircraftSizeCategoryMetadataMap
     : IMetadataMap<AircraftSizeCategory, AircraftSizeCategoryRequest, AircraftSizeCategoryResponse>

@@ -1,4 +1,5 @@
 using Aero.TextMessageParser.Api.Contracts;
+using Aero.TextMessageParser.Api.Extensions;
 
 namespace Aero.TextMessageParser.Api.Parsers.Elements.Validators;
 

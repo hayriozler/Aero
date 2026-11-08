@@ -1,4 +1,4 @@
-using Aero.Flights.Domain.Identity;
+using Aero.Shared.Domain.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 

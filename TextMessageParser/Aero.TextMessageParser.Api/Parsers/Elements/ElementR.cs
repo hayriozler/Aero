@@ -9,8 +9,9 @@ public class ElementR(IElementValidator validator) : Element(Consts.R)
     {
         var validationResult = validator.Validate(elementDetail);
         if (!validationResult.IsValid) return new(this, validationResult);
+        var result = new ElementR(validator);
         var parsedText = elementDetail.ParsedText;
-        FreeText = parsedText.Length > 1 ? parsedText[1].ToString() : string.Empty;
-        return new(this, validationResult);
+        result.FreeText = parsedText.Length > 1 ? parsedText[1].ToString() : string.Empty;
+        return new(result, validationResult);
     }
 }

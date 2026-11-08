@@ -19,7 +19,7 @@ public static class DashboardEndpoints
     public static IEndpointRouteBuilder MapDashboardEndpoints(this IEndpointRouteBuilder app)
     {
         var dashboard = app.MapGroup("/api/dashboard")
-            .RequireAuthorization(Policies.AirportOrRamp);
+            .RequireAuthorization(ScannerPolicies.AirportOrRamp);
 
         dashboard.MapGet("/summary", GetSummary)
             .WithName("GetDashboardSummary")

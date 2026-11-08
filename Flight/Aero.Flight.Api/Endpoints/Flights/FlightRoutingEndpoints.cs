@@ -1,6 +1,6 @@
 using Aero.Flights.Api.Infrastructure;
 using Aero.Flights.Application.Common;
-using Aero.Flights.Application.Flights.Routings;
+using Aero.Flights.Application.OpsFlights.Routings;
 using Aero.Flights.Contracts.Flights;
 using Aero.Flights.Domain.Identity;
 using Aero.Flights.Domain.Ops.Routing;
@@ -27,7 +27,7 @@ public static class FlightRoutingEndpoints
             HttpContext ctx,
             CancellationToken ct) =>
             ApiResult.Ok(ctx, await handler.HandleAsync(new ListRoutingsQuery<TRouting>(flightId), ct)))
-            .RequireAuthorization(Permissions.FlightView);
+            .RequireAuthorization(FlightPermissions.FlightView);
 
         app.MapPost(basePath, async (
             long flightId,
@@ -43,7 +43,7 @@ public static class FlightRoutingEndpoints
 
             var result = await handler.HandleAsync(new AddRoutingCommand<TRouting>(flightId, request), ct);
             return ApiResult.Created(ctx, result.Routing!, $"{basePath}/{result.Routing!.Id}");
-        }).RequireAuthorization(Permissions.FlightWrite);
+        }).RequireAuthorization(FlightPermissions.FlightWrite);
 
         app.MapPut($"{basePath}/{{routingId:long}}", async (
             long flightId,
@@ -62,7 +62,7 @@ public static class FlightRoutingEndpoints
             return result is null
                 ? ApiResult.NotFound(ctx, "ROUTING_NOT_FOUND", $"OpsRouting {routingId} not found.")
                 : ApiResult.Ok(ctx, result);
-        }).RequireAuthorization(Permissions.FlightWrite);
+        }).RequireAuthorization(FlightPermissions.FlightWrite);
 
         app.MapDelete($"{basePath}/{{routingId:long}}", async (
             long flightId,
@@ -78,6 +78,6 @@ public static class FlightRoutingEndpoints
                 DeleteRoutingOutcome.NotFound => ApiResult.NotFound(ctx, "ROUTING_NOT_FOUND", $"OpsRouting {routingId} not found."),
                 _ => ApiResult.Conflict(ctx, "LAST_ROUTING_LEG", "Cannot delete the only remaining routing leg."),
             };
-        }).RequireAuthorization(Permissions.FlightWrite);
+        }).RequireAuthorization(FlightPermissions.FlightWrite);
     }
 }

@@ -1,19 +1,14 @@
-using System.Security.Claims;
-using System.Text.Json;
-using System.Text.Json.Serialization.Metadata;
 using Aero.Flights.Contracts.Outbound;
-using Aero.Flights.Contracts.Topology;
 using Aero.Flights.Domain.Common;
-using Aero.Flights.Domain.Configuration;
-using Aero.Flights.Domain.Messaging;
 using Aero.Flights.Domain.Ops;
-using Aero.Flights.Domain.Ops.Passengers;
 using Aero.Flights.Domain.Ops.Resources;
-using Aero.Flights.Domain.Ops.Routing;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using System.Security.Claims;
+using System.Text.Json;
+using System.Text.Json.Serialization.Metadata;
 
 namespace Aero.Flights.Infrastructure.Persistence.Interceptors;
 
@@ -36,7 +31,7 @@ public sealed class FlightOutboxInterceptor(IHttpContextAccessor httpContextAcce
             if (typeInfo.Properties[i].Name is "arrivalFlight" or "departureFlight")
                 typeInfo.Properties.RemoveAt(i);
         }
-    }    
+    }
 
     public override async ValueTask<InterceptionResult<int>> SavingChangesAsync(
         DbContextEventData eventData, InterceptionResult<int> result, CancellationToken ct = default)
@@ -101,7 +96,7 @@ public sealed class FlightOutboxInterceptor(IHttpContextAccessor httpContextAcce
             return;
 
         var changedBy = ResolveUser();
-        var TimeZoneManager = await ResolveTimeZoneManagerAsync(context, ct);
+        var timeZoneManager = await ResolveTimeZoneManagerAsync(context, ct);
 
         foreach (var ((flightType, flightId), group) in groups)
         {
@@ -126,9 +121,9 @@ public sealed class FlightOutboxInterceptor(IHttpContextAccessor httpContextAcce
             var changes = group.Changes ?? [];
 
             FlightChanged payload = isArrival
-                ? new ArrivalFlightChanged(Guid.NewGuid(), routingKey, now, changedBy, TimeZoneManager, flightJson, changes,
+                ? new ArrivalFlightChanged(Guid.NewGuid(), routingKey, now, changedBy, timeZoneManager, flightJson, changes,
                     group.GatesResources, group.BeltsResources, group.ParkPositionsResources, group.RoutingsResources, group.PassengersResources)
-                : new DepartureFlightChanged(Guid.NewGuid(), routingKey, now, changedBy, TimeZoneManager, flightJson, changes,
+                : new DepartureFlightChanged(Guid.NewGuid(), routingKey, now, changedBy, timeZoneManager, flightJson, changes,
                     group.GatesResources, group.BeltsResources, group.ParkPositionsResources, group.RoutingsResources, group.CountersResources, group.PassengersResources);
 
             context.Add(OutboxMessage.Create(ExchangeNames.Flights, routingKey, payload.GetType().Name,
@@ -211,10 +206,6 @@ public sealed class FlightOutboxInterceptor(IHttpContextAccessor httpContextAcce
         return ToResourceChanged(MergeEntities(dbRows, tracked, r => r.Id));
     }
 
-    // Combines the already-persisted (pre-transaction) rows with whatever this transaction touched:
-    // Modified rows replace their DB counterpart, Deleted rows drop out entirely (they no longer
-    // exist), Added rows (no real id assigned yet at this point) are always included. Each surviving
-    // row is tagged with what happened to it this transaction, or "unchanged" if it wasn't touched.
     private static List<(string Operation, TEntity Entity)> MergeEntities<TEntity>(
         List<TEntity> dbRows, List<(EntityState State, TEntity Entity)> tracked, Func<TEntity, long> idOf)
         where TEntity : notnull
@@ -356,10 +347,6 @@ public sealed class FlightOutboxInterceptor(IHttpContextAccessor httpContextAcce
         ?? httpContextAccessor.HttpContext?.User.FindFirstValue("unique_name")
         ?? "system";
 
-    // Read straight off the DbContext already in hand rather than IAeroConfigService — that
-    // service depends on IAeroFlightDbContext, and this interceptor is constructed while AeroFlightDbContext
-    // itself is still being built (inside its own options factory), so injecting it here would
-    // be a circular dependency.
     private static async Task<string> ResolveTimeZoneManagerAsync(DbContext context, CancellationToken ct) =>
         await context.Set<AeroConfiguration>()
             .Where(c => c.ConfigurationName == "Display.TimeZone")

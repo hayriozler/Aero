@@ -99,7 +99,7 @@
             await LoadAsync();
     }
 
-    private async Task OpenEditAsync(FidsUserResponse existing)
+    private async Task OpenEditAsync(UserResponse existing)
     {
         var parameters = new DialogParameters<EditFidsUserDialog> { { x => x.Existing, existing } };
         var dialog = await DialogService.ShowAsync<EditFidsUserDialog>($"Edit {existing.Username}", parameters, _dialogOptions);

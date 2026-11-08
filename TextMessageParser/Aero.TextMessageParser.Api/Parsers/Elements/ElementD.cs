@@ -14,14 +14,15 @@ public class ElementD(IElementValidator validator) : Element(Consts.D)
     {
         var validationResult = validator.Validate(elementDetail);
         if (!validationResult.IsValid) return new(this, validationResult);
+        var result = new ElementD(validator);
         var parsedText = elementDetail.ParsedText;
 
-        BagCheckInLocationIdentifier  = parsedText.Length > 1 ? parsedText[1].ToString() : string.Empty;
-        BagCheckInLocationDescription = parsedText.Length > 2 ? parsedText[2].ToString() : string.Empty;
-        BagCheckInDate  = parsedText.Length > 3 ? parsedText[3].ToString() : string.Empty;
-        BagCheckInTime  = parsedText.Length > 4 ? parsedText[4].ToString() : string.Empty;
-        CarriageMedium  = parsedText.Length > 5 ? parsedText[5].ToString() : string.Empty;
-        TransportId     = parsedText.Length > 6 ? parsedText[6].ToString() : string.Empty;
-        return new(this, validationResult);
+        result.BagCheckInLocationIdentifier  = parsedText.Length > 1 ? parsedText[1].ToString() : string.Empty;
+        result.BagCheckInLocationDescription = parsedText.Length > 2 ? parsedText[2].ToString() : string.Empty;
+        result.BagCheckInDate  = parsedText.Length > 3 ? parsedText[3].ToString() : string.Empty;
+        result.BagCheckInTime  = parsedText.Length > 4 ? parsedText[4].ToString() : string.Empty;
+        result.CarriageMedium  = parsedText.Length > 5 ? parsedText[5].ToString() : string.Empty;
+        result.TransportId     = parsedText.Length > 6 ? parsedText[6].ToString() : string.Empty;
+        return new(result, validationResult);
     }
 }

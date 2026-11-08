@@ -33,22 +33,22 @@ public static class InstallServices
             });
         //services.AddSingleton<IAuthorizationHandler, DebugRoleHandler>();
         services.AddAuthorizationBuilder()
-            .AddPolicy(Policies.BaggageAgent, p =>
+            .AddPolicy(ScannerPolicies.BaggageAgent, p =>
             {
                 p.RequireRole(SystemDefinedRoles.BaggageAgent);
                 p.RequireClaim("company_type", CompanyType.HandlingAgent.ToString());
             })
-            .AddPolicy(Policies.RamSupervisor, p =>
+            .AddPolicy(ScannerPolicies.RamSupervisor, p =>
             {
                 p.RequireRole(SystemDefinedRoles.RamSupervisor);
                 p.RequireClaim("company_type", CompanyType.HandlingAgent.ToString());
             })
-            .AddPolicy(Policies.AirportOperator, p =>
+            .AddPolicy(ScannerPolicies.AirportOperator, p =>
             {
                 p.RequireRole(SystemDefinedRoles.Admin);
                 p.RequireClaim("company_type", CompanyType.AirportOperator.ToString());
             })
-            .AddPolicy(Policies.AirportOrRamp, p => p.RequireAssertion(ctx =>
+            .AddPolicy(ScannerPolicies.AirportOrRamp, p => p.RequireAssertion(ctx =>
             {
                 var companyType = ctx.User.FindFirst("company_type")?.Value;
                 return (ctx.User.IsInRole(SystemDefinedRoles.Admin) &&
@@ -56,7 +56,7 @@ public static class InstallServices
                     || (ctx.User.IsInRole(SystemDefinedRoles.RamSupervisor) &&
                         companyType == CompanyType.HandlingAgent.ToString());
             }))
-            .AddPolicy(Policies.AnyRole, p => p.RequireAssertion(ctx =>
+            .AddPolicy(ScannerPolicies.AnyRole, p => p.RequireAssertion(ctx =>
                 ctx.User.IsInRole(SystemDefinedRoles.Admin) ||
                 ctx.User.IsInRole(SystemDefinedRoles.RamSupervisor) ||
                 ctx.User.IsInRole(SystemDefinedRoles.BaggageAgent)));

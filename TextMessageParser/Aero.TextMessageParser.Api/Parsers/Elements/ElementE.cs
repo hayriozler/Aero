@@ -8,7 +8,9 @@ public class ElementE(IElementValidator validator) : Element(Consts.E)
     public override ElementResult Parse(ElementDetail elementDetail)
     {
         var validationResult = validator.Validate(elementDetail);
-        BagExceptionType= validationResult.IsValid ? elementDetail.Text.ToString() : string.Empty;
-        return new(this, validationResult);
+        if (!validationResult.IsValid) return new(this, validationResult);
+        var result = new ElementE(validator);
+        result.BagExceptionType = elementDetail.Text.ToString();
+        return new(result, validationResult);
     }
 }

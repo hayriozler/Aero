@@ -1,6 +1,7 @@
 using Aero.Flights.Api.Infrastructure;
 using Aero.Flights.Application.Common;
 using Aero.Flights.Application.SeasonalFlightSchedules;
+using Aero.Flights.Application.SeasonalFlightSchedules.Commands;
 using Aero.Flights.Contracts.SeasonalFlightSchedules;
 using Aero.Flights.Domain.Identity;
 using FluentValidation;
@@ -25,7 +26,7 @@ public static class SeasonalFlightScheduleEndpoints
             IQueryHandler<ListScheduleSeasonsQuery, IReadOnlyList<ScheduleSeasonResponse>> handler,
             HttpContext ctx, CancellationToken ct) =>
             ApiResult.Ok(ctx, await handler.HandleAsync(new ListScheduleSeasonsQuery(), ct)))
-            .RequireAuthorization(Permissions.SeasonalFlightScheduleView);
+            .RequireAuthorization(FlightPermissions.SeasonalFlightScheduleView);
 
         app.MapGet($"{basePath}/{{code}}", async (
             string code,
@@ -34,7 +35,7 @@ public static class SeasonalFlightScheduleEndpoints
         {
             var result = await handler.HandleAsync(new GetScheduleSeasonQuery(code), ct);
             return result is null ? ApiResult.NotFound(ctx, "SEASON_NOT_FOUND", $"Season '{code}' not found.") : ApiResult.Ok(ctx, result);
-        }).RequireAuthorization(Permissions.SeasonalFlightScheduleView);
+        }).RequireAuthorization(FlightPermissions.SeasonalFlightScheduleView);
 
         app.MapPost(basePath, async (
             ScheduleSeasonRequest request,
@@ -48,7 +49,7 @@ public static class SeasonalFlightScheduleEndpoints
 
             var result = await handler.HandleAsync(new CreateScheduleSeasonCommand(request), ct);
             return ApiResult.Created(ctx, result, $"{basePath}/{result.Code}");
-        }).RequireAuthorization(Permissions.SeasonalFlightScheduleWrite);
+        }).RequireAuthorization(FlightPermissions.SeasonalFlightScheduleWrite);
 
         app.MapPut($"{basePath}/{{code}}", async (
             string code,
@@ -63,7 +64,7 @@ public static class SeasonalFlightScheduleEndpoints
 
             var result = await handler.HandleAsync(new UpdateScheduleSeasonCommand(code, request), ct);
             return result is null ? ApiResult.NotFound(ctx, "SEASON_NOT_FOUND", $"Season '{code}' not found.") : ApiResult.Ok(ctx, result);
-        }).RequireAuthorization(Permissions.SeasonalFlightScheduleWrite);
+        }).RequireAuthorization(FlightPermissions.SeasonalFlightScheduleWrite);
 
         app.MapDelete($"{basePath}/{{code}}", async (
             string code,
@@ -72,7 +73,7 @@ public static class SeasonalFlightScheduleEndpoints
         {
             var deleted = await handler.HandleAsync(new DeleteScheduleSeasonCommand(code), ct);
             return deleted ? ApiResult.NoContent(ctx) : ApiResult.NotFound(ctx, "SEASON_NOT_FOUND", $"Season '{code}' not found.");
-        }).RequireAuthorization(Permissions.SeasonalFlightScheduleWrite);
+        }).RequireAuthorization(FlightPermissions.SeasonalFlightScheduleWrite);
     }
 
     private static void MapArrivalFlightEndpoints(IEndpointRouteBuilder app)
@@ -84,7 +85,7 @@ public static class SeasonalFlightScheduleEndpoints
             IQueryHandler<ListSeasonalFlightScheduleArrivalFlightsQuery, IReadOnlyList<SeasonalFlightScheduleArrivalFlightResponse>> handler,
             HttpContext ctx, CancellationToken ct) =>
             ApiResult.Ok(ctx, await handler.HandleAsync(new ListSeasonalFlightScheduleArrivalFlightsQuery(scheduleSeasonCode), ct)))
-            .RequireAuthorization(Permissions.SeasonalFlightScheduleView);
+            .RequireAuthorization(FlightPermissions.SeasonalFlightScheduleView);
 
         app.MapGet($"{basePath}/{{id:int}}", async (
             int id,
@@ -93,7 +94,7 @@ public static class SeasonalFlightScheduleEndpoints
         {
             var result = await handler.HandleAsync(new GetSeasonalFlightScheduleArrivalFlightQuery(id), ct);
             return result is null ? ApiResult.NotFound(ctx, "SCHEDULE_FLIGHT_NOT_FOUND", $"Arrival schedule flight {id} not found.") : ApiResult.Ok(ctx, result);
-        }).RequireAuthorization(Permissions.SeasonalFlightScheduleView);
+        }).RequireAuthorization(FlightPermissions.SeasonalFlightScheduleView);
 
         app.MapPost(basePath, async (
             SeasonalFlightScheduleArrivalFlightRequest request,
@@ -107,7 +108,7 @@ public static class SeasonalFlightScheduleEndpoints
 
             var result = await handler.HandleAsync(new CreateSeasonalFlightScheduleArrivalFlightCommand(request), ct);
             return ApiResult.Created(ctx, result, $"{basePath}/{result.Id}");
-        }).RequireAuthorization(Permissions.SeasonalFlightScheduleWrite);
+        }).RequireAuthorization(FlightPermissions.SeasonalFlightScheduleWrite);
 
         app.MapPut($"{basePath}/{{id:int}}", async (
             int id,
@@ -122,7 +123,7 @@ public static class SeasonalFlightScheduleEndpoints
 
             var result = await handler.HandleAsync(new UpdateSeasonalFlightScheduleArrivalFlightCommand(id, request), ct);
             return result is null ? ApiResult.NotFound(ctx, "SCHEDULE_FLIGHT_NOT_FOUND", $"Arrival schedule flight {id} not found.") : ApiResult.Ok(ctx, result);
-        }).RequireAuthorization(Permissions.SeasonalFlightScheduleWrite);
+        }).RequireAuthorization(FlightPermissions.SeasonalFlightScheduleWrite);
 
         app.MapDelete($"{basePath}/{{id:int}}", async (
             int id,
@@ -131,7 +132,7 @@ public static class SeasonalFlightScheduleEndpoints
         {
             var deleted = await handler.HandleAsync(new DeleteSeasonalFlightScheduleArrivalFlightCommand(id), ct);
             return deleted ? ApiResult.NoContent(ctx) : ApiResult.NotFound(ctx, "SCHEDULE_FLIGHT_NOT_FOUND", $"Arrival schedule flight {id} not found.");
-        }).RequireAuthorization(Permissions.SeasonalFlightScheduleWrite);
+        }).RequireAuthorization(FlightPermissions.SeasonalFlightScheduleWrite);
     }
 
     private static void MapDepartureFlightEndpoints(IEndpointRouteBuilder app)
@@ -143,7 +144,7 @@ public static class SeasonalFlightScheduleEndpoints
             IQueryHandler<ListSeasonalFlightScheduleDepartureFlightsQuery, IReadOnlyList<SeasonalFlightScheduleDepartureFlightResponse>> handler,
             HttpContext ctx, CancellationToken ct) =>
             ApiResult.Ok(ctx, await handler.HandleAsync(new ListSeasonalFlightScheduleDepartureFlightsQuery(scheduleSeasonCode), ct)))
-            .RequireAuthorization(Permissions.SeasonalFlightScheduleView);
+            .RequireAuthorization(FlightPermissions.SeasonalFlightScheduleView);
 
         app.MapGet($"{basePath}/{{id:int}}", async (
             int id,
@@ -152,7 +153,7 @@ public static class SeasonalFlightScheduleEndpoints
         {
             var result = await handler.HandleAsync(new GetSeasonalFlightScheduleDepartureFlightQuery(id), ct);
             return result is null ? ApiResult.NotFound(ctx, "SCHEDULE_FLIGHT_NOT_FOUND", $"Departure schedule flight {id} not found.") : ApiResult.Ok(ctx, result);
-        }).RequireAuthorization(Permissions.SeasonalFlightScheduleView);
+        }).RequireAuthorization(FlightPermissions.SeasonalFlightScheduleView);
 
         app.MapPost(basePath, async (
             SeasonalFlightScheduleDepartureFlightRequest request,
@@ -166,7 +167,7 @@ public static class SeasonalFlightScheduleEndpoints
 
             var result = await handler.HandleAsync(new CreateSeasonalFlightScheduleDepartureFlightCommand(request), ct);
             return ApiResult.Created(ctx, result, $"{basePath}/{result.Id}");
-        }).RequireAuthorization(Permissions.SeasonalFlightScheduleWrite);
+        }).RequireAuthorization(FlightPermissions.SeasonalFlightScheduleWrite);
 
         app.MapPut($"{basePath}/{{id:int}}", async (
             int id,
@@ -181,7 +182,7 @@ public static class SeasonalFlightScheduleEndpoints
 
             var result = await handler.HandleAsync(new UpdateSeasonalFlightScheduleDepartureFlightCommand(id, request), ct);
             return result is null ? ApiResult.NotFound(ctx, "SCHEDULE_FLIGHT_NOT_FOUND", $"Departure schedule flight {id} not found.") : ApiResult.Ok(ctx, result);
-        }).RequireAuthorization(Permissions.SeasonalFlightScheduleWrite);
+        }).RequireAuthorization(FlightPermissions.SeasonalFlightScheduleWrite);
 
         app.MapDelete($"{basePath}/{{id:int}}", async (
             int id,
@@ -190,6 +191,6 @@ public static class SeasonalFlightScheduleEndpoints
         {
             var deleted = await handler.HandleAsync(new DeleteSeasonalFlightScheduleDepartureFlightCommand(id), ct);
             return deleted ? ApiResult.NoContent(ctx) : ApiResult.NotFound(ctx, "SCHEDULE_FLIGHT_NOT_FOUND", $"Departure schedule flight {id} not found.");
-        }).RequireAuthorization(Permissions.SeasonalFlightScheduleWrite);
+        }).RequireAuthorization(FlightPermissions.SeasonalFlightScheduleWrite);
     }
 }

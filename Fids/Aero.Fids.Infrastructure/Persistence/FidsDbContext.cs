@@ -1,7 +1,6 @@
-using Aero.Fids.Infrastructure.Boards;
-using Aero.Fids.Infrastructure.Flights;
-using Aero.Fids.Infrastructure.Settings;
-using Aero.Fids.Infrastructure.Signage;
+using Aero.Fids.Domain.Boards;
+using Aero.Fids.Domain.Flights;
+using Aero.Fids.Domain.Signages;
 using Aero.Shared.Domain.Identity;
 using Aero.Shared.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;

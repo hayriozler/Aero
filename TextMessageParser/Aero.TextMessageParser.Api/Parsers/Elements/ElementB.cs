@@ -12,11 +12,12 @@ public class ElementB(IElementValidator validator) : Element(Consts.B)
     {
         var validationResult = validator.Validate(elementDetail);
         if (!validationResult.IsValid) return new(this, validationResult);
+        var result = new ElementB(validator);
 
         var parsedText = elementDetail.ParsedText;
-        BaggageStatusCode = parsedText.Length > 1 ? parsedText[1].ToString() : string.Empty;
-        BaggageTagNumber = parsedText.Length > 2 ? parsedText[2].ToString() : string.Empty;
-        BaggageTagConsecutiveTag = parsedText.Length > 3 ? parsedText[3].ToString() : string.Empty;
-        return new(this, validationResult);
+        result.BaggageStatusCode = parsedText.Length > 1 ? parsedText[1].ToString() : string.Empty;
+        result.BaggageTagNumber = parsedText.Length > 2 ? parsedText[2].ToString() : string.Empty;
+        result.BaggageTagConsecutiveTag = parsedText.Length > 3 ? parsedText[3].ToString() : string.Empty;
+        return new(result, validationResult);
     }
 }

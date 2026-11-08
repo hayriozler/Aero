@@ -1,7 +1,7 @@
 using Aero.Flights.Api.Infrastructure;
 using Aero.Flights.Application.Common;
 using Aero.Flights.Application.Configuration;
-using Aero.Flights.Application.Flights.Resources;
+using Aero.Flights.Application.OpsFlights.Resources;
 using Aero.Flights.Contracts.Flights;
 using Aero.Flights.Domain.Identity;
 using Aero.Flights.Domain.Ops.Resources;
@@ -44,7 +44,7 @@ public static class FlightResourceEndpoints
 
             var minutes = await aeroConfig.GetIntAsync(configName, ResourceDefaultsConstants.FallbackDurationMinutes, ct);
             return ApiResult.Ok(ctx, new ResourceDefaultsResponse(minutes));
-        }).RequireAuthorization(Permissions.FlightView);
+        }).RequireAuthorization(FlightPermissions.FlightView);
 
         app.MapGet("/api/flights/status-colors", async (
             IAeroConfigService aeroConfig,
@@ -53,7 +53,7 @@ public static class FlightResourceEndpoints
         {
             var colors = await aeroConfig.GetByPrefixAsync("FlightStatus.Color.", ct);
             return ApiResult.Ok(ctx, colors);
-        }).RequireAuthorization(Permissions.FlightView);
+        }).RequireAuthorization(FlightPermissions.FlightView);
 
         app.MapGet("/api/flights/resource-grid-date-format", async (
             IAeroConfigService aeroConfig,
@@ -62,7 +62,7 @@ public static class FlightResourceEndpoints
         {
             var format = await aeroConfig.GetAsync("Resources.Grid.DateFormat", ct);
             return ApiResult.Ok(ctx, new ResourceGridDateFormatResponse(format ?? "dd.MM"));
-        }).RequireAuthorization(Permissions.FlightView);
+        }).RequireAuthorization(FlightPermissions.FlightView);
 
         return app;
     }
@@ -79,7 +79,7 @@ public static class FlightResourceEndpoints
             HttpContext ctx,
             CancellationToken ct) =>
             ApiResult.Ok(ctx, await handler.HandleAsync(new ListFlightResourcesQuery<TResource>(flightId), ct)))
-            .RequireAuthorization(Permissions.FlightView);
+            .RequireAuthorization(FlightPermissions.FlightView);
 
         app.MapPost(basePath, async (
             long flightId,
@@ -95,7 +95,7 @@ public static class FlightResourceEndpoints
 
             var result = await handler.HandleAsync(new AddFlightResourceCommand<TResource>(flightId, request), ct);
             return ApiResult.Created(ctx, result, $"{basePath}/{result.Id}");
-        }).RequireAuthorization(Permissions.FlightWrite);
+        }).RequireAuthorization(FlightPermissions.FlightWrite);
 
         app.MapPut($"{basePath}/{{resourceId:long}}", async (
             long flightId,
@@ -114,7 +114,7 @@ public static class FlightResourceEndpoints
             return result is null
                 ? ApiResult.NotFound(ctx, "RESOURCE_NOT_FOUND", $"Resource {resourceId} not found.")
                 : ApiResult.Ok(ctx, result);
-        }).RequireAuthorization(Permissions.FlightWrite);
+        }).RequireAuthorization(FlightPermissions.FlightWrite);
 
         app.MapDelete($"{basePath}/{{resourceId:long}}", async (
             long flightId,
@@ -127,7 +127,7 @@ public static class FlightResourceEndpoints
             return deleted
                 ? ApiResult.NoContent(ctx)
                 : ApiResult.NotFound(ctx, "RESOURCE_NOT_FOUND", $"Resource {resourceId} not found.");
-        }).RequireAuthorization(Permissions.FlightWrite);
+        }).RequireAuthorization(FlightPermissions.FlightWrite);
 
         app.MapPut($"{basePath}/status", async (
             long flightId,
@@ -143,6 +143,6 @@ public static class FlightResourceEndpoints
 
             var result = await handler.HandleAsync(new BulkUpdateResourceStatusCommand<TResource>(flightId, request.StatusCode), ct);
             return ApiResult.Ok(ctx, result);
-        }).RequireAuthorization(Permissions.FlightWrite);
+        }).RequireAuthorization(FlightPermissions.FlightWrite);
     }
 }

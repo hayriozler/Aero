@@ -15,15 +15,16 @@ public class ElementV(IElementValidator validator) : Element(Consts.V)
     {
         var v = validator.Validate(elementDetail);
         if (!v.IsValid) return new(this, v);
+        var result = new ElementV(validator);
         var parsedText = elementDetail.ParsedText;
         var f1 = parsedText.Length > 1 ? parsedText[1] : default;
-        DataDictionaryVersion  = f1[..1].Span[0];
-        BaggageSourceIndicator = f1.Slice(1, 1).Span[0];
-        AirportCode            = f1.Slice(2, 3).ToString();
-        PartNumber = parsedText.Length > 2 ? parsedText[2].ToString() : string.Empty;
-        MessageRefNumber = parsedText.Length > 3 ? parsedText[3].ToString() : string.Empty;
-        AckRequest = parsedText.Length > 4 ? parsedText[4].ToString()[0] : null;
-        EncryptionKey   = parsedText.Length > 5 ? parsedText[5].ToString() : string.Empty;
-        return new(this, v);
+        result.DataDictionaryVersion  = f1[..1].Span[0];
+        result.BaggageSourceIndicator = f1.Slice(1, 1).Span[0];
+        result.AirportCode            = f1.Slice(2, 3).ToString();
+        result.PartNumber = parsedText.Length > 2 ? parsedText[2].ToString() : string.Empty;
+        result.MessageRefNumber = parsedText.Length > 3 ? parsedText[3].ToString() : string.Empty;
+        result.AckRequest = parsedText.Length > 4 ? parsedText[4].ToString()[0] : null;
+        result.EncryptionKey   = parsedText.Length > 5 ? parsedText[5].ToString() : string.Empty;
+        return new(result, v);
     }
 }

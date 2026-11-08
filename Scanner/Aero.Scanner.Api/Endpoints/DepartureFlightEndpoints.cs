@@ -15,7 +15,7 @@ public static class DepartureFlightEndpoints
     public static IEndpointRouteBuilder MapDepartureFlightEndpoints(this IEndpointRouteBuilder app)
     {
         var flights = app.MapGroup("/api/departure/flights")
-            .RequireAuthorization(Policies.AnyRole);
+            .RequireAuthorization(ScannerPolicies.AnyRole);
 
         // ── Departure flights ──────────────────────────────────────────────────
         flights.MapGet("", ListDepartureFlights)

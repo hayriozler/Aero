@@ -1,8 +1,6 @@
 using Aero.Scanner.Api.Extensions;
 using Aero.Scanner.Api.Persistence;
 using Aero.Scanner.Shared.Consts;
-using Aero.Scanner.Shared.Dtos;
-using Aero.Scanner.Shared.Requests;
 using Aero.Shared.WebUtilities.Validations;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
@@ -14,7 +12,7 @@ public static class RoleEndpoints
     public static IEndpointRouteBuilder MapRoleEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/roles")
-            .RequireAuthorization(Policies.AirportOrRamp);
+            .RequireAuthorization(ScannerPolicies.AirportOrRamp);
 
         group.MapGet("/", GetAll)
             .WithName("GetAllRoles")
@@ -26,7 +24,7 @@ public static class RoleEndpoints
             .ProducesProblem(404);
 
         group.MapPost("/", Create)
-            .RequireAuthorization(Policies.AirportOperator)
+            .RequireAuthorization(ScannerPolicies.AirportOperator)
             .WithName("CreateRole")
             .AddEndpointFilter<EndPointValidationFilter<CreateRoleRequest>>()
             .Produces<RoleDto>(201)
@@ -35,7 +33,7 @@ public static class RoleEndpoints
             .ProducesProblem(409);
 
         group.MapPut("/{name}", Update)
-            .RequireAuthorization(Policies.AirportOperator)
+            .RequireAuthorization(ScannerPolicies.AirportOperator)
             .WithName("UpdateRole")
             .AddEndpointFilter<EndPointValidationFilter<UpdateRoleRequest>>()
             .Produces<RoleDto>()
@@ -43,7 +41,7 @@ public static class RoleEndpoints
             .ProducesProblem(404);
 
         group.MapDelete("/{name}", Delete)
-            .RequireAuthorization(Policies.AirportOperator)
+            .RequireAuthorization(ScannerPolicies.AirportOperator)
             .WithName("DeleteRole")
             .Produces(204)
             .ProducesProblem(400)

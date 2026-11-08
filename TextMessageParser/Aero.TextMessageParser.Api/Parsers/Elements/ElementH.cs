@@ -11,10 +11,11 @@ public class ElementH(IElementValidator validator) : Element(Consts.H)
     {
         var validationResult = validator.Validate(elementDetail);
         if (!validationResult.IsValid) return new(this, validationResult);
+        var result = new ElementH(validator);
         var parsedText = elementDetail.ParsedText;
-        HandlingTerminal = parsedText.Length > 1 ? parsedText[1].ToString() : string.Empty;
-        HandlingBayPier  = parsedText.Length > 2 ? parsedText[2].ToString() : string.Empty;
-        HandlingArea     = parsedText.Length > 3 ? parsedText[3].ToString() : string.Empty;
-        return new(this, validationResult);
+        result.HandlingTerminal = parsedText.Length > 1 ? parsedText[1].ToString() : string.Empty;
+        result.HandlingBayPier  = parsedText.Length > 2 ? parsedText[2].ToString() : string.Empty;
+        result.HandlingArea     = parsedText.Length > 3 ? parsedText[3].ToString() : string.Empty;
+        return new(result, validationResult);
     }
 }

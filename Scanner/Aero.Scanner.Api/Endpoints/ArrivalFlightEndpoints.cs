@@ -15,7 +15,7 @@ public static class ArrivalFlightEndpoints
     public static IEndpointRouteBuilder MapArrivalFlightEndpoints(this IEndpointRouteBuilder app)
     {
         var flights = app.MapGroup("/api/arrival/flights")
-            .RequireAuthorization(Policies.AnyRole);
+            .RequireAuthorization(ScannerPolicies.AnyRole);
 
         flights.MapGet("", ListArrivalFlights)
             .WithName("ListArrivalFlights")

@@ -1,19 +1,9 @@
 using Aero.Flights.Contracts.Metadatas;
 using Aero.Flights.Domain.Metadatas;
-using FluentValidation;
 using System.Linq.Expressions;
 
 namespace Aero.Flights.Application.Metadatas;
 
-public sealed class ParkPositionRequestValidator : AbstractValidator<ParkPositionRequest>
-{
-    public ParkPositionRequestValidator()
-    {
-        RuleFor(x => x.Code).NotEmpty().MaximumLength(10);
-        RuleFor(x => x.TypeCode).MaximumLength(10);
-        RuleFor(x => x.Description).MaximumLength(200);
-    }
-}
 
 public sealed class ParkPositionMetadataMap : IMetadataMap<ParkPosition, ParkPositionRequest, ParkPositionResponse>
 {

@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Aero.Shared.Application.Managers;
 
-internal sealed class InterfaceSettingsManager(
+public sealed class InterfaceSettingsManager(
     IDbContextFactory<TenantDbContext> contextFactory, IStringProtector protector, TimeProvider clock)
     : IInterfaceSettingsManager
 {

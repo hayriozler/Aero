@@ -1,4 +1,4 @@
-using Aero.Fids.Web.Services;
+using Aero.Fids.Application.Statuses;
 
 namespace Aero.Fids.Web.Endpoints.StatusMappings;
 

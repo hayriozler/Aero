@@ -1,6 +1,6 @@
 using Aero.Flights.Application.Configuration;
-using Aero.Flights.Application.Flights.Resources;
 using Aero.Flights.Application.Interfaces;
+using Aero.Flights.Application.OpsFlights.Resources;
 using Aero.Flights.Application.Tenancy;
 using Aero.Flights.Domain.Ops;
 using Aero.Flights.Domain.Ops.Resources;

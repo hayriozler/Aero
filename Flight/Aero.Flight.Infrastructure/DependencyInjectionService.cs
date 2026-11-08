@@ -1,8 +1,7 @@
+using Aero.Flights.Domain.Ops.Resources;
 using Aero.Flights.Infrastructure.Messaging;
-using Aero.Flights.Infrastructure.Metadata;
 using Aero.Flights.Infrastructure.Persistence;
 using Aero.Flights.Infrastructure.Persistence.Interceptors;
-using Aero.Flights.Infrastructure.Rules;
 using Aero.Shared.Application;
 using Aero.Shared.Application.Commands.Logins;
 using Aero.Shared.Application.Commands.RolePermissions;
@@ -20,9 +19,11 @@ using Aero.Shared.Application.Queries.Audits;
 using Aero.Shared.Application.Queries.RolePermissions;
 using Aero.Shared.Application.Queries.Roles;
 using Aero.Shared.Application.Queries.Users;
+using Aero.Shared.Application.Tenancy;
 using Aero.Shared.Contracts.Responses;
 using Aero.Shared.Domain.Identity;
 using Aero.Shared.Domain.Identity.Audits;
+using Aero.Shared.Infrastructure.Interceptors;
 using Aero.Shared.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -40,7 +41,6 @@ public static class DependencyInjectionService
         services.AddScoped<MetadataOutboxInterceptor>();
         services.AddScoped<FlightOutboxInterceptor>();
 
-        // Connection comes from the tenant resolved for the current scope (middleware or background loop).
         services.AddScoped<ITenantContext, TenantContext>();
 
         services.AddDbContext<AeroFlightDbContext>((sp, options) =>
@@ -61,7 +61,7 @@ public static class DependencyInjectionService
 #endif
         });
 
-        services.AddScoped<IAeroFlightDbContext>(sp => sp.GetRequiredService<AeroFlightDbContext>());
+        services.AddScoped<AeroFlightDbContext>();
 
         services.AddIdentityHandlers();
         services.AddMetadataDataEntities();

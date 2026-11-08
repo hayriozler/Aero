@@ -1,6 +1,6 @@
 using Aero.Flights.Api.Infrastructure;
 using Aero.Flights.Application.Common;
-using Aero.Flights.Application.Flights.ParkPositiions;
+using Aero.Flights.Application.OpsFlights.ParkPositiions;
 using Aero.Flights.Contracts.Flights;
 using Aero.Flights.Domain.Identity;
 using FluentValidation;
@@ -25,7 +25,7 @@ public static class FlightParkPositionEndpoints
             HttpContext ctx,
             CancellationToken ct) =>
             ApiResult.Ok(ctx, await handler.HandleAsync(new ListParkPositionsQuery(flightId, isArrival), ct)))
-            .RequireAuthorization(Permissions.FlightView);
+            .RequireAuthorization(FlightPermissions.FlightView);
 
         app.MapPost(basePath, async (
             long flightId,
@@ -41,7 +41,7 @@ public static class FlightParkPositionEndpoints
 
             var result = await handler.HandleAsync(new AddParkPositionCommand(flightId, isArrival, request), ct);
             return ApiResult.Created(ctx, result, $"{basePath}/{result.Id}");
-        }).RequireAuthorization(Permissions.FlightWrite);
+        }).RequireAuthorization(FlightPermissions.FlightWrite);
 
         app.MapPut($"{basePath}/{{parkPositionId:long}}", async (
             long flightId,
@@ -60,7 +60,7 @@ public static class FlightParkPositionEndpoints
             return result is null
                 ? ApiResult.NotFound(ctx, "PARK_POSITION_NOT_FOUND", $"Park position {parkPositionId} not found.")
                 : ApiResult.Ok(ctx, result);
-        }).RequireAuthorization(Permissions.FlightWrite);
+        }).RequireAuthorization(FlightPermissions.FlightWrite);
 
         app.MapDelete($"{basePath}/{{parkPositionId:long}}", async (
             long flightId,
@@ -73,6 +73,6 @@ public static class FlightParkPositionEndpoints
             return deleted
                 ? ApiResult.NoContent(ctx)
                 : ApiResult.NotFound(ctx, "PARK_POSITION_NOT_FOUND", $"Park position {parkPositionId} not found.");
-        }).RequireAuthorization(Permissions.FlightWrite);
+        }).RequireAuthorization(FlightPermissions.FlightWrite);
     }
 }
