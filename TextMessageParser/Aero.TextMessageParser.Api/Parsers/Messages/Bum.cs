@@ -8,7 +8,7 @@ namespace Aero.TextMessageParser.Api.Parsers.Messages;
 public sealed class Bum(IReadOnlyDictionary<string, Element> elementMap)
     : MessageBase<TextMessageBumRequest>(new MessageHeader(Consts.BUM, null, null), elementMap)
 {
-    public override IReadOnlyList<ElementSequence> ElementSequences =>
+    public override IReadOnlyList<ElementSequence> ElementSequences { get; } =
     [
         new(Consts.V, ElementRequirement.Mandatory,   IsMultiple: false),
         new(Consts.K, ElementRequirement.Optional,    IsMultiple: false),

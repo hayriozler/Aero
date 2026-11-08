@@ -15,7 +15,7 @@ public class MessageProcessingService(
                 SET ""Status"" = '" + TextMessageStatus.Processing + @"', ""ProcessingStartedAt"" = {0}
                 WHERE ""Id"" IN (
                     SELECT ""Id"" FROM ""messages"".""TextMessages""
-                    WHERE ""Status"" = '" + TextMessageStatus.NotProcessed + @"' AND ""Completed"" = false
+                    WHERE ""Status"" = '" + TextMessageStatus.NotProcessed + @"'
                     ORDER BY ""RecordDateTime""
                     LIMIT {1}
                     FOR UPDATE SKIP LOCKED
@@ -35,7 +35,6 @@ public class MessageProcessingService(
 
         var recovered = await dbContext.TextMessagesSet
             .Where(m => m.Status == TextMessageStatus.Processing
-                     && m.Completed == false
                      && m.ProcessingStartedAt < cutoff)
             .ExecuteUpdateAsync(s => s
                 .SetProperty(m => m.Status, TextMessageStatus.NotProcessed)

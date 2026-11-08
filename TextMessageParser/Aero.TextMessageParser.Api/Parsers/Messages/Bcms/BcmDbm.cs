@@ -6,7 +6,7 @@ namespace Aero.TextMessageParser.Api.Parsers.Messages.Bcms;
 public sealed class BcmDbm(IReadOnlyDictionary<string, Element> elementMap)
     : BcmBase(Consts.DBM, elementMap)
 {
-    public override IReadOnlyList<ElementSequence> ElementSequences =>
+    public override IReadOnlyList<ElementSequence> ElementSequences { get; } =
     [
         new(Consts.V, ElementRequirement.Mandatory, IsMultiple: false),
         new(Consts.F, ElementRequirement.Mandatory, IsMultiple: false),

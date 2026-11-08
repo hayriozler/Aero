@@ -83,7 +83,7 @@ The field layout of `.S/` is: 1 Authority to Load (Y/N, the only mandatory field
 | Test | Result |
 |---|---|
 | Failed_message_is_persisted_as_terminal | SKIPPED: needs PostgreSQL (raw claim SQL, private method). Skip reason holds the reproduction: BUM message, observe Status stays PROCESSING, Completed false. |
-| Catch_block_persists_failure (SourceGuard) | Green after the fix: the catch block calls `RecordFailureAsync`, which opens a fresh scope and writes Status ERROR, Completed true, ProcessDateTime and a `MSG_HND_02` error row. |
+| Catch_block_persists_failure (SourceGuard) | Green after the fix: the catch block calls `RecordFailureAsync`, which opens a fresh scope and writes Status ERROR, ProcessDateTime and a `MSG_HND_02` error row. |
 | Stale_recovery_runs_inside_the_loop (SourceGuard) | Green after the fix: `RecoverStaleRecordsAsync` runs every minute inside the loop, not only at startup. |
 | Bum_handler_throws_not_implemented | Green, documents that `Bum.Handle` throws NotImplementedException (what reaches the catch block). |
 
@@ -210,3 +210,6 @@ Single-tag BSM parse; BSM CHG and DEL parse; SplitOnSlash (4 cases); ValidationH
 
 ## Side observation, not tested
 `ValidationHelper.ValidateAirlineFlightNumber` requires letters for the first 2 characters when the third is a digit, so airline codes like `4U` (digit + letter) are rejected.
+
+## Manual check of the partial indexes (2026-11-08)
+Not an automated test. On a temporary `postgres:17-alpine` container both migrations were applied, 100000 rows were inserted (100 `NOT_PROCESSED`, the rest `PROCESSED`) and the claim query was explained. The plan is an `Index Scan using IX_TextMessages_Pending` without a Sort node; the index is 16 kB while the table index on the primary key is 2208 kB. `Completed` is no longer a column, it is computed from `Status`.

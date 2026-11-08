@@ -10,7 +10,7 @@ public abstract class BsmBase<TResult>(
     : MessageBase<TResult>(new MessageHeader(Consts.BSM, null, changeOfStatus), elementMap)
     where TResult : class
 {
-    public override IReadOnlyList<ElementSequence> ElementSequences =>
+    public override IReadOnlyList<ElementSequence> ElementSequences { get; } =
     [
         new(Consts.V, ElementRequirement.Mandatory,   IsMultiple: false),
         new(Consts.F, ElementRequirement.Conditional, IsMultiple: false),
@@ -33,6 +33,4 @@ public abstract class BsmBase<TResult>(
         new(Consts.R, ElementRequirement.Optional,    IsMultiple: false),
         new(Consts.X, ElementRequirement.Optional,    IsMultiple: false),
     ];
-
-    // All state is local to the call — no instance fields — safe for singleton reuse across concurrent messages.    
 }

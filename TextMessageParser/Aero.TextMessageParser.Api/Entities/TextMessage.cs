@@ -19,7 +19,7 @@ public sealed class TextMessage
     public string Message { get; private set; } = string.Empty;
     public DateTime RecordDateTime { get; private set; }
     public DateTime? ProcessDateTime { get; private set; }
-    public bool Completed { get; private set; }
+    public bool Completed => Status is TextMessageStatus.Processed or TextMessageStatus.Error;
     public string Status { get; private set; } = TextMessageStatus.NotProcessed;
     public DateTime? ProcessingStartedAt { get; private set; }
 
@@ -42,7 +42,6 @@ public sealed class TextMessage
             throw new InvalidOperationException(
                 $"Text message {Id} is {Status}; only a claimed ({TextMessageStatus.Processing}) message can be completed.");
         Status = status;
-        Completed = true;
         ProcessDateTime = processedAtUtc;
     }
 }

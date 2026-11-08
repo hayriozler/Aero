@@ -65,10 +65,6 @@ namespace Aero.TextMessageParser.Migrations.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
-                    b.Property<bool>("Completed")
-                        .HasColumnType("boolean")
-                        .HasColumnOrder(9);
-
                     b.Property<string>("Message")
                         .IsRequired()
                         .HasMaxLength(4000)
@@ -77,7 +73,7 @@ namespace Aero.TextMessageParser.Migrations.Migrations
 
                     b.Property<DateTime?>("ProcessDateTime")
                         .HasColumnType("TIMESTAMPTZ")
-                        .HasColumnOrder(10);
+                        .HasColumnOrder(9);
 
                     b.Property<DateTime?>("ProcessingStartedAt")
                         .HasColumnType("TIMESTAMPTZ")
@@ -85,7 +81,7 @@ namespace Aero.TextMessageParser.Migrations.Migrations
 
                     b.Property<DateTime>("RecordDateTime")
                         .HasColumnType("TIMESTAMPTZ")
-                        .HasColumnOrder(11);
+                        .HasColumnOrder(10);
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -96,7 +92,13 @@ namespace Aero.TextMessageParser.Migrations.Migrations
                     b.HasKey("Id")
                         .HasName("PK_TextMessageId");
 
-                    b.HasIndex("Status", "Completed");
+                    b.HasIndex("ProcessingStartedAt")
+                        .HasDatabaseName("IX_TextMessages_Processing")
+                        .HasFilter("\"Status\" = 'PROCESSING'");
+
+                    b.HasIndex("RecordDateTime")
+                        .HasDatabaseName("IX_TextMessages_Pending")
+                        .HasFilter("\"Status\" = 'NOT_PROCESSED'");
 
                     b.ToTable("TextMessages", "messages");
                 });

@@ -12,7 +12,7 @@ public abstract class BcmBase(
 {
     private readonly string _subType = char.ToUpperInvariant(secondaryIdentifier[0]) + secondaryIdentifier[1..].ToLowerInvariant();
 
-    public override IReadOnlyList<ElementSequence> ElementSequences =>
+    public override IReadOnlyList<ElementSequence> ElementSequences { get; } =
     [
         new(Consts.V, ElementRequirement.Mandatory, IsMultiple: false),
         new(Consts.F, ElementRequirement.Mandatory, IsMultiple: false),

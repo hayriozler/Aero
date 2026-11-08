@@ -59,21 +59,25 @@ internal sealed class TextMessageConfiguration : IEntityTypeConfiguration<TextMe
             .HasColumnOrder(8);
 
 
-        builder.Property(e => e.Completed)
-      .HasColumnType("boolean")
-      .HasColumnOrder(9);
+        builder.Ignore(e => e.Completed);
 
         builder.Property(e => e.ProcessDateTime)
            .HasColumnType("TIMESTAMPTZ")
            .IsRequired(false)
-           .HasColumnOrder(10);
+           .HasColumnOrder(9);
 
         builder.Property(e => e.RecordDateTime)
           .HasColumnType("TIMESTAMPTZ")
           .IsRequired()
-          .HasColumnOrder(11);
+          .HasColumnOrder(10);
 
-        builder.HasIndex(x => new { x.Status, x.Completed });
+        builder.HasIndex(x => x.RecordDateTime)
+            .HasDatabaseName("IX_TextMessages_Pending")
+            .HasFilter("\"Status\" = 'NOT_PROCESSED'");
+
+        builder.HasIndex(x => x.ProcessingStartedAt)
+            .HasDatabaseName("IX_TextMessages_Processing")
+            .HasFilter("\"Status\" = 'PROCESSING'");
 
     }
 }

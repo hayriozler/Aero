@@ -26,7 +26,7 @@ builder.Services
     .InstallProcessors();
 
 builder.Services.Configure<SlowRequestOptions>(builder.Configuration.GetSection(SlowRequestOptions.Section));
-builder.Services.AddDbContext<TextMessageParserDbContext, TextMessageParserDbContext>((sp, opt) =>
+builder.Services.AddDbContext<TextMessageParserDbContext>((sp, opt) =>
 {
     var connectionStr = builder.Configuration.GetConnectionString("textmessageparser");
     opt.UseNpgsql(connectionStr, npgsqlOptions =>

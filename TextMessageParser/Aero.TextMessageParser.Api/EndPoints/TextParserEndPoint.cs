@@ -51,7 +51,9 @@ public static class TextParserEndPoint
             await db.SaveChangesAsync(cancellationToken);
             return Results.Accepted(value: new TextMessageAcceptedResponse(message.Id));
         })
-        .WithName("TextMessages")
+        .WithName("SubmitTextMessage")
+        .WithSummary("Accepts a raw IATA baggage text message for asynchronous parsing")
+        .WithDescription("Validates the envelope (3 character header, element lines, matching END line, at most 4000 characters), stores the raw text and returns its id. Parsing happens in the background.")
         .Produces<TextMessageAcceptedResponse>(StatusCodes.Status202Accepted)
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status413PayloadTooLarge)
