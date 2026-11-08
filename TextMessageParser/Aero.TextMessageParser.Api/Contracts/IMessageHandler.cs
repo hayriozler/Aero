@@ -4,4 +4,5 @@ public interface IMessageHandler
 {
     string MessageName  { get; }
     string EndIdentifier { get; }
+    string RoutingKey { get; }
 }

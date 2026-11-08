@@ -44,7 +44,7 @@ public class Consts
     public const string W = ".W/";
     public const string X = ".X/";
     public const string Y = ".Y/";
-    public static readonly string[] CHANGE_OF_STATUS = ["ACK", "NAK"];
+    public static readonly string[] CHANGE_OF_STATUS = [CHG, DEL];
     public static readonly string[] ACK_NAK_ARRAY = ["ACK", "NAK"];
     public static readonly string[] BAG_STATUS_CODE_ARRAY = ["NAL", "OFF", "UNS", "OND", "ONA"];
     public static readonly string[] AUTHORITY_LOAD_ARRAY = ["Y", "N"];

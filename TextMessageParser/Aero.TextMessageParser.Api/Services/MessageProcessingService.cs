@@ -128,7 +128,7 @@ public class MessageProcessingService(
         TextMessageParserDbContext textParserDataContext,
         CancellationToken cancellationToken)
     {
-        var key = message.Header.Identifier + message.Header.SecondaryIdentifier;
+        var key = message.Header.RoutingKey;
 
         var processor = scopedServices.GetKeyedService<IMessageProcessor>(key);
         if (processor is null)

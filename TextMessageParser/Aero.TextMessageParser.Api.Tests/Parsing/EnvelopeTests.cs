@@ -114,9 +114,11 @@ public class EnvelopeTests
         Check.True(plain.SecondaryIdentifier is null, "Plain BSM has no secondary identifier.");
         Check.Equal("ENDBSM", plainFooter.EndIdentifier, "Footer identifier.");
         var (chg, _) = SampleMessages.ChgText(SampleMessages.V, SampleMessages.N1).GetMessageIdentifier();
-        Check.Equal("CHG", chg.SecondaryIdentifier, "CHG secondary identifier.");
+        Check.Equal("CHG", chg.ChangeOfStatus, "CHG is the change of status indicator (IATA table 2.2).");
+        Check.True(chg.SecondaryIdentifier is null, "CHG is not a secondary level identifier.");
         var (del, _) = SampleMessages.DelText(SampleMessages.V, SampleMessages.N1).GetMessageIdentifier();
-        Check.Equal("DEL", del.SecondaryIdentifier, "DEL secondary identifier.");
+        Check.Equal("DEL", del.ChangeOfStatus, "DEL is the change of status indicator (IATA table 2.2).");
+        Check.True(del.SecondaryIdentifier is null, "DEL is not a secondary level identifier.");
     }
 
     [Theory(DisplayName = "Bug 13: the same BSM using LF only and CRLF must give identical header/footer from GetMessageIdentifier regardless of Environment.NewLine")]

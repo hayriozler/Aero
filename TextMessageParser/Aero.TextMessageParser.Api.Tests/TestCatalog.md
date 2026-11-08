@@ -167,6 +167,15 @@ Production_model_builds: `new TextMessageParserDbContext(options).Model` throws 
 | Codes_are_constants_unique_and_short | Reflection over `ErrorCodes` | All const, unique, at most 50 characters | Green |
 | Message_codes_are_centralised | Helper methods | Same strings as before | Green |
 
+## Message header semantics (medium item A3)
+IATA table 2.2 names three header concepts: the Standard Message Identifier (BSM, BUM, BCM), the Secondary Level Message Identifier (BAM, FOM, FCM, FFM, DBM, used by BCM) and the Change of Status Indicator (CHG or DEL, used by BSM). `Consts.CHANGE_OF_STATUS` was `["ACK","NAK"]`, so CHG and DEL were stored as a secondary identifier while the handlers described themselves with a change of status. It is now `["CHG","DEL"]`. `MessageHeader.RoutingKey` (identifier + secondary + change of status) is the single routing key, exposed by `IMessageHandler.RoutingKey` and used by `MessageProcessingService`. Rows stored the old way (CHG in the secondary column) build the same key and keep working; no data migration is required.
+| Test | Input | Expected | Actual |
+|---|---|---|---|
+| Second_line_goes_to_the_right_header_field (5 cases) | BSM, BSM CHG, BSM DEL, BCM FOM, BCM DBM | CHG/DEL in change of status, FOM/DBM in secondary identifier | Green |
+| Registered_keys_match_the_handlers_own_header | Handler map built by `InstallMessages` | Dictionary key equals `handler.RoutingKey` for every handler | Green |
+| Parsed_header_finds_its_handler (8 cases) | Every supported message type | Routing key from stored text exists in the handler map | Green |
+| Old_rows_still_route_and_parse | CHG stored in the secondary column | Same routing key, message parses | Green |
+
 ## Baseline (Kind=Baseline, all green)
 Single-tag BSM parse; BSM CHG and DEL parse; SplitOnSlash (4 cases); ValidationHelper flight number (5), IATA date (5), airport code (4); Install extensions; model builds with test context; endpoint accepts valid BSM; GetMessageIdentifier happy path; scalar JSON; ElementS valid lengths (5); malformed controls (7).
 

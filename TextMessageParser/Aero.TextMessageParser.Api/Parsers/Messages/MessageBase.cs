@@ -13,6 +13,7 @@ public abstract class MessageBase<TResult>(
     where TResult : class
 {
     public string EndIdentifier => $"END{header.Identifier}";
+    public string RoutingKey => header.RoutingKey;
     public string MessageName
     {
         get

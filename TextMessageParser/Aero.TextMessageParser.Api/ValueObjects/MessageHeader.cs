@@ -1,3 +1,6 @@
-﻿namespace Aero.TextMessageParser.Api.ValueObjects;
+namespace Aero.TextMessageParser.Api.ValueObjects;
 
-public sealed record MessageHeader(string Identifier, string? SecondaryIdentifier, string? ChangeOfStatus);
+public sealed record MessageHeader(string Identifier, string? SecondaryIdentifier, string? ChangeOfStatus)
+{
+    public string RoutingKey => Identifier + SecondaryIdentifier + ChangeOfStatus;
+}
